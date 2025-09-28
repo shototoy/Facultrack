@@ -12,7 +12,12 @@
 !program.js
 !home.php
 !home.js
+!faculty.php
+!faculty.js
 !index.php
 !logout.php
+!fetch_announcements.php
 !common_utilities.php
+!get_location.php
+!get_statistics.php
 !.gitignore
