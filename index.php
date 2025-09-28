@@ -102,12 +102,20 @@ $demo_accounts = [];
 
 try {
     $stmt = $pdo->prepare("
-        (SELECT username, role, full_name FROM users WHERE role = 'class' AND is_active = 1)
+        SELECT username, role, full_name FROM users WHERE role = 'campus_director' AND is_active = 1
         UNION ALL
-        (SELECT username, role, full_name FROM users WHERE role = 'program_chair' AND is_active = 1)
+        SELECT username, role, full_name FROM users WHERE role = 'program_chair' AND is_active = 1
         UNION ALL 
-        (SELECT username, role, full_name FROM users WHERE role = 'faculty' AND is_active = 1 LIMIT 1)
-        ORDER BY role, full_name
+        SELECT username, role, full_name FROM users WHERE role = 'faculty' AND is_active = 1
+        UNION ALL
+        SELECT username, role, full_name FROM users WHERE role = 'class' AND is_active = 1
+        ORDER BY 
+            CASE role 
+                WHEN 'campus_director' THEN 1
+                WHEN 'program_chair' THEN 2
+                WHEN 'faculty' THEN 3
+                WHEN 'class' THEN 4
+            END, full_name
     ");
     $stmt->execute();
     $demo_accounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
