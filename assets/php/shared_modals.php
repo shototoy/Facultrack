@@ -219,13 +219,15 @@ $role = $_SESSION['role'] ?? '';
 </div>
 <?php endif; ?>
 
+
+<!-- Faculty Schedule Modal -->
 <div class="modal-overlay" id="facultyScheduleModal">
     <div class="modal large-modal">
         <div class="modal-header">
             <h3 class="modal-title" id="scheduleModalTitle">Faculty Schedule</h3>
             <button type="button" class="modal-close" onclick="closeModal('facultyScheduleModal')">&times;</button>
         </div>
-        
+
         <div class="modal-body">
             <div id="scheduleContent">
                 <div class="loading">Loading schedule...</div>
@@ -233,3 +235,19 @@ $role = $_SESSION['role'] ?? '';
         </div>
     </div>
 </div>
+
+<!--
+<div class="modal-overlay" id="facultyCourseLoad">
+    <div class="modal large-modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="courseLoadModalTitle">Faculty Course Load</h3>
+            <button type="button" class="modal-close" onclick="closeModal('facultyScheduleModal')">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <div id="scheduleContent">
+                <div class="loading">Loading schedule...</div>
+            </div>
+        </div>
+    </div>
+</div>-->

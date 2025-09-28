@@ -117,12 +117,12 @@ function contactFaculty(email) {
 function callFaculty(phone) {
     window.location.href = 'tel:' + phone;
 }
-
 function viewSchedule(facultyId) {
     const modal = document.getElementById('facultyScheduleModal');
     const content = document.getElementById('scheduleContent');
     const title = document.getElementById('scheduleModalTitle');
-        modal.classList.add('show');
+    
+    modal.classList.add('show');
     document.body.style.overflow = 'hidden';
     
     const facultyName = facultyNames[facultyId];
@@ -137,47 +137,84 @@ function viewSchedule(facultyId) {
                 <p>This faculty member has no assigned classes.</p>
             </div>
         `;
-    } else {
-        let scheduleHTML = '<div class="schedule-list">';
-        
-        schedules.forEach(schedule => {
-            scheduleHTML += `
-                <div class="schedule-item-detail">
-                    <div class="schedule-header">
-                        <div class="course-info">
-                            <div class="sched-course-code">${schedule.course_code}</div>
-                            <div class="sched-course-name">${schedule.course_description}</div>
-                        </div>
-                        <div class="schedule-time">
-                            <div class="days">${schedule.days.toUpperCase()}</div>
-                            <div class="time">${formatTime(schedule.time_start)} - ${formatTime(schedule.time_end)}</div>
-                        </div>
-                    </div>
-                    <div class="schedule-details">
-                        <div class="detail-item">
-                            <span class="label">Class:</span>
-                            <span class="value">${schedule.class_name} (${schedule.class_code})</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="label">Room:</span>
-                            <span class="value">${schedule.room || 'Not specified'}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        scheduleHTML += '</div>';
-        content.innerHTML = scheduleHTML;
+        return;
     }
+    let debugHTML = '<div style="margin-bottom: 20px; padding: 10px; background: #f0f0f0; font-family: monospace; font-size: 12px;">';
+    debugHTML += '<h5>Debug - Raw Schedule Data:</h5>';
+    schedules.forEach((schedule, index) => {
+        debugHTML += `<div>Schedule ${index + 1}: ${schedule.course_code} - Days: "${schedule.days}" - Time: ${schedule.time_start} to ${schedule.time_end} - Room: ${schedule.room || 'TBA'}</div>`;
+    });
+    debugHTML += '</div>';
+    
+    content.innerHTML = `
+        ${debugHTML}
+        <div class="schedule-tables">
+            <div class="schedule-table-container">
+                <h4>Monday, Wednesday, Friday Schedule</h4>
+                ${generateMWFSchedule(schedules)}
+            </div>
+            <div class="schedule-table-container">
+                <h4>Tuesday, Thursday Schedule</h4>
+                ${generateTTHSchedule(schedules)}
+            </div>
+        </div>
+    `;
+}
+
+function generateMWFSchedule(schedules) {
+    const times = ['08:00:00', '09:00:00', '10:00:00', '11:00:00', '13:00:00', '14:00:00', '15:00:00', '16:00:00', '17:00:00'];
+    
+    let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>Monday</th><th>Wednesday</th><th>Friday</th></tr></thead><tbody>`;
+    
+    times.forEach(time => {
+        html += `<tr><td class="time-cell">${formatTime(time)}</td>`;
+        html += `<td>${findCourseForTimeAndDay(schedules, time, 'M')}</td>`;
+        html += `<td>${findCourseForTimeAndDay(schedules, time, 'W')}</td>`;
+        html += `<td>${findCourseForTimeAndDay(schedules, time, 'F')}</td></tr>`;
+    });
+    
+    return html + '</tbody></table>';
+}
+
+function generateTTHSchedule(schedules) {
+    const times = ['07:30:00', '09:00:00', '10:30:00', '13:00:00', '14:30:00', '16:00:00', '17:30:00'];
+    
+    let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>Tuesday</th><th>Thursday</th></tr></thead><tbody>`;
+    
+    times.forEach(time => {
+        html += `<tr><td class="time-cell">${formatTime(time)}</td>`;
+        html += `<td>${findCourseForTimeAndDay(schedules, time, 'T')}</td>`;
+        html += `<td>${findCourseForTimeAndDay(schedules, time, 'TH')}</td></tr>`;
+    });
+    
+    return html + '</tbody></table>';
+}
+
+function findCourseForTimeAndDay(schedules, timeSlot, day) {
+    const schedule = schedules.find(s => {
+        const daysValue = s.days.toUpperCase();
+        const dayMap = {
+            'M': ['M', 'MW', 'MF', 'MWF', 'MTWTHF'],
+            'T': ['T', 'TTH', 'MTWTHF'],
+            'W': ['W', 'MW', 'WF', 'MWF', 'MTWTHF'],
+            'TH': ['TH', 'TTH', 'MTWTHF'],
+            'F': ['F', 'MF', 'WF', 'MWF', 'MTWTHF']
+        };
+        
+        return dayMap[day]?.includes(daysValue) && s.time_start === timeSlot;
+    });
+    
+    if (schedule) {
+        return `<div class="course-code">${schedule.course_code}</div><div class="room-info">${schedule.room || 'TBA'}</div>`;
+    }
+    return '';
 }
 
 function formatTime(time) {
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
     const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+    return `${hour12}:${minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
 }
 
 function viewClassDetails(classId) {

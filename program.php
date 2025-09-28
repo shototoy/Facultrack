@@ -319,6 +319,32 @@ function getClassSchedules($pdo, $class_id) {
             color: #2c3e50;
         }
 
+        .schedule-table td {
+            text-align: center;
+            vertical-align: middle;
+            padding: 8px 4px;
+            font-size: 0.8rem;
+        }
+
+        .course-code {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.85rem;
+            line-height: 1.2;
+        }
+
+        .room-info {
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 2px;
+            font-style: italic;
+        }
+
+        .time-cell {
+            font-weight: 500;
+            background: #f8f9fa;
+            color: #333;
+        }
     </style>
 </head>
 <body>
