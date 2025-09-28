@@ -464,8 +464,14 @@ function generateCourseLoadForm(facultyId) {
                         </div>
                     </div>
                     
+                    <div class="form-group">
+                        <label class="form-label">End Time *</label>
+                        <select name="time_end" class="form-select" required id="timeEndSelect">
+                            <option value="">Select end time...</option>
+                        </select>
+                    </div>
+                    
                     <input type="hidden" name="time_start" id="hiddenTimeStart">
-                    <input type="hidden" name="time_end" id="hiddenTimeEnd">
                     
                     <div class="form-actions">
                         <button type="button" class="btn-secondary" onclick="closeModal('facultyCourseLoadModal')">Cancel</button>
@@ -507,11 +513,9 @@ function handleTimeSlotClick(cell) {
     currentSelectedDayGroup = group;
     
     document.getElementById('hiddenTimeStart').value = time;
-    
-    if (group === 'MWF') {
-        document.getElementById('hiddenTimeEnd').value = addHours(time, 1);
-    } else if (group === 'TTHS') {
-        document.getElementById('hiddenTimeEnd').value = addHours(time, 1.5);
+    const displayTimeStart = document.getElementById('displayTimeStart');
+    if (displayTimeStart) {
+        displayTimeStart.value = formatTime(time);
     }
     
     const allCheckboxes = document.querySelectorAll('input[name="days[]"]');
@@ -645,17 +649,16 @@ function populateTimeOptions(group) {
 }
 
 function updateEndTimeOptions() {
-    const startTimeSelect = document.getElementById('timeStartSelect');
     const endTimeSelect = document.getElementById('timeEndSelect');
     
-    if (!startTimeSelect || !endTimeSelect) return;
-    
-    const startTime = startTimeSelect.value;
-    if (!startTime) {
-        endTimeSelect.innerHTML = '<option value="">Select end time...</option>';
+    if (!endTimeSelect || !currentSelectedTimeSlot) {
+        if (endTimeSelect) {
+            endTimeSelect.innerHTML = '<option value="">Select end time...</option>';
+        }
         return;
     }
     
+    const startTime = currentSelectedTimeSlot;
     let endTimeOptions = [];
     const startHour = parseInt(startTime.split(':')[0]);
     const startMinute = parseInt(startTime.split(':')[1]);
@@ -686,39 +689,39 @@ function updateEndTimeOptions() {
             }
         }
     } else if (currentSelectedDayGroup === 'TTHS') {
-        const baseMinutes = startHour * 60 + startMinute;
-        const endMinutes = baseMinutes + 90;
-        const endHour = Math.floor(endMinutes / 60);
-        const endMin = endMinutes % 60;
+        const tthSchedule = {
+            '07:30:00': [
+                { end: '09:00:00', duration: '1.5 hours' },
+                { end: '10:30:00', duration: '3 hours' },
+                { end: '12:00:00', duration: '4.5 hours' }
+            ],
+            '09:00:00': [
+                { end: '10:30:00', duration: '1.5 hours' },
+                { end: '12:00:00', duration: '3 hours' }
+            ],
+            '10:30:00': [
+                { end: '12:00:00', duration: '1.5 hours' }
+            ],
+            '13:00:00': [
+                { end: '14:30:00', duration: '1.5 hours' },
+                { end: '16:00:00', duration: '3 hours' },
+                { end: '17:30:00', duration: '4.5 hours' }
+            ],
+            '14:30:00': [
+                { end: '16:00:00', duration: '1.5 hours' },
+                { end: '17:30:00', duration: '3 hours' }
+            ],
+            '16:00:00': [
+                { end: '17:30:00', duration: '1.5 hours' }
+            ]
+        };
         
-        if (isMorningSession && endHour <= 12) {
-            const endTime = `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}:00`;
+        const options = tthSchedule[startTime] || [];
+        options.forEach(option => {
             endTimeOptions.push({
-                value: endTime,
-                label: `${formatTime(endTime)} (1.5 hours)`
+                value: option.end,
+                label: `${formatTime(option.end)} (${option.duration})`
             });
-        } else if (isAfternoonSession && endHour <= 17) {
-            const endTime = `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}:00`;
-            endTimeOptions.push({
-                value: endTime,
-                label: `${formatTime(endTime)} (1.5 hours)`
-            });
-        }
-    } else {
-        const intervals = [1, 1.5, 2, 3];
-        intervals.forEach(duration => {
-            const endTime = addHours(startTime, duration);
-            const endHour = parseInt(endTime.split(':')[0]);
-            
-            const wouldCrossLunch = (startHour < 12 && endHour > 12 && endHour < 13);
-            
-            if (!wouldCrossLunch && endHour <= 17) {
-                const hourLabel = duration === 1 ? 'hour' : 'hours';
-                endTimeOptions.push({
-                    value: endTime,
-                    label: `${formatTime(endTime)} (${duration} ${hourLabel})`
-                });
-            }
         });
     }
     
