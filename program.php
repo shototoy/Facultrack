@@ -118,6 +118,7 @@ function getClassSchedules($pdo, $class_id) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Program Chair Dashboard</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/scheduling.css">
     <style>
         .classes-grid {
             display: grid;
@@ -476,6 +477,9 @@ function getClassSchedules($pdo, $class_id) {
                                 <?php endif; ?>
                                 <button class="action-btn" onclick="viewSchedule(<?php echo $faculty['faculty_id']; ?>)">
                                     Schedule
+                                </button>
+                                <button class="action-btn" onclick="viewCourseLoad(<?php echo $faculty['faculty_id']; ?>)">
+                                    Course Load
                                 </button>
                             </div>
                         </div>
