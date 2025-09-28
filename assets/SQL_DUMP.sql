@@ -142,7 +142,7 @@ INSERT INTO `announcements` VALUES
 (5, 'Professional Development Workshop', 'A workshop on modern teaching methodologies will be held next month. Registration is now open for all faculty members.', 'low', 'faculty', 1, NOW(), NOW(), 1),
 (6, 'Schedule Assignment Deadline', 'Program Chairs must finalize all class schedules and faculty assignments by the end of this week.', 'high', 'program_chairs', 1, NOW(), NOW(), 1),
 (7, 'Budget Planning Meeting', 'Department budget planning session scheduled for next Tuesday at 10:00 AM. Attendance is mandatory for all Program Chairs.', 'high', 'program_chairs', 1, NOW(), NOW(), 1),
-(8, 'Curriculum Review Process', 'Annual curriculum review process begins next month. Please prepare necessary documentation and recommendations.', 'medium', 'program_chairs', 1, NOW(), NOW(), 1),
+(8, 'Curriculum Review Process', 'Annual curriculum review process begins next month. Please prepare necessary documentation and recommendations.', 'medium', 'program_chairs', 1, NOW(), NOW(), 1);
 
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_role ON users(role);
