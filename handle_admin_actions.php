@@ -69,7 +69,7 @@ function handleAdd($pdo, $data, $user_id, $user_role) {
             'required' => ['title', 'content', 'priority', 'target_audience'],
             'role_required' => 'campus_director',
             'table' => 'announcements',
-            'fields' => ['title', 'content', 'priority', 'target_audience', 'created_by']
+            'fields' => ['title', 'content', 'priority', 'target_audience']
         ]
     ];
 
@@ -148,9 +148,7 @@ function handleAdd($pdo, $data, $user_id, $user_role) {
         }
 
         foreach ($c['fields'] as $field) {
-            if ($field !== 'created_by' || $action === 'add_announcement') {
-                $insert_data[$field] = $data[$field] ?? null;
-            }
+            $insert_data[$field] = $data[$field] ?? null;
         }
 
         if ($new_user_id) {

@@ -5,5 +5,7 @@
 !handle_admin_actions.php
 !shared_modals.js
 !shared_modals.php
+!director.js
+!program.js
 !common_utilities.php
 !.gitignore
