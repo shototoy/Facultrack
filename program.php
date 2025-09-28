@@ -202,7 +202,7 @@ function getClassSchedules($pdo, $class_id) {
         .course-card {
             background: #fff;
             border: 1px solid #ddd;
-            padding: 16px;
+            padding: 12px 24px;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
@@ -216,15 +216,16 @@ function getClassSchedules($pdo, $class_id) {
 
         .course-code {
             color: #2c3e50;
+            font-size: 2.25rem;
         }
 
         .course-units {
             color: #888;
-            font-size: 0.9rem;
+            font-size: 1.2rem;
         }
 
         .course-description {
-            font-size: 0.95rem;
+            font-size: 1rem;
             color: #333;
         }
 
@@ -256,6 +257,63 @@ function getClassSchedules($pdo, $class_id) {
             color: #666;
             font-size: 0.8rem;
         }
+
+        .add-card {
+            background: linear-gradient(135deg, #E8F5E8 0%, #F1F8E9 100%);
+            border: 2px dashed #2E7D32;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+        }
+
+        .add-card-course {
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 100px;
+        }
+
+        .add-card:hover {
+            background: linear-gradient(135deg, #C8E6C9 0%, #E8F5E8 100%);
+            border-color: #1B5E20;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.15);
+        }
+
+        .add-card-icon {
+            font-size: 3rem;
+            color: #2E7D32;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .add-card-course-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0px;
+        }
+
+        .add-card:hover .add-card-icon {
+            color: #1B5E20;
+            transform: scale(1.1);
+        }
+
+        .add-card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1B5E20;
+        }
+
+        .add-card-subtitle {
+            font-size: 0.9rem;
+            color: #2E7D32;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -265,11 +323,6 @@ function getClassSchedules($pdo, $class_id) {
             <span class="announcement-badge"><?php echo count($announcements); ?></span>
         </button>
 
-        <div class="user-info">
-            <span>Welcome, <?php echo htmlspecialchars($program_chair_name); ?></span>
-            <span style="font-size: 0.8rem; color: #666;">(<?php echo htmlspecialchars($program); ?>)</span>
-            <a href="logout.php" class="logout-btn">Logout</a>
-        </div>
         <div class="sidebar-overlay" onclick="closeSidebar()"></div>
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -288,6 +341,11 @@ function getClassSchedules($pdo, $class_id) {
                 <h1>FaculTrack - Program Chair</h1>
                 <p>Sultan Kudarat State University - Isulan Campus</p>
                 <small>Program: <strong><?php echo htmlspecialchars($program); ?></strong></small>
+                <div class="user-info">
+                    <span>Welcome, <?php echo htmlspecialchars($program_chair_name); ?></span>
+                    <span style="font-size: 0.8rem; color: white;">(<?php echo htmlspecialchars($program); ?>)</span>
+                    <a href="logout.php" class="logout-btn">Logout</a>
+                </div>
             </div>
             <div class="stats-cards">
                 <div class="stat-card">
@@ -516,7 +574,6 @@ function getClassSchedules($pdo, $class_id) {
         const facultyNames = <?php echo json_encode(array_column($faculty_data, 'faculty_name', 'faculty_id')); ?>;
     </script>
     <?php include 'assets/php/shared_modals.php'; ?>
-
     <script src="assets/js/shared_modals.js"></script>
     <script src="assets/js/program.js"></script>
 </body>

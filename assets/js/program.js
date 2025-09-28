@@ -13,7 +13,7 @@ function resetAllTabsVisibility() {
     const facultyCards = document.querySelectorAll('.faculty-card');
     facultyCards.forEach(card => card.style.display = 'block');
     const courseCards = document.querySelectorAll('.course-card');
-    courseCards.forEach(card => card.style.display = 'block');
+    courseCards.forEach(card => card.style.display = 'block');  
     const classCards = document.querySelectorAll('.class-card');
     classCards.forEach(card => card.style.display = 'block');
     const emptyStates = document.querySelectorAll('.search-empty-state');
@@ -122,8 +122,7 @@ function viewSchedule(facultyId) {
     const modal = document.getElementById('facultyScheduleModal');
     const content = document.getElementById('scheduleContent');
     const title = document.getElementById('scheduleModalTitle');
-    
-    modal.classList.add('show');
+        modal.classList.add('show');
     document.body.style.overflow = 'hidden';
     
     const facultyName = facultyNames[facultyId];
