@@ -136,20 +136,13 @@ INSERT INTO `courses` VALUES
 
 INSERT INTO `announcements` VALUES 
 (1, 'Welcome to FaculTrack System', 'The new FaculTrack system is now live. All users can access their respective dashboards using their assigned credentials.', 'medium', 'all', 1, NOW(), NOW(), 1),
-(2, 'System Maintenance Schedule', 'Regular system maintenance will be conducted every Sunday from 2:00 AM to 4:00 AM. Please plan accordingly.', 'medium', 'all', 1, NOW(), NOW(), 1),
-(3, 'Academic Year 2024-2025 Guidelines', 'Please review the updated academic guidelines for the current academic year. All policies are now available in the system.', 'high', 'all', 1, NOW(), NOW(), 1),
-(4, 'Holiday Break Schedule', 'Classes will be suspended from December 20, 2024 to January 3, 2025 for the Christmas and New Year break.', 'medium', 'all', 1, NOW(), NOW(), 1),
-(5, 'Emergency Contact Information', 'Updated emergency contact numbers are now available. Please check your profile settings for the latest information.', 'low', 'all', 1, NOW(), NOW(), 1),
-(6, 'Faculty Meeting - Monthly Assembly', 'All faculty members are required to attend the monthly faculty meeting on Friday, 2:00 PM in the Conference Room.', 'high', 'faculty', 1, NOW(), NOW(), 1),
-(7, 'Office Hours Update Required', 'Please update your office hours in the system by end of this week. Students need accurate information for consultations.', 'medium', 'faculty', 1, NOW(), NOW(), 1),
-(8, 'Research Presentation Opportunity', 'Faculty members are invited to present their research during the upcoming Academic Symposium. Submit abstracts by month end.', 'medium', 'faculty', 1, NOW(), NOW(), 1),
-(9, 'Teaching Load Distribution', 'Please review your assigned teaching loads and report any discrepancies to the Academic Affairs office immediately.', 'high', 'faculty', 1, NOW(), NOW(), 1),
-(10, 'Professional Development Workshop', 'A workshop on modern teaching methodologies will be held next month. Registration is now open for all faculty members.', 'low', 'faculty', 1, NOW(), NOW(), 1),
-(11, 'Schedule Assignment Deadline', 'Program Chairs must finalize all class schedules and faculty assignments by the end of this week.', 'high', 'program_chairs', 1, NOW(), NOW(), 1),
-(12, 'Budget Planning Meeting', 'Department budget planning session scheduled for next Tuesday at 10:00 AM. Attendance is mandatory for all Program Chairs.', 'high', 'program_chairs', 1, NOW(), NOW(), 1),
-(13, 'Curriculum Review Process', 'Annual curriculum review process begins next month. Please prepare necessary documentation and recommendations.', 'medium', 'program_chairs', 1, NOW(), NOW(), 1),
-(14, 'Faculty Performance Evaluation', 'Mid-year faculty performance evaluations are due by month end. Please complete all required assessments.', 'medium', 'program_chairs', 1, NOW(), NOW(), 1),
-(15, 'New Course Proposal Guidelines', 'Updated guidelines for proposing new courses are now available. Review requirements before submitting proposals.', 'low', 'program_chairs', 1, NOW(), NOW(), 1);
+(2, 'Academic Year 2024-2025 Guidelines', 'Please review the updated academic guidelines for the current academic year. All policies are now available in the system.', 'high', 'all', 1, NOW(), NOW(), 1),
+(3, 'Emergency Contact Information', 'Updated emergency contact numbers are now available. Please check your profile settings for the latest information.', 'low', 'all', 1, NOW(), NOW(), 1),
+(4, 'Faculty Meeting - Monthly Assembly', 'All faculty members are required to attend the monthly faculty meeting on Friday, 2:00 PM in the Conference Room.', 'high', 'faculty', 1, NOW(), NOW(), 1),
+(5, 'Professional Development Workshop', 'A workshop on modern teaching methodologies will be held next month. Registration is now open for all faculty members.', 'low', 'faculty', 1, NOW(), NOW(), 1),
+(6, 'Schedule Assignment Deadline', 'Program Chairs must finalize all class schedules and faculty assignments by the end of this week.', 'high', 'program_chairs', 1, NOW(), NOW(), 1),
+(7, 'Budget Planning Meeting', 'Department budget planning session scheduled for next Tuesday at 10:00 AM. Attendance is mandatory for all Program Chairs.', 'high', 'program_chairs', 1, NOW(), NOW(), 1),
+(8, 'Curriculum Review Process', 'Annual curriculum review process begins next month. Please prepare necessary documentation and recommendations.', 'medium', 'program_chairs', 1, NOW(), NOW(), 1),
 
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_role ON users(role);
