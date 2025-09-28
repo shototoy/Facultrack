@@ -256,6 +256,53 @@ function getClassSchedules($pdo, $class_id) {
             color: #666;
             font-size: 0.8rem;
         }
+
+        .add-card {
+            background: linear-gradient(135deg, #E8F5E8 0%, #F1F8E9 100%);
+            border: 2px dashed #2E7D32;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+        }
+
+        .add-card:hover {
+            background: linear-gradient(135deg, #C8E6C9 0%, #E8F5E8 100%);
+            border-color: #1B5E20;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.15);
+        }
+
+        .add-card-icon {
+            font-size: 3rem;
+            color: #2E7D32;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .add-card:hover .add-card-icon {
+            color: #1B5E20;
+            transform: scale(1.1);
+        }
+
+        .add-card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1B5E20;
+            margin-bottom: 8px;
+        }
+
+        .add-card-subtitle {
+            font-size: 0.9rem;
+            color: #2E7D32;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
