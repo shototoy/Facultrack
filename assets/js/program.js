@@ -118,8 +118,6 @@ function callFaculty(phone) {
     window.location.href = 'tel:' + phone;
 }
 
-// Fixed program.js with corrected checkbox and time slot logic
-
 function switchTab(tabName) {
     const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(content => content.classList.remove('active'));
@@ -240,7 +238,6 @@ function callFaculty(phone) {
     window.location.href = 'tel:' + phone;
 }
 
-// Global variables to track current selection state
 let currentSelectedTimeSlot = null;
 let currentSelectedDayGroup = null;
 
@@ -554,6 +551,7 @@ function handleTimeSlotClick(cell) {
     }
     
     checkConflicts(time, group);
+    updateEndTimeOptions();
     
     document.querySelector('.courseload-assignment-form').style.display = 'block';
     
@@ -625,7 +623,6 @@ function populateTimeOptions(group) {
             { value: '16:00:00', label: '4:00 PM' }
         ];
     } else {
-        // Default - all times available
         timeOptions = [
             { value: '07:30:00', label: '7:30 AM' },
             { value: '08:00:00', label: '8:00 AM' },
@@ -647,7 +644,6 @@ function populateTimeOptions(group) {
     });
 }
 
-// FIXED: Update end time options with proper logic for MWF/TTHS
 function updateEndTimeOptions() {
     const startTimeSelect = document.getElementById('timeStartSelect');
     const endTimeSelect = document.getElementById('timeEndSelect');
@@ -661,46 +657,69 @@ function updateEndTimeOptions() {
     }
     
     let endTimeOptions = [];
+    const startHour = parseInt(startTime.split(':')[0]);
+    const startMinute = parseInt(startTime.split(':')[1]);
     
-    // Fixed end time logic based on day group
+    const isMorningSession = startHour >= 8 && startHour < 12;
+    const isAfternoonSession = startHour >= 13 && startHour <= 17;
+    
     if (currentSelectedDayGroup === 'MWF') {
-        // MWF: 1 hour intervals
-        const startHour = parseInt(startTime.split(':')[0]);
-        
-        if (startHour >= 8 && startHour <= 11) {
-            // AM range: can go up to 12:00
+        if (isMorningSession) {
             for (let h = startHour + 1; h <= 12; h++) {
                 const endTime = `${h.toString().padStart(2, '0')}:00:00`;
+                const duration = h - startHour;
+                const hourLabel = duration === 1 ? 'hour' : 'hours';
                 endTimeOptions.push({
                     value: endTime,
-                    label: formatTime(endTime)
+                    label: `${formatTime(endTime)} (${duration} ${hourLabel})`
                 });
             }
-        } else if (startHour >= 13 && startHour <= 16) {
-            // PM range: can go up to 17:00 (5 PM)
+        } else if (isAfternoonSession) {
             for (let h = startHour + 1; h <= 17; h++) {
                 const endTime = `${h.toString().padStart(2, '0')}:00:00`;
+                const duration = h - startHour;
+                const hourLabel = duration === 1 ? 'hour' : 'hours';
                 endTimeOptions.push({
                     value: endTime,
-                    label: formatTime(endTime)
+                    label: `${formatTime(endTime)} (${duration} ${hourLabel})`
                 });
             }
         }
     } else if (currentSelectedDayGroup === 'TTHS') {
-        // TTHS: 1.5 hour intervals
-        const endTime = addHours(startTime, 1.5);
-        endTimeOptions.push({
-            value: endTime,
-            label: formatTime(endTime)
-        });
+        const baseMinutes = startHour * 60 + startMinute;
+        const endMinutes = baseMinutes + 90;
+        const endHour = Math.floor(endMinutes / 60);
+        const endMin = endMinutes % 60;
+        
+        if (isMorningSession && endHour <= 12) {
+            const endTime = `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}:00`;
+            endTimeOptions.push({
+                value: endTime,
+                label: `${formatTime(endTime)} (1.5 hours)`
+            });
+        } else if (isAfternoonSession && endHour <= 17) {
+            const endTime = `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}:00`;
+            endTimeOptions.push({
+                value: endTime,
+                label: `${formatTime(endTime)} (1.5 hours)`
+            });
+        }
     } else {
-        // Default: flexible options
-        endTimeOptions = [
-            { value: addHours(startTime, 1), label: formatTime(addHours(startTime, 1)) + ' (1 hour)' },
-            { value: addHours(startTime, 1.5), label: formatTime(addHours(startTime, 1.5)) + ' (1.5 hours)' },
-            { value: addHours(startTime, 2), label: formatTime(addHours(startTime, 2)) + ' (2 hours)' },
-            { value: addHours(startTime, 3), label: formatTime(addHours(startTime, 3)) + ' (3 hours)' }
-        ];
+        const intervals = [1, 1.5, 2, 3];
+        intervals.forEach(duration => {
+            const endTime = addHours(startTime, duration);
+            const endHour = parseInt(endTime.split(':')[0]);
+            
+            const wouldCrossLunch = (startHour < 12 && endHour > 12 && endHour < 13);
+            
+            if (!wouldCrossLunch && endHour <= 17) {
+                const hourLabel = duration === 1 ? 'hour' : 'hours';
+                endTimeOptions.push({
+                    value: endTime,
+                    label: `${formatTime(endTime)} (${duration} ${hourLabel})`
+                });
+            }
+        });
     }
     
     endTimeSelect.innerHTML = '<option value="">Select end time...</option>';
@@ -709,15 +728,12 @@ function updateEndTimeOptions() {
     });
 }
 
-// FIXED: Day selection handler - prevent unchecking required days
 function handleDaySelection(checkbox) {
-    // Prevent unchecking required days (those set by time slot click)
     if (!checkbox.checked && checkbox.dataset.required === 'true') {
         checkbox.checked = true;
         return;
     }
     
-    // Remove required flag when manually checking/unchecking
     if (checkbox.dataset.required === 'true') {
         delete checkbox.dataset.required;
     }
@@ -741,7 +757,6 @@ function viewCourseLoad(facultyId) {
     generateScheduleView(facultyId, 'courseload');
 }
 
-// FIXED: Load course and class data function
 function loadCourseAndClassData() {
     const formData = new FormData();
     formData.append('action', 'get_courses_and_classes');
