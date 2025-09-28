@@ -1,5 +1,5 @@
 <?php
-require_once 'common_utilities.php';
+require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
 validateUserSession('campus_director');
@@ -7,7 +7,7 @@ validateUserSession('campus_director');
 $user_id = $_SESSION['user_id'];
 $director_name = $_SESSION['full_name'];
 
-require_once 'fetch_announcements.php';
+require_once 'assets/php/fetch_announcements.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
 $faculty_data = getAllFaculty($pdo);
@@ -126,7 +126,7 @@ function getProgramChairs($pdo) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Campus Director Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>
         .table-container {
             background: white;
@@ -420,11 +420,11 @@ function getProgramChairs($pdo) {
 
     <?php 
     $GLOBALS['program_chairs'] = $program_chairs;
-    include 'shared_modals.php'; 
+    include 'assets/php/shared_modals.php'; 
     ?>
     
-    <script src="shared_modals.js"></script>
-    <script src="director.js"></script>
+    <script src="assets/js/shared_modals.js"></script>
+    <script src="assets/js/director.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const programChairSelect = document.querySelector('select[name="program_chair_id"]');

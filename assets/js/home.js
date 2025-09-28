@@ -92,7 +92,7 @@ function stopLocationPolling() {
 
 async function updateFacultyLocations() {
     try {
-        const response = await fetch('get_location.php', {
+        const response = await fetch('assets/php/get_location.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',

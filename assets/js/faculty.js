@@ -53,7 +53,7 @@ async function updateLocation() {
     const finalLocation = customLocation || selectedLocation;
     
     try {
-        const response = await fetch('faculty_update_location.php', {
+        const response = await fetch('assets/php/faculty_update_location.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -185,7 +185,7 @@ setInterval(function() {
 
 async function updateLocationStatus() {
     try {
-        const response = await fetch('faculty_get_status.php');
+        const response = await fetch('assets/php/faculty_get_status.php');
         const result = await response.json();
         
         if (result.success) {

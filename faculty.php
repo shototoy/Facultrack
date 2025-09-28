@@ -1,5 +1,5 @@
 <?php
-require_once 'common_utilities.php';
+require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
 
@@ -80,7 +80,7 @@ $today_schedule = getTodaySchedule($pdo, $faculty_info['faculty_id']);
 $location_history = getLocationHistory($pdo, $faculty_info['faculty_id']);
 $schedule_tabs = getScheduleTabs($pdo, $faculty_info['faculty_id']);
 
-require_once 'fetch_announcements.php';
+require_once 'assets/php/fetch_announcements.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
 function getFacultyInfo($pdo, $user_id) {
@@ -255,7 +255,7 @@ function generateScheduleHTML($schedule_data) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Faculty Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>            
         .dashboard-grid {
             display: grid;
