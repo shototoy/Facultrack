@@ -118,6 +118,145 @@ function getClassSchedules($pdo, $class_id) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Program Chair Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .classes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .class-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-left: 4px solid #2E7D32;
+            transition: transform 0.3s ease;
+        }
+
+        .class-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .class-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .class-info {
+            flex: 1;
+        }
+
+        .class-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .class-code {
+            color: #2E7D32;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .class-meta {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .class-stats {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .class-stat {
+            text-align: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            flex: 1;
+        }
+
+        .class-stat-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2E7D32;
+        }
+
+        .class-stat-label {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .course-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .course-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .course-code {
+            color: #2c3e50;
+        }
+
+        .course-units {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .course-description {
+            font-size: 0.95rem;
+            color: #333;
+        }
+
+        .schedule-preview {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .schedule-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .schedule-item:last-child {
+            border-bottom: none;
+        }
+
+        .schedule-course {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .schedule-time {
+            color: #666;
+            font-size: 0.8rem;
+        }
+    </style>
 </head>
 <body>
     <div class="main-container">

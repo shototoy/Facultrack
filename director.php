@@ -127,14 +127,91 @@ function getProgramChairs($pdo) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Campus Director Dashboard</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="shared_styles.css">
+    <style>
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .data-table .item-checkbox {
+            margin-right: 8px;
+        }
+
+        .bulk-actions {
+            display: none;
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+
+        .bulk-actions button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-right: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .bulk-actions button:hover {
+            background: #1565c0;
+        }
+    </style>
 </head>
 <body>
-    <div class="director-container">
+    <div class="main-container">
         <div class="header">
             <h1>FaculTrack - Campus Director</h1>
             <p>Sultan Kudarat State University - Isulan Campus</p>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <div class="user-info">
                 <span>Welcome, <?php echo htmlspecialchars($director_name); ?></span>
                 <a href="logout.php" class="logout-btn">Logout</a>
             </div>
