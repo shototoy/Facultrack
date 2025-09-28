@@ -36,7 +36,6 @@ body::before {
 
 .content-wrapper {
     transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(10px);
 }
 
 .header {
@@ -295,7 +294,6 @@ body::before {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
     transform: scale(1.1);
 }
-
 .announcement-toggle {
     position: fixed;
     top: 45px;
@@ -312,7 +310,6 @@ body::before {
                 inset 0 1px 0 rgba(255, 255, 255, 0.2);
     z-index: 999;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -564,7 +561,6 @@ body::before {
 /* BUTTON STYLES */
 .btn-primary {
     background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 50%, #66BB6A 100%);
-    color: white;
     border: none;
     padding: 10px 20px;
     border-radius: 8px;
@@ -1254,20 +1250,21 @@ body::before {
     }
 
     .announcement-toggle {
-        top: 50px;
-        right: 50px;
-        width: 45px;
-        height: 45px;
+        top: 40px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
     }
     
     .announcement-badge {
-        position: absolute;
-        top: -10px;
-        right: -10px;
-        font-size: 1.0rem;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        top: -6px;
+        right: -6px;
+        border: 1px solid #ffffff;
     }
 
     .login-card {
@@ -1351,10 +1348,23 @@ body::before {
         margin-right: 300px;
     }
 
+@media (min-width: 768px) and (max-width: 1023px) {
     .announcement-toggle {
         top: 35px;
         right: 60px;
+        width: 65px;
+        height: 65px;
+        font-size: 1.7rem;
     }
+    
+    .announcement-badge {
+        width: 24px;
+        height: 24px;
+        font-size: 1rem;
+        top: -8px;
+        right: -8px;
+    }
+}
 
     .tab-button {
         font-size: 1rem;
@@ -1415,5 +1425,24 @@ body::before {
         flex-direction: row;
         justify-content: center;
         margin: 20px 0;
+    }
+
+        .announcement-toggle {
+        top: 10px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+        background: rgba(255,255,255,0.1)
+    }
+    
+    .announcement-badge {
+        width: 15px;
+        height: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        top: -6px;
+        right: -6px;
+        border: 1px solid #ffffff;
     }
 }
