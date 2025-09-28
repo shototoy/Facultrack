@@ -171,11 +171,11 @@ function generateScheduleTables(schedules, isClickable = false) {
     
     return `
         <div class="schedule-table-container">
-            <h4>Monday, Wednesday, Friday & Saturday</h4>
+            <h4>Monday, Wednesday, Friday</h4>
             ${generateMWFScheduleTable(schedules, clickableClass, clickHandler)}
         </div>
         <div class="schedule-table-container">
-            <h4>Tuesday & Thursday</h4>
+            <h4>Tuesday, Thursday & Saturday</h4>
             ${generateTTHScheduleTable(schedules, clickableClass, clickHandler)}
         </div>
     `;
@@ -184,14 +184,13 @@ function generateScheduleTables(schedules, isClickable = false) {
 function generateMWFScheduleTable(schedules, clickableClass, clickHandler) {
     const times = ['08:00:00', '09:00:00', '10:00:00', '11:00:00', '13:00:00', '14:00:00', '15:00:00', '16:00:00', '17:00:00'];
     
-    let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>M</th><th>W</th><th>F</th><th>S</th></tr></thead><tbody>`;
+    let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>M</th><th>W</th><th>F</th></tr></thead><tbody>`;
     
     times.forEach(time => {
         html += `<tr><td class="time-cell">${formatTime(time)}</td>`;
         html += `<td class="${clickableClass}" data-time="${time}" data-day="M" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'M')}</td>`;
         html += `<td class="${clickableClass}" data-time="${time}" data-day="W" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'W')}</td>`;
-        html += `<td class="${clickableClass}" data-time="${time}" data-day="F" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'F')}</td>`;
-        html += `<td class="${clickableClass}" data-time="${time}" data-day="S" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'S')}</td></tr>`;
+        html += `<td class="${clickableClass}" data-time="${time}" data-day="F" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'F')}</td></tr>`;
     });
     
     return html + '</tbody></table>';
@@ -200,12 +199,13 @@ function generateMWFScheduleTable(schedules, clickableClass, clickHandler) {
 function generateTTHScheduleTable(schedules, clickableClass, clickHandler) {
     const times = ['07:30:00', '09:00:00', '10:30:00', '13:00:00', '14:30:00', '16:00:00', '17:30:00'];
     
-    let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>T</th><th>TH</th></tr></thead><tbody>`;
+    let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>T</th><th>TH</th><th>S</th></tr></thead><tbody>`;
     
     times.forEach(time => {
         html += `<tr><td class="time-cell">${formatTime(time)}</td>`;
         html += `<td class="${clickableClass}" data-time="${time}" data-day="T" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'T')}</td>`;
-        html += `<td class="${clickableClass}" data-time="${time}" data-day="TH" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'TH')}</td></tr>`;
+        html += `<td class="${clickableClass}" data-time="${time}" data-day="TH" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'TH')}</td>`;
+        html += `<td class="${clickableClass}" data-time="${time}" data-day="S" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'S')}</td></tr>`;
     });
     
     return html + '</tbody></table>';
@@ -291,16 +291,26 @@ function generateCourseLoadForm(facultyId) {
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Days *</label>
-                            <select name="days" class="form-select" required>
-                                <option value="">Select days...</option>
-                                <option value="MWF">Monday, Wednesday, Friday</option>
-                                <option value="MW">Monday, Wednesday</option>
-                                <option value="TTH">Tuesday, Thursday</option>
-                                <option value="MF">Monday, Friday</option>
-                                <option value="WF">Wednesday, Friday</option>
-                                <option value="S">Saturday</option>
-                                <option value="MTWTHF">Monday to Friday</option>
-                            </select>
+                            <div class="days-checkbox-group">
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="M"> M
+                                </label>
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="T"> T
+                                </label>
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="W"> W
+                                </label>
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="TH"> TH
+                                </label>
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="F"> F
+                                </label>
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="S"> S
+                                </label>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Room</label>
@@ -311,7 +321,7 @@ function generateCourseLoadForm(facultyId) {
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Start Time *</label>
-                            <select name="time_start" class="form-select" required>
+                            <select name="time_start" class="form-select" required id="timeStartSelect" onchange="updateEndTimeOptions()">
                                 <option value="">Select start time...</option>
                                 <option value="07:30:00">7:30 AM</option>
                                 <option value="08:00:00">8:00 AM</option>
@@ -330,21 +340,8 @@ function generateCourseLoadForm(facultyId) {
                         </div>
                         <div class="form-group">
                             <label class="form-label">End Time *</label>
-                            <select name="time_end" class="form-select" required>
+                            <select name="time_end" class="form-select" required id="timeEndSelect">
                                 <option value="">Select end time...</option>
-                                <option value="08:30:00">8:30 AM</option>
-                                <option value="09:00:00">9:00 AM</option>
-                                <option value="10:00:00">10:00 AM</option>
-                                <option value="10:30:00">10:30 AM</option>
-                                <option value="11:00:00">11:00 AM</option>
-                                <option value="12:00:00">12:00 PM</option>
-                                <option value="14:00:00">2:00 PM</option>
-                                <option value="15:00:00">3:00 PM</option>
-                                <option value="15:30:00">3:30 PM</option>
-                                <option value="16:00:00">4:00 PM</option>
-                                <option value="17:00:00">5:00 PM</option>
-                                <option value="18:00:00">6:00 PM</option>
-                                <option value="19:00:00">7:00 PM</option>
                             </select>
                         </div>
                     </div>
@@ -384,26 +381,57 @@ function handleTimeSlotClick(cell) {
     const time = cell.getAttribute('data-time');
     const day = cell.getAttribute('data-day');
     
-    const timeSelect = document.querySelector('select[name="time_start"]');
-    const daysSelect = document.querySelector('select[name="days"]');
-    
+    const timeSelect = document.getElementById('timeStartSelect');
     if (timeSelect) {
         timeSelect.value = time;
+        updateEndTimeOptions();
     }
     
-    if (daysSelect && day) {
-        const dayMappings = {
-            'M': 'MWF',
-            'W': 'MWF', 
-            'F': 'MWF',
-            'T': 'TTH',
-            'TH': 'TTH',
-            'S': 'S'
-        };
-        daysSelect.value = dayMappings[day] || '';
+    const dayCheckboxes = document.querySelectorAll('input[name="days[]"]');
+    dayCheckboxes.forEach(checkbox => checkbox.checked = false);
+    
+    const targetCheckbox = document.querySelector(`input[name="days[]"][value="${day}"]`);
+    if (targetCheckbox) {
+        targetCheckbox.checked = true;
     }
     
     showNotification(`Time slot selected: ${day} at ${formatTime(time)}`, 'info');
+}
+
+function updateEndTimeOptions() {
+    const startTimeSelect = document.getElementById('timeStartSelect');
+    const endTimeSelect = document.getElementById('timeEndSelect');
+    
+    if (!startTimeSelect || !endTimeSelect) return;
+    
+    const startTime = startTimeSelect.value;
+    if (!startTime) {
+        endTimeSelect.innerHTML = '<option value="">Select end time...</option>';
+        return;
+    }
+    
+    const timeOptions = [
+        { value: "08:30:00", label: "8:30 AM" },
+        { value: "09:00:00", label: "9:00 AM" },
+        { value: "10:00:00", label: "10:00 AM" },
+        { value: "10:30:00", label: "10:30 AM" },
+        { value: "11:00:00", label: "11:00 AM" },
+        { value: "12:00:00", label: "12:00 PM" },
+        { value: "14:00:00", label: "2:00 PM" },
+        { value: "15:00:00", label: "3:00 PM" },
+        { value: "15:30:00", label: "3:30 PM" },
+        { value: "16:00:00", label: "4:00 PM" },
+        { value: "17:00:00", label: "5:00 PM" },
+        { value: "18:00:00", label: "6:00 PM" },
+        { value: "19:00:00", label: "7:00 PM" }
+    ];
+    
+    const validEndTimes = timeOptions.filter(option => option.value > startTime);
+    
+    endTimeSelect.innerHTML = '<option value="">Select end time...</option>';
+    validEndTimes.forEach(option => {
+        endTimeSelect.innerHTML += `<option value="${option.value}">${option.label}</option>`;
+    });
 }
 
 function viewSchedule(facultyId) {
@@ -476,6 +504,17 @@ function updateCourseInfo() {
 
 function submitCourseAssignment(form, facultyId) {
     const formData = new FormData(form);
+    
+    const selectedDays = Array.from(form.querySelectorAll('input[name="days[]"]:checked'))
+        .map(checkbox => checkbox.value);
+    
+    if (selectedDays.length === 0) {
+        showNotification('Please select at least one day', 'error');
+        return;
+    }
+    
+    formData.delete('days[]');
+    formData.append('days', selectedDays.join(''));
     formData.append('action', 'assign_course_load');
     formData.append('faculty_id', facultyId);
     
