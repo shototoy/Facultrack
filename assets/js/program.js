@@ -294,11 +294,9 @@ function generateScheduleTables(schedules, isClickable = false) {
     
     return `
         <div class="schedule-table-container">
-            <h4>Monday, Wednesday, Friday</h4>
             ${generateMWFScheduleTable(schedules, clickableClass, clickHandler)}
         </div>
         <div class="schedule-table-container">
-            <h4>Tuesday, Thursday & Saturday</h4>
             ${generateTTHScheduleTable(schedules, clickableClass, clickHandler)}
         </div>
     `;
@@ -309,44 +307,181 @@ function generateMWFScheduleTable(schedules, clickableClass, clickHandler) {
     
     let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>M</th><th>W</th><th>F</th></tr></thead><tbody>`;
     
+    const processedCells = new Set();
+    
     times.forEach(time => {
-        html += `<tr><td class="time-cell">${formatTime(time)}</td>`;
+        const row = [];
+        row.push(`<td class="time-cell">${formatTime(time)}</td>`);
         
-        const courseM = findCourseForTimeAndDay(schedules, time, 'M');
-        const courseW = findCourseForTimeAndDay(schedules, time, 'W');
-        const courseF = findCourseForTimeAndDay(schedules, time, 'F');
+        ['M', 'W', 'F'].forEach(day => {
+            const cellKey = `${time}-${day}`;
+            
+            if (processedCells.has(cellKey)) {
+                return;
+            }
+            
+            const schedule = schedules.find(s => {
+                const daysValue = s.days.toUpperCase();
+                const dayMap = {
+                    'M': ['M', 'MW', 'MF', 'MWF'],
+                    'W': ['W', 'MW', 'WF', 'MWF'],
+                    'F': ['F', 'MF', 'WF', 'MWF']
+                };
+                return dayMap[day]?.includes(daysValue) && s.time_start === time;
+            });
+            
+            if (schedule && !clickableClass) {
+                const startHour = parseInt(schedule.time_start.split(':')[0]);
+                const endHour = parseInt(schedule.time_end.split(':')[0]);
+                const duration = endHour - startHour;
+                const rowspan = duration > 1 ? `rowspan="${duration}"` : '';
+                
+                const days = schedule.days.toUpperCase();
+                let colspan = '';
+                let colspanCount = 1;
+                
+                if (days === 'MWF') colspanCount = 3;
+                else if (days === 'MW' || days === 'MF' || days === 'WF') colspanCount = 2;
+                
+                if (colspanCount > 1) {
+                    colspan = `colspan="${colspanCount}"`;
+                }
+                
+                for (let i = 0; i < duration; i++) {
+                    const futureTimeIndex = times.indexOf(time) + i;
+                    if (futureTimeIndex < times.length) {
+                        if (days === 'MWF') {
+                            processedCells.add(`${times[futureTimeIndex]}-M`);
+                            processedCells.add(`${times[futureTimeIndex]}-W`);
+                            processedCells.add(`${times[futureTimeIndex]}-F`);
+                        } else if (days === 'MW') {
+                            processedCells.add(`${times[futureTimeIndex]}-M`);
+                            processedCells.add(`${times[futureTimeIndex]}-W`);
+                        } else if (days === 'MF') {
+                            processedCells.add(`${times[futureTimeIndex]}-M`);
+                            processedCells.add(`${times[futureTimeIndex]}-F`);
+                        } else if (days === 'WF') {
+                            processedCells.add(`${times[futureTimeIndex]}-W`);
+                            processedCells.add(`${times[futureTimeIndex]}-F`);
+                        } else {
+                            processedCells.add(`${times[futureTimeIndex]}-${day}`);
+                        }
+                    }
+                }
+                
+                row.push(`<td ${rowspan} ${colspan}>
+                    <div class="course-code">${schedule.course_code}</div>
+                    <div class="room-info">${schedule.room || 'TBA'}</div>
+                </td>`);
+                
+                if (colspanCount === 2 && days === 'MW' && day === 'F') {
+                    const clickable = `class="${clickableClass}" data-time="${time}" data-day="F" data-group="MWF" ${clickHandler}`;
+                    row.push(`<td ${clickable}></td>`);
+                } else if (colspanCount === 2 && days === 'MF' && day === 'W') {
+                    const clickable = `class="${clickableClass}" data-time="${time}" data-day="W" data-group="MWF" ${clickHandler}`;
+                    row.push(`<td ${clickable}></td>`);
+                } else if (colspanCount === 2 && days === 'WF' && day === 'M') {
+                    const clickable = `class="${clickableClass}" data-time="${time}" data-day="M" data-group="MWF" ${clickHandler}`;
+                    row.push(`<td ${clickable}></td>`);
+                }
+            } else if (!processedCells.has(cellKey)) {
+                const clickable = schedule ? '' : `class="${clickableClass}" data-time="${time}" data-day="${day}" data-group="MWF" ${clickHandler}`;
+                const content = schedule ? `<div class="course-code">${schedule.course_code}</div><div class="room-info">${schedule.room || 'TBA'}</div>` : '';
+                row.push(`<td ${clickable}>${content}</td>`);
+                processedCells.add(cellKey);
+            }
+        });
         
-        const clickableM = courseM ? '' : `class="${clickableClass}" data-time="${time}" data-day="M" data-group="MWF" ${clickHandler}`;
-        const clickableW = courseW ? '' : `class="${clickableClass}" data-time="${time}" data-day="W" data-group="MWF" ${clickHandler}`;
-        const clickableF = courseF ? '' : `class="${clickableClass}" data-time="${time}" data-day="F" data-group="MWF" ${clickHandler}`;
-        
-        html += `<td ${clickableM}>${courseM}</td>`;
-        html += `<td ${clickableW}>${courseW}</td>`;
-        html += `<td ${clickableF}>${courseF}</td></tr>`;
+        if (row.length > 1) {
+            html += `<tr>${row.join('')}</tr>`;
+        }
     });
     
     return html + '</tbody></table>';
 }
-
 function generateTTHScheduleTable(schedules, clickableClass, clickHandler) {
     const times = ['07:30:00', '09:00:00', '10:30:00', '13:00:00', '14:30:00', '16:00:00'];
     
     let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>T</th><th>TH</th><th>S</th></tr></thead><tbody>`;
     
+    const processedCells = new Set();
+    
     times.forEach(time => {
-        html += `<tr><td class="time-cell">${formatTime(time)}</td>`;
+        const row = [];
+        row.push(`<td class="time-cell">${formatTime(time)}</td>`);
         
-        const courseT = findCourseForTimeAndDay(schedules, time, 'T');
-        const courseTH = findCourseForTimeAndDay(schedules, time, 'TH');
-        const courseS = findCourseForTimeAndDay(schedules, time, 'S');
+        ['T', 'TH', 'S'].forEach(day => {
+            const cellKey = `${time}-${day}`;
+            
+            if (processedCells.has(cellKey)) {
+                return;
+            }
+            
+            const schedule = schedules.find(s => {
+                const daysValue = s.days.toUpperCase();
+                const dayMap = {
+                    'T': ['T', 'TTH'],
+                    'TH': ['TH', 'TTH'],
+                    'S': ['S']
+                };
+                return dayMap[day]?.includes(daysValue) && s.time_start === time;
+            });
+            
+            if (schedule && !clickableClass) {
+                const tthMap = {
+                    '07:30:00-09:00:00': 1,
+                    '07:30:00-10:30:00': 2,
+                    '07:30:00-12:00:00': 3,
+                    '09:00:00-10:30:00': 1,
+                    '09:00:00-12:00:00': 2,
+                    '10:30:00-12:00:00': 1,
+                    '13:00:00-14:30:00': 1,
+                    '13:00:00-16:00:00': 2,
+                    '13:00:00-17:30:00': 3,
+                    '14:30:00-16:00:00': 1,
+                    '14:30:00-17:30:00': 2,
+                    '16:00:00-17:30:00': 1
+                };
+                
+                const key = `${schedule.time_start}-${schedule.time_end}`;
+                const duration = tthMap[key] || 1;
+                const rowspan = duration > 1 ? `rowspan="${duration}"` : '';
+                
+                const days = schedule.days.toUpperCase();
+                const colspan = days === 'TTH' ? 'colspan="2"' : '';
+                
+                for (let i = 0; i < duration; i++) {
+                    const futureTimeIndex = times.indexOf(time) + i;
+                    if (futureTimeIndex < times.length) {
+                        if (days === 'TTH') {
+                            processedCells.add(`${times[futureTimeIndex]}-T`);
+                            processedCells.add(`${times[futureTimeIndex]}-TH`);
+                        } else {
+                            processedCells.add(`${times[futureTimeIndex]}-${day}`);
+                        }
+                    }
+                }
+                
+                row.push(`<td ${rowspan} ${colspan}>
+                    <div class="course-code">${schedule.course_code}</div>
+                    <div class="room-info">${schedule.room || 'TBA'}</div>
+                </td>`);
+                
+                if (days === 'TTH' && day === 'S') {
+                    const clickable = `class="${clickableClass}" data-time="${time}" data-day="S" data-group="TTHS" ${clickHandler}`;
+                    row.push(`<td ${clickable}></td>`);
+                }
+            } else if (!processedCells.has(cellKey)) {
+                const clickable = schedule ? '' : `class="${clickableClass}" data-time="${time}" data-day="${day}" data-group="TTHS" ${clickHandler}`;
+                const content = schedule ? `<div class="course-code">${schedule.course_code}</div><div class="room-info">${schedule.room || 'TBA'}</div>` : '';
+                row.push(`<td ${clickable}>${content}</td>`);
+                processedCells.add(cellKey);
+            }
+        });
         
-        const clickableT = courseT ? '' : `class="${clickableClass}" data-time="${time}" data-day="T" data-group="TTHS" ${clickHandler}`;
-        const clickableTH = courseTH ? '' : `class="${clickableClass}" data-time="${time}" data-day="TH" data-group="TTHS" ${clickHandler}`;
-        const clickableS = courseS ? '' : `class="${clickableClass}" data-time="${time}" data-day="S" data-group="TTHS" ${clickHandler}`;
-        
-        html += `<td ${clickableT}>${courseT}</td>`;
-        html += `<td ${clickableTH}>${courseTH}</td>`;
-        html += `<td ${clickableS}>${courseS}</td></tr>`;
+        if (row.length > 1) {
+            html += `<tr>${row.join('')}</tr>`;
+        }
     });
     
     return html + '</tbody></table>';
