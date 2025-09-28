@@ -314,6 +314,11 @@ function getClassSchedules($pdo, $class_id) {
             color: #2E7D32;
             opacity: 0.8;
         }
+
+        .sched-course-code {
+            color: #2c3e50;
+        }
+
     </style>
 </head>
 <body>
@@ -569,12 +574,12 @@ function getClassSchedules($pdo, $class_id) {
             </div>
         </div>
     </div>
+    <?php include 'assets/php/shared_modals.php'; ?>
+    <script src="assets/js/shared_modals.js"></script>
+    <script src="assets/js/program.js"></script>
     <script>
         const facultySchedules = <?php echo json_encode($faculty_schedules); ?>;
         const facultyNames = <?php echo json_encode(array_column($faculty_data, 'faculty_name', 'faculty_id')); ?>;
     </script>
-    <?php include 'assets/php/shared_modals.php'; ?>
-    <script src="assets/js/shared_modals.js"></script>
-    <script src="assets/js/program.js"></script>
 </body>
 </html>

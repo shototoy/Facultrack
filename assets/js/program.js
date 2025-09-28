@@ -145,8 +145,8 @@ function viewSchedule(facultyId) {
                 <div class="schedule-item-detail">
                     <div class="schedule-header">
                         <div class="course-info">
-                            <div class="course-code">${schedule.course_code}</div>
-                            <div class="course-name">${schedule.course_description}</div>
+                            <div class="sched-course-code">${schedule.course_code}</div>
+                            <div class="sched-course-name">${schedule.course_description}</div>
                         </div>
                         <div class="schedule-time">
                             <div class="days">${schedule.days.toUpperCase()}</div>
