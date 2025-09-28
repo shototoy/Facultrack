@@ -283,19 +283,25 @@ try {
                 <div class="demo-title">Demo Accounts (Click to use):</div>
 
                 <?php foreach ($demo_accounts as $account): ?>
-                    <div class="demo-account" onclick="fillCredentials('<?php echo $account['username']; ?>', '<?php 
-                        if ($account['role'] === 'class') echo 'class123';
-                        elseif ($account['role'] === 'faculty') echo 'prof123'; 
-                        else echo 'chair123';
-                    ?>')">
-                        <strong><?php echo ucfirst(str_replace('_', ' ', $account['role'])); ?>:</strong> <?php echo $account['username']; ?> / 
-                        <?php 
-                            if ($account['role'] === 'class') echo 'class123';
-                            elseif ($account['role'] === 'faculty') echo 'prof123'; 
-                            else echo 'chair123';
-                        ?>
-                        <div class="available">Available</div>
-                    </div>
+                    <form method="POST" action="" style="display: inline;">
+                        <input type="hidden" name="username" value="<?php echo $account['username']; ?>">
+                        <input type="hidden" name="password" value="<?php 
+                            if ($account['role'] === 'campus_director') echo 'admin123';
+                            elseif ($account['role'] === 'program_chair') echo 'chair123';
+                            elseif ($account['role'] === 'faculty') echo 'prof123';
+                            else echo 'class123';
+                        ?>">
+                        <div class="demo-account" onclick="this.parentNode.submit()">
+                            <strong><?php echo ucfirst(str_replace('_', ' ', $account['role'])); ?>:</strong> <?php echo $account['username']; ?> / 
+                            <?php 
+                                if ($account['role'] === 'campus_director') echo 'admin123';
+                                elseif ($account['role'] === 'program_chair') echo 'chair123';
+                                elseif ($account['role'] === 'faculty') echo 'prof123';
+                                else echo 'class123';
+                            ?>
+                            <div class="available">Click to Sign In</div>
+                        </div>
+                    </form>
                 <?php endforeach; ?>
             </div>
 
@@ -307,16 +313,6 @@ try {
             document.getElementById('username').value = username;
             document.getElementById('password').value = password;
         }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('username').focus();
-        });
-        
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.querySelector('form').submit();
-            }
-        });
     </script>
 </body>
 </html>
