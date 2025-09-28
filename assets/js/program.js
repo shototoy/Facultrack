@@ -150,11 +150,9 @@ function viewSchedule(facultyId) {
         ${debugHTML}
         <div class="schedule-tables">
             <div class="schedule-table-container">
-                <h4>Monday, Wednesday, Friday Schedule</h4>
                 ${generateMWFSchedule(schedules)}
             </div>
             <div class="schedule-table-container">
-                <h4>Tuesday, Thursday Schedule</h4>
                 ${generateTTHSchedule(schedules)}
             </div>
         </div>
@@ -164,13 +162,14 @@ function viewSchedule(facultyId) {
 function generateMWFSchedule(schedules) {
     const times = ['08:00:00', '09:00:00', '10:00:00', '11:00:00', '13:00:00', '14:00:00', '15:00:00', '16:00:00', '17:00:00'];
     
-    let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>Monday</th><th>Wednesday</th><th>Friday</th></tr></thead><tbody>`;
+    let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>M</th><th>W</th><th>F</th><th>S</th></tr></thead><tbody>`;
     
     times.forEach(time => {
         html += `<tr><td class="time-cell">${formatTime(time)}</td>`;
         html += `<td>${findCourseForTimeAndDay(schedules, time, 'M')}</td>`;
         html += `<td>${findCourseForTimeAndDay(schedules, time, 'W')}</td>`;
-        html += `<td>${findCourseForTimeAndDay(schedules, time, 'F')}</td></tr>`;
+        html += `<td>${findCourseForTimeAndDay(schedules, time, 'F')}</td>`;
+        html += `<td>${findCourseForTimeAndDay(schedules, time, 'S')}</td></tr>`;
     });
     
     return html + '</tbody></table>';
@@ -179,7 +178,7 @@ function generateMWFSchedule(schedules) {
 function generateTTHSchedule(schedules) {
     const times = ['07:30:00', '09:00:00', '10:30:00', '13:00:00', '14:30:00', '16:00:00', '17:30:00'];
     
-    let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>Tuesday</th><th>Thursday</th></tr></thead><tbody>`;
+    let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>T</th><th>TH</th></tr></thead><tbody>`;
     
     times.forEach(time => {
         html += `<tr><td class="time-cell">${formatTime(time)}</td>`;
@@ -198,7 +197,7 @@ function findCourseForTimeAndDay(schedules, timeSlot, day) {
             'T': ['T', 'TTH', 'MTWTHF'],
             'W': ['W', 'MW', 'WF', 'MWF', 'MTWTHF'],
             'TH': ['TH', 'TTH', 'MTWTHF'],
-            'F': ['F', 'MF', 'WF', 'MWF', 'MTWTHF']
+            'F': ['F', 'MF', 'WF', 'MWF', 'MTWTHF'], 'S': ['S']
         };
         
         return dayMap[day]?.includes(daysValue) && s.time_start === timeSlot;
