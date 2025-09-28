@@ -135,25 +135,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_courses_and_classes') {
     exit;
 }
 
-if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
-    $faculty_id = $_POST['faculty_id'];
-    $course_code = $_POST['course_code']; 
-    $class_id = $_POST['class_id'];
-    $days = $_POST['days']; 
-    $time_start = $_POST['time_start'];
-    $time_end = $_POST['time_end'];
-    $room = $_POST['room'] ?? null;
-    
-    $insert_query = "INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)";
-    $stmt = $pdo->prepare($insert_query);
-    
-    if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room])) {
-        echo json_encode(['success' => true]);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to assign course']);
-    }
-    exit;
-}
 
 if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
     try {

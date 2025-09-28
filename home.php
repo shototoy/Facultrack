@@ -64,12 +64,68 @@ function getClassFaculty($pdo, $class_id) {
 }
 
 function getFacultyCourses($pdo, $faculty_id, $class_id) {
+    $debug_time = '09:30:00'; // Debug time
+    $debug_day = 'W'; // Debug day: M, T, W, TH, F, S
+    
     $courses_query = "
-        SELECT s.course_code, c.course_description, s.days, s.time_start, s.time_end, s.room
+        SELECT s.course_code, c.course_description, s.days, s.time_start, s.time_end, s.room,
+        CASE 
+            WHEN TIME('$debug_time') BETWEEN s.time_start AND s.time_end 
+                 AND (s.days = '$debug_day' OR 
+                      (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                      (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                      (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                      (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                      (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                 THEN 'current'
+            WHEN TIME('$debug_time') < s.time_start 
+                 AND (s.days = '$debug_day' OR 
+                      (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                      (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                      (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                      (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                      (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                 THEN 'upcoming'
+            WHEN (s.days = '$debug_day' OR 
+                  (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                  (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                  (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                  (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                  (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                 THEN 'finished'
+            ELSE 'not-today'
+        END as status
         FROM schedules s
         JOIN courses c ON s.course_code = c.course_code
         WHERE s.faculty_id = ? AND s.class_id = ? AND s.is_active = TRUE
-        ORDER BY s.time_start";
+        ORDER BY 
+            CASE 
+                WHEN TIME('$debug_time') BETWEEN s.time_start AND s.time_end 
+                     AND (s.days = '$debug_day' OR 
+                          (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                          (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                          (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                          (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                          (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                     THEN 1
+                WHEN TIME('$debug_time') < s.time_start 
+                     AND (s.days = '$debug_day' OR 
+                          (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                          (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                          (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                          (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                          (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                     THEN 2
+                WHEN (s.days = '$debug_day' OR 
+                      (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                      (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                      (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                      (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                      (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                     THEN 3
+                ELSE 4
+            END,
+            s.time_start";
     $stmt = $pdo->prepare($courses_query);
     $stmt->execute([$faculty_id, $class_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -82,6 +138,104 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Faculty Locator</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .course-info {
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            color: black;
+        }
+
+        .course-info.course-finished {
+            opacity: 0.85;
+            background-color: #f5f5f5;
+            border-left: 4px solid #9e9e9e;
+            color: #d32f2f;
+        }
+
+        .course-info.course-current {
+            background-color: #c8e6c9;
+            border-left: 4px solid #4caf50;
+            padding-left: 8px;
+        }
+
+        .course-info.course-upcoming {
+            background-color: #bbdefb;
+            border-left: 4px solid #2196f3;
+            padding-left: 8px;
+        }
+
+        .course-info.course-not-today {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            color: #999;
+            padding-left: 8px;
+            margin-top: 12px;
+        }
+
+        .course-info.course-not-today:first-of-type {
+            margin-top: 16px;
+        }
+            
+        .courses-list {
+            margin: 12px 0;
+        }
+
+        .course-info:last-child {
+            margin-bottom: 0;
+        }
+
+        .location-info {
+            background: linear-gradient(135deg, rgba(232, 245, 232, 0.9), rgba(241, 248, 233, 0.9));
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 8px;
+            clear: both;
+            border-left: 3px solid #FFC107;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        .location-status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .location-text {
+            font-weight: bold;
+            color: #333;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .time-info {
+            color: #666;
+            font-size: 0.75rem;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(238, 238, 238, 0.8);
+        }
+
+        .office-hours {
+            font-size: 0.7rem;
+            color: #666;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .faculty-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+    </style>
 </head>
 <body>
     <div class="main-container">
@@ -133,20 +287,20 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                     <div class="faculty-name"><?php echo htmlspecialchars($faculty['faculty_name']); ?></div>
                     <div class="faculty-program"><?php echo htmlspecialchars($faculty['program']); ?></div>
                     
-                    <div class="courses-list">
-                        <?php foreach ($faculty_courses[$faculty['faculty_id']] as $course): ?>
-                        <div class="course-info">
-                            <strong><?php echo htmlspecialchars($course['course_code']); ?>:</strong> 
-                            <?php echo htmlspecialchars($course['course_description']); ?>
-                            <br>
-                            <small>
-                                <?php echo strtoupper($course['days']); ?> | 
-                                <?php echo formatTime($course['time_start']); ?> - <?php echo formatTime($course['time_end']); ?> | 
-                                <?php echo htmlspecialchars($course['room']); ?>
-                            </small>
-                        </div>
-                        <?php endforeach; ?>
+                <div class="courses-list">
+                    <?php foreach ($faculty_courses[$faculty['faculty_id']] as $course): ?>
+                    <div class="course-info course-<?php echo $course['status']; ?>">
+                        <strong><?php echo htmlspecialchars($course['course_code']); ?>:</strong> 
+                        <?php echo htmlspecialchars($course['course_description']); ?>
+                        <br>
+                        <small>
+                            <?php echo strtoupper($course['days']); ?> | 
+                            <?php echo formatTime($course['time_start']); ?> - <?php echo formatTime($course['time_end']); ?> | 
+                            <?php echo htmlspecialchars($course['room']); ?>
+                        </small>
                     </div>
+                    <?php endforeach; ?>
+                </div>
 
                     <div class="location-info">
                         <div class="location-status">

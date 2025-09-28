@@ -136,72 +136,32 @@ function getScheduleTabs($pdo, $faculty_id) {
 }
 
 function createDayTabs($schedule_days) {
-    $day_sets = [];
-    $all_days = [];
-    
-    foreach ($schedule_days as $days) {
-        $day_sets[] = $days;
-        $individual_days = [];
-        if (strpos($days, 'MTWTHF') !== false) {
-            $individual_days = ['M', 'T', 'W', 'TH', 'F'];
-        } else {
-            $remaining = $days;
-            while ($remaining) {
-                if (strpos($remaining, 'TH') === 0) {
-                    $individual_days[] = 'TH';
-                    $remaining = substr($remaining, 2);
-                } elseif (strpos($remaining, 'SAT') === 0) {
-                    $individual_days[] = 'SAT';
-                    $remaining = substr($remaining, 3);
-                } else {
-                    $individual_days[] = $remaining[0];
-                    $remaining = substr($remaining, 1);
-                }
-            }
-        }
-        $all_days = array_merge($all_days, $individual_days);
-    }
-    
-    $all_days = array_unique($all_days);
-    $unique_tabs = [];
-    
-    foreach ($day_sets as $days) {
-        if (strlen($days) > 2 || $days == 'TH' || $days == 'SAT') {
-            $unique_tabs[] = $days;
-        }
-    }
-    
-    foreach ($all_days as $day) {
-        $covered = false;
-        foreach ($unique_tabs as $tab) {
-            if (strpos($tab, $day) !== false) {
-                $covered = true;
-                break;
-            }
-        }
-        if (!$covered) {
-            $unique_tabs[] = $day;
-        }
-    }
-    
-    return array_unique($unique_tabs);
+    return array_unique($schedule_days);
 }
 
 function getScheduleForDays($pdo, $faculty_id, $days) {
     $schedule_query = "
         SELECT s.*, c.course_description, cl.class_name, cl.class_code,
             CASE 
-                WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end AND s.days = ? THEN 'ongoing'
-                WHEN TIME(NOW()) < s.time_start AND s.days = ? THEN 'upcoming'
+                WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 'ongoing'
+                WHEN TIME(NOW()) < s.time_start THEN 'upcoming'
                 ELSE 'finished'
             END as status
         FROM schedules s
         JOIN courses c ON s.course_code = c.course_code
         JOIN classes cl ON s.class_id = cl.class_id
-        WHERE s.faculty_id = ? AND s.is_active = TRUE AND s.days = ?
+        WHERE s.faculty_id = ? AND s.is_active = TRUE 
+        AND (s.days = ? OR 
+            (s.days = 'MW' AND ? IN ('M', 'W', 'MW')) OR
+            (s.days = 'MF' AND ? IN ('M', 'F', 'MF')) OR
+            (s.days = 'WF' AND ? IN ('W', 'F', 'WF')) OR
+            (s.days = 'MWF' AND ? IN ('M', 'W', 'F', 'MWF')) OR
+            (s.days = 'TTH' AND ? IN ('T', 'TH', 'TTH')) OR
+            (s.days = 'MTWTHF' AND ? IN ('M', 'T', 'W', 'TH', 'F', 'MTWTHF'))
+        )
         ORDER BY s.time_start";
     $stmt = $pdo->prepare($schedule_query);
-    $stmt->execute([$days, $days, $faculty_id, $days]);
+    $stmt->execute([$faculty_id, $days, $days, $days, $days, $days, $days, $days]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
