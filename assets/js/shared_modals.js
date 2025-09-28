@@ -26,7 +26,7 @@ async function submitForm(action, formId, tabName) {
     try {
         showFormLoading(formId, true);
 
-        const response = await fetch('handle_admin_actions.php', {
+        const response = await fetch('assets/php/handle_admin_actions.php', {
             method: 'POST',
             body: formData
         });

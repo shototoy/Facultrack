@@ -120,7 +120,7 @@ async function deleteEntity(action, id) {
         formData.append('action', action);
         formData.append(idField, id);
 
-        const response = await fetch('handle_admin_actions.php', {
+        const response = await fetch('assets/php/handle_admin_actions.php', {
             method: 'POST',
             body: formData
         });
@@ -145,7 +145,7 @@ function capitalize(text) {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
 function updateStatistics() {
-    fetch('get_statistics.php')
+    fetch('assets/php/get_statistics.php')
         .then(response => response.json())
         .then(data => {
             updateDashboardStats(data);
@@ -227,7 +227,7 @@ async function handleFormSubmission(form, type) {
         const formData = new FormData(form);
         formData.set('action', actionMap[type]);
         
-        const response = await fetch('handle_admin_actions.php', {
+        const response = await fetch('assets/php/handle_admin_actions.php', {
             method: 'POST',
             body: formData
         });
