@@ -6,6 +6,8 @@
 !shared_modals.js
 !shared_modals.php
 !director.js
+!director.php
+!program.php
 !program.js
 !common_utilities.php
 !.gitignore
