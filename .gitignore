@@ -1,0 +1,9 @@
+# Ignore everything
+*
+
+# Except these
+!handle_admin_actions.php
+!shared_modals.js
+!shared_modals.php
+!common_utilities.php
+!.gitignore
