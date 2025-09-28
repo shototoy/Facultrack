@@ -358,3 +358,11 @@
     border-color: #2E7D32;
     color: #2E7D32;
 }
+
+#facultyCourseLoadModal .day-checkbox.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    background: #f5f5f5;
+    border-color: #ddd;
+    color: #999;
+}

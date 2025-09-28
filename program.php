@@ -109,6 +109,87 @@ function getClassSchedules($pdo, $class_id) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+if (isset($_POST['action']) && $_POST['action'] === 'get_courses_and_classes') {
+    try {
+        $courses_query = "SELECT course_code, course_description, units FROM courses WHERE is_active = TRUE ORDER BY course_code";
+        $courses_stmt = $pdo->prepare($courses_query);
+        $courses_stmt->execute();
+        $courses = $courses_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $classes_query = "SELECT class_id, class_code, class_name, year_level FROM classes WHERE program_chair_id = ? AND is_active = TRUE ORDER BY year_level, class_name";
+        $classes_stmt = $pdo->prepare($classes_query);
+        $classes_stmt->execute([$user_id]);
+        $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'success' => true,
+            'courses' => $courses,
+            'classes' => $classes
+        ]);
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Failed to fetch data: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
+if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
+    $faculty_id = $_POST['faculty_id'];
+    $course_code = $_POST['course_code']; 
+    $class_id = $_POST['class_id'];
+    $days = $_POST['days']; 
+    $time_start = $_POST['time_start'];
+    $time_end = $_POST['time_end'];
+    $room = $_POST['room'] ?? null;
+    
+    $insert_query = "INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)";
+    $stmt = $pdo->prepare($insert_query);
+    
+    if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room])) {
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to assign course']);
+    }
+    exit;
+}
+
+if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
+    try {
+        $faculty_id = $_POST['faculty_id'];
+        $course_code = $_POST['course_code']; 
+        $class_id = $_POST['class_id'];
+        $days = $_POST['days']; 
+        $time_start = $_POST['time_start'];
+        $time_end = $_POST['time_end'];
+        $room = $_POST['room'] ?? null;
+        
+        $conflict_query = "SELECT COUNT(*) as conflicts FROM schedules 
+                          WHERE faculty_id = ? AND time_start = ? AND days = ? AND is_active = TRUE";
+        $conflict_stmt = $pdo->prepare($conflict_query);
+        $conflict_stmt->execute([$faculty_id, $time_start, $days]);
+        $conflicts = $conflict_stmt->fetch(PDO::FETCH_ASSOC)['conflicts'];
+        
+        if ($conflicts > 0) {
+            echo json_encode(['success' => false, 'message' => 'Time conflict detected']);
+            exit;
+        }
+        
+        $insert_query = "INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, semester, academic_year, is_active) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, '1st', '2024-2025', TRUE)";
+        $stmt = $pdo->prepare($insert_query);
+        
+        if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room])) {
+            echo json_encode(['success' => true, 'message' => 'Course assigned successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to assign course']);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+    exit;
+}
 ?>
 
 <!DOCTYPE html>

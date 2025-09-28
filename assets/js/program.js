@@ -118,6 +118,132 @@ function callFaculty(phone) {
     window.location.href = 'tel:' + phone;
 }
 
+// Fixed program.js with corrected checkbox and time slot logic
+
+function switchTab(tabName) {
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => content.classList.remove('active'));
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => button.classList.remove('active'));
+    document.getElementById(tabName + '-content').classList.add('active');
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById('searchInput').value = '';
+    resetAllTabsVisibility();
+}
+
+function resetAllTabsVisibility() {
+    const facultyCards = document.querySelectorAll('.faculty-card');
+    facultyCards.forEach(card => card.style.display = 'block');
+    const courseCards = document.querySelectorAll('.course-card');
+    courseCards.forEach(card => card.style.display = 'block');  
+    const classCards = document.querySelectorAll('.class-card');
+    classCards.forEach(card => card.style.display = 'block');
+    const emptyStates = document.querySelectorAll('.search-empty-state');
+    emptyStates.forEach(state => state.remove());
+}
+
+function searchContent() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const activeTab = document.querySelector('.tab-content.active').id;
+    
+    if (activeTab === 'faculty-content') {
+        searchFaculty(searchTerm);
+    } else if (activeTab === 'courses-content') {
+        searchCourses(searchTerm);
+    } else if (activeTab === 'classes-content') {
+        searchClasses(searchTerm);
+    }
+}
+
+function searchFaculty(searchTerm) {
+    const facultyCards = document.querySelectorAll('.faculty-card:not(.add-card)');
+    let visibleCount = 0;
+
+    facultyCards.forEach(card => {
+        const name = card.getAttribute('data-name').toLowerCase();
+        
+        if (name.includes(searchTerm)) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    updateEmptyState('#facultyGrid', visibleCount, searchTerm, 'No faculty found', 'Try adjusting your search criteria');
+}
+
+function searchCourses(searchTerm) {
+    const courseCards = document.querySelectorAll('.course-card');
+    let visibleCount = 0;
+
+    courseCards.forEach(card => {
+        const courseCode = card.querySelector('.course-code').textContent.toLowerCase();
+        const courseDescription = card.querySelector('.course-description').textContent.toLowerCase();
+        
+        if (courseCode.includes(searchTerm) || courseDescription.includes(searchTerm)) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    updateEmptyState('#courses-content .courses-grid', visibleCount, searchTerm, 'No courses found', 'Try adjusting your search criteria');
+}
+
+function searchClasses(searchTerm) {
+    const classCards = document.querySelectorAll('.class-card:not(.add-card)');
+    let visibleCount = 0;
+
+    classCards.forEach(card => {
+        const name = card.getAttribute('data-name').toLowerCase();
+        const code = card.getAttribute('data-code').toLowerCase();
+        
+        if (name.includes(searchTerm) || code.includes(searchTerm)) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    updateEmptyState('#classesGrid', visibleCount, searchTerm, 'No classes found', 'Try adjusting your search criteria');
+}
+
+function updateEmptyState(containerSelector, visibleCount, searchTerm, title, message) {
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+    
+    const existingEmptyState = container.querySelector('.search-empty-state');
+    
+    if (existingEmptyState) {
+        existingEmptyState.remove();
+    }
+
+    if (visibleCount === 0 && searchTerm.trim() !== '') {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'empty-state search-empty-state';
+        emptyState.innerHTML = `
+            <h3>${title}</h3>
+            <p>${message}</p>
+        `;
+        container.appendChild(emptyState);
+    }
+}
+
+function contactFaculty(email) {
+    window.location.href = 'mailto:' + email;
+}
+
+function callFaculty(phone) {
+    window.location.href = 'tel:' + phone;
+}
+
+// Global variables to track current selection state
+let currentSelectedTimeSlot = null;
+let currentSelectedDayGroup = null;
+
 function generateScheduleView(facultyId, viewType = 'schedule') {
     const modalId = viewType === 'courseload' ? 'facultyCourseLoadModal' : 'facultyScheduleModal';
     const contentId = viewType === 'courseload' ? 'courseLoadContent' : 'scheduleContent';
@@ -182,30 +308,48 @@ function generateScheduleTables(schedules, isClickable = false) {
 }
 
 function generateMWFScheduleTable(schedules, clickableClass, clickHandler) {
-    const times = ['08:00:00', '09:00:00', '10:00:00', '11:00:00', '13:00:00', '14:00:00', '15:00:00', '16:00:00', '17:00:00'];
+    const times = ['08:00:00', '09:00:00', '10:00:00', '11:00:00', '13:00:00', '14:00:00', '15:00:00', '16:00:00'];
     
     let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>M</th><th>W</th><th>F</th></tr></thead><tbody>`;
     
     times.forEach(time => {
         html += `<tr><td class="time-cell">${formatTime(time)}</td>`;
-        html += `<td class="${clickableClass}" data-time="${time}" data-day="M" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'M')}</td>`;
-        html += `<td class="${clickableClass}" data-time="${time}" data-day="W" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'W')}</td>`;
-        html += `<td class="${clickableClass}" data-time="${time}" data-day="F" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'F')}</td></tr>`;
+        
+        const courseM = findCourseForTimeAndDay(schedules, time, 'M');
+        const courseW = findCourseForTimeAndDay(schedules, time, 'W');
+        const courseF = findCourseForTimeAndDay(schedules, time, 'F');
+        
+        const clickableM = courseM ? '' : `class="${clickableClass}" data-time="${time}" data-day="M" data-group="MWF" ${clickHandler}`;
+        const clickableW = courseW ? '' : `class="${clickableClass}" data-time="${time}" data-day="W" data-group="MWF" ${clickHandler}`;
+        const clickableF = courseF ? '' : `class="${clickableClass}" data-time="${time}" data-day="F" data-group="MWF" ${clickHandler}`;
+        
+        html += `<td ${clickableM}>${courseM}</td>`;
+        html += `<td ${clickableW}>${courseW}</td>`;
+        html += `<td ${clickableF}>${courseF}</td></tr>`;
     });
     
     return html + '</tbody></table>';
 }
 
 function generateTTHScheduleTable(schedules, clickableClass, clickHandler) {
-    const times = ['07:30:00', '09:00:00', '10:30:00', '13:00:00', '14:30:00', '16:00:00', '17:30:00'];
+    const times = ['07:30:00', '09:00:00', '10:30:00', '13:00:00', '14:30:00', '16:00:00'];
     
     let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>T</th><th>TH</th><th>S</th></tr></thead><tbody>`;
     
     times.forEach(time => {
         html += `<tr><td class="time-cell">${formatTime(time)}</td>`;
-        html += `<td class="${clickableClass}" data-time="${time}" data-day="T" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'T')}</td>`;
-        html += `<td class="${clickableClass}" data-time="${time}" data-day="TH" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'TH')}</td>`;
-        html += `<td class="${clickableClass}" data-time="${time}" data-day="S" ${clickHandler}>${findCourseForTimeAndDay(schedules, time, 'S')}</td></tr>`;
+        
+        const courseT = findCourseForTimeAndDay(schedules, time, 'T');
+        const courseTH = findCourseForTimeAndDay(schedules, time, 'TH');
+        const courseS = findCourseForTimeAndDay(schedules, time, 'S');
+        
+        const clickableT = courseT ? '' : `class="${clickableClass}" data-time="${time}" data-day="T" data-group="TTHS" ${clickHandler}`;
+        const clickableTH = courseTH ? '' : `class="${clickableClass}" data-time="${time}" data-day="TH" data-group="TTHS" ${clickHandler}`;
+        const clickableS = courseS ? '' : `class="${clickableClass}" data-time="${time}" data-day="S" data-group="TTHS" ${clickHandler}`;
+        
+        html += `<td ${clickableT}>${courseT}</td>`;
+        html += `<td ${clickableTH}>${courseTH}</td>`;
+        html += `<td ${clickableS}>${courseS}</td></tr>`;
     });
     
     return html + '</tbody></table>';
@@ -254,11 +398,16 @@ function generateScheduleSummary(schedules, facultyId) {
 }
 
 function generateCourseLoadForm(facultyId) {
+    currentFacultyId = facultyId;
+    
     return `
-        <div class="courseload-assignment-form">
+        <div class="courseload-assignment-form" style="display: none;">
             <form id="assignCourseLoadForm" onsubmit="event.preventDefault(); submitCourseAssignment(this, ${facultyId});">
                 <div class="form-section">
                     <h4>Assign Course to Faculty</h4>
+                    <div class="time-selection-notice" style="padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem; color: #856404;">
+                        Click on a time slot in the schedule above to begin assignment
+                    </div>
                     
                     <div class="form-row">
                         <div class="form-group">
@@ -318,33 +467,8 @@ function generateCourseLoadForm(facultyId) {
                         </div>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Start Time *</label>
-                            <select name="time_start" class="form-select" required id="timeStartSelect" onchange="updateEndTimeOptions()">
-                                <option value="">Select start time...</option>
-                                <option value="07:30:00">7:30 AM</option>
-                                <option value="08:00:00">8:00 AM</option>
-                                <option value="09:00:00">9:00 AM</option>
-                                <option value="10:00:00">10:00 AM</option>
-                                <option value="10:30:00">10:30 AM</option>
-                                <option value="11:00:00">11:00 AM</option>
-                                <option value="13:00:00">1:00 PM</option>
-                                <option value="14:00:00">2:00 PM</option>
-                                <option value="14:30:00">2:30 PM</option>
-                                <option value="15:00:00">3:00 PM</option>
-                                <option value="16:00:00">4:00 PM</option>
-                                <option value="17:00:00">5:00 PM</option>
-                                <option value="17:30:00">5:30 PM</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">End Time *</label>
-                            <select name="time_end" class="form-select" required id="timeEndSelect">
-                                <option value="">Select end time...</option>
-                            </select>
-                        </div>
-                    </div>
+                    <input type="hidden" name="time_start" id="hiddenTimeStart">
+                    <input type="hidden" name="time_end" id="hiddenTimeEnd">
                     
                     <div class="form-actions">
                         <button type="button" class="btn-secondary" onclick="closeModal('facultyCourseLoadModal')">Cancel</button>
@@ -360,11 +484,11 @@ function findCourseForTimeAndDay(schedules, timeSlot, day) {
     const schedule = schedules.find(s => {
         const daysValue = s.days.toUpperCase();
         const dayMap = {
-            'M': ['M', 'MW', 'MF', 'MWF', 'MTWTHF'],
-            'T': ['T', 'TTH', 'MTWTHF'],
-            'W': ['W', 'MW', 'WF', 'MWF', 'MTWTHF'],
-            'TH': ['TH', 'TTH', 'MTWTHF'],
-            'F': ['F', 'MF', 'WF', 'MWF', 'MTWTHF'],
+            'M': ['M', 'MW', 'MF', 'MWF'],
+            'T': ['T', 'TTH'],
+            'W': ['W', 'MW', 'WF', 'MWF'],
+            'TH': ['TH', 'TTH'],
+            'F': ['F', 'MF', 'WF', 'MWF'],
             'S': ['S']
         };
         
@@ -380,24 +504,150 @@ function findCourseForTimeAndDay(schedules, timeSlot, day) {
 function handleTimeSlotClick(cell) {
     const time = cell.getAttribute('data-time');
     const day = cell.getAttribute('data-day');
+    const group = cell.getAttribute('data-group');
     
-    const timeSelect = document.getElementById('timeStartSelect');
-    if (timeSelect) {
-        timeSelect.value = time;
-        updateEndTimeOptions();
+    currentSelectedTimeSlot = time;
+    currentSelectedDayGroup = group;
+    
+    document.getElementById('hiddenTimeStart').value = time;
+    
+    if (group === 'MWF') {
+        document.getElementById('hiddenTimeEnd').value = addHours(time, 1);
+    } else if (group === 'TTHS') {
+        document.getElementById('hiddenTimeEnd').value = addHours(time, 1.5);
     }
     
-    const dayCheckboxes = document.querySelectorAll('input[name="days[]"]');
-    dayCheckboxes.forEach(checkbox => checkbox.checked = false);
+    const allCheckboxes = document.querySelectorAll('input[name="days[]"]');
+    allCheckboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        checkbox.disabled = false;
+        checkbox.parentElement.style.opacity = '1';
+        checkbox.parentElement.classList.remove('disabled');
+        delete checkbox.dataset.required;
+    });
     
-    const targetCheckbox = document.querySelector(`input[name="days[]"][value="${day}"]`);
-    if (targetCheckbox) {
-        targetCheckbox.checked = true;
+    if (group === 'MWF') {
+        ['T', 'TH', 'S'].forEach(d => {
+            const cb = document.querySelector(`input[name="days[]"][value="${d}"]`);
+            if (cb) {
+                cb.disabled = true;
+                cb.parentElement.style.opacity = '0.5';
+                cb.parentElement.classList.add('disabled');
+            }
+        });
+    } else if (group === 'TTHS') {
+        ['M', 'W', 'F'].forEach(d => {
+            const cb = document.querySelector(`input[name="days[]"][value="${d}"]`);
+            if (cb) {
+                cb.disabled = true;
+                cb.parentElement.style.opacity = '0.5';
+                cb.parentElement.classList.add('disabled');
+            }
+        });
     }
+    
+    const clickedCheckbox = document.querySelector(`input[name="days[]"][value="${day}"]`);
+    if (clickedCheckbox) {
+        clickedCheckbox.checked = true;
+        clickedCheckbox.disabled = true;
+        clickedCheckbox.dataset.required = 'true';
+    }
+    
+    checkConflicts(time, group);
+    
+    document.querySelector('.courseload-assignment-form').style.display = 'block';
     
     showNotification(`Time slot selected: ${day} at ${formatTime(time)}`, 'info');
 }
 
+function checkConflicts(selectedTime, selectedGroup) {
+    const facultyId = currentFacultyId;
+    const schedules = facultySchedules[facultyId] || [];
+    
+    const conflictingDays = [];
+    
+    schedules.forEach(schedule => {
+        if (schedule.time_start === selectedTime) {
+            const scheduleDays = schedule.days.toUpperCase();
+            
+            if (selectedGroup === 'MWF') {
+                ['M', 'W', 'F'].forEach(day => {
+                    if (scheduleDays.includes(day)) {
+                        conflictingDays.push(day);
+                    }
+                });
+            } else if (selectedGroup === 'TTHS') {
+                ['T', 'TH', 'S'].forEach(day => {
+                    if (scheduleDays.includes(day)) {
+                        conflictingDays.push(day);
+                    }
+                });
+            }
+        }
+    });
+    
+    conflictingDays.forEach(day => {
+        const checkbox = document.querySelector(`input[name="days[]"][value="${day}"]`);
+        if (checkbox && !checkbox.dataset.required) {
+            checkbox.disabled = true;
+            checkbox.parentElement.style.opacity = '0.3';
+            checkbox.parentElement.classList.add('conflict');
+            checkbox.parentElement.title = 'Already has a course assigned at this time';
+        }
+    });
+}
+
+
+function populateTimeOptions(group) {
+    const timeSelect = document.getElementById('timeStartSelect');
+    if (!timeSelect) return;
+    
+    let timeOptions = [];
+    
+    if (group === 'MWF') {
+        timeOptions = [
+            { value: '08:00:00', label: '8:00 AM' },
+            { value: '09:00:00', label: '9:00 AM' },
+            { value: '10:00:00', label: '10:00 AM' },
+            { value: '11:00:00', label: '11:00 AM' },
+            { value: '13:00:00', label: '1:00 PM' },
+            { value: '14:00:00', label: '2:00 PM' },
+            { value: '15:00:00', label: '3:00 PM' },
+            { value: '16:00:00', label: '4:00 PM' }
+        ];
+    } else if (group === 'TTHS') {
+        timeOptions = [
+            { value: '07:30:00', label: '7:30 AM' },
+            { value: '09:00:00', label: '9:00 AM' },
+            { value: '10:30:00', label: '10:30 AM' },
+            { value: '13:00:00', label: '1:00 PM' },
+            { value: '14:30:00', label: '2:30 PM' },
+            { value: '16:00:00', label: '4:00 PM' }
+        ];
+    } else {
+        // Default - all times available
+        timeOptions = [
+            { value: '07:30:00', label: '7:30 AM' },
+            { value: '08:00:00', label: '8:00 AM' },
+            { value: '09:00:00', label: '9:00 AM' },
+            { value: '10:00:00', label: '10:00 AM' },
+            { value: '10:30:00', label: '10:30 AM' },
+            { value: '11:00:00', label: '11:00 AM' },
+            { value: '13:00:00', label: '1:00 PM' },
+            { value: '14:00:00', label: '2:00 PM' },
+            { value: '14:30:00', label: '2:30 PM' },
+            { value: '15:00:00', label: '3:00 PM' },
+            { value: '16:00:00', label: '4:00 PM' }
+        ];
+    }
+    
+    timeSelect.innerHTML = '<option value="">Select start time...</option>';
+    timeOptions.forEach(option => {
+        timeSelect.innerHTML += `<option value="${option.value}">${option.label}</option>`;
+    });
+}
+
+// FIXED: Update end time options with proper logic for MWF/TTHS
 function updateEndTimeOptions() {
     const startTimeSelect = document.getElementById('timeStartSelect');
     const endTimeSelect = document.getElementById('timeEndSelect');
@@ -410,28 +660,77 @@ function updateEndTimeOptions() {
         return;
     }
     
-    const timeOptions = [
-        { value: "08:30:00", label: "8:30 AM" },
-        { value: "09:00:00", label: "9:00 AM" },
-        { value: "10:00:00", label: "10:00 AM" },
-        { value: "10:30:00", label: "10:30 AM" },
-        { value: "11:00:00", label: "11:00 AM" },
-        { value: "12:00:00", label: "12:00 PM" },
-        { value: "14:00:00", label: "2:00 PM" },
-        { value: "15:00:00", label: "3:00 PM" },
-        { value: "15:30:00", label: "3:30 PM" },
-        { value: "16:00:00", label: "4:00 PM" },
-        { value: "17:00:00", label: "5:00 PM" },
-        { value: "18:00:00", label: "6:00 PM" },
-        { value: "19:00:00", label: "7:00 PM" }
-    ];
+    let endTimeOptions = [];
     
-    const validEndTimes = timeOptions.filter(option => option.value > startTime);
+    // Fixed end time logic based on day group
+    if (currentSelectedDayGroup === 'MWF') {
+        // MWF: 1 hour intervals
+        const startHour = parseInt(startTime.split(':')[0]);
+        
+        if (startHour >= 8 && startHour <= 11) {
+            // AM range: can go up to 12:00
+            for (let h = startHour + 1; h <= 12; h++) {
+                const endTime = `${h.toString().padStart(2, '0')}:00:00`;
+                endTimeOptions.push({
+                    value: endTime,
+                    label: formatTime(endTime)
+                });
+            }
+        } else if (startHour >= 13 && startHour <= 16) {
+            // PM range: can go up to 17:00 (5 PM)
+            for (let h = startHour + 1; h <= 17; h++) {
+                const endTime = `${h.toString().padStart(2, '0')}:00:00`;
+                endTimeOptions.push({
+                    value: endTime,
+                    label: formatTime(endTime)
+                });
+            }
+        }
+    } else if (currentSelectedDayGroup === 'TTHS') {
+        // TTHS: 1.5 hour intervals
+        const endTime = addHours(startTime, 1.5);
+        endTimeOptions.push({
+            value: endTime,
+            label: formatTime(endTime)
+        });
+    } else {
+        // Default: flexible options
+        endTimeOptions = [
+            { value: addHours(startTime, 1), label: formatTime(addHours(startTime, 1)) + ' (1 hour)' },
+            { value: addHours(startTime, 1.5), label: formatTime(addHours(startTime, 1.5)) + ' (1.5 hours)' },
+            { value: addHours(startTime, 2), label: formatTime(addHours(startTime, 2)) + ' (2 hours)' },
+            { value: addHours(startTime, 3), label: formatTime(addHours(startTime, 3)) + ' (3 hours)' }
+        ];
+    }
     
     endTimeSelect.innerHTML = '<option value="">Select end time...</option>';
-    validEndTimes.forEach(option => {
+    endTimeOptions.forEach(option => {
         endTimeSelect.innerHTML += `<option value="${option.value}">${option.label}</option>`;
     });
+}
+
+// FIXED: Day selection handler - prevent unchecking required days
+function handleDaySelection(checkbox) {
+    // Prevent unchecking required days (those set by time slot click)
+    if (!checkbox.checked && checkbox.dataset.required === 'true') {
+        checkbox.checked = true;
+        return;
+    }
+    
+    // Remove required flag when manually checking/unchecking
+    if (checkbox.dataset.required === 'true') {
+        delete checkbox.dataset.required;
+    }
+    
+    updateEndTimeOptions();
+}
+
+function addHours(timeString, hours) {
+    const [h, m, s] = timeString.split(':').map(Number);
+    const totalMinutes = h * 60 + m + (hours * 60);
+    const newHours = Math.floor(totalMinutes / 60);
+    const newMinutes = totalMinutes % 60;
+    return `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
 function viewSchedule(facultyId) {
@@ -442,50 +741,54 @@ function viewCourseLoad(facultyId) {
     generateScheduleView(facultyId, 'courseload');
 }
 
+// FIXED: Load course and class data function
 function loadCourseAndClassData() {
+    const formData = new FormData();
+    formData.append('action', 'get_courses_and_classes');
+    
     fetch('program.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'action=get_course_class_data'
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            populateCourseSelect(data.courses);
-            populateClassSelect(data.classes);
+            const courseSelect = document.getElementById('courseSelect');
+            const classSelect = document.getElementById('classSelect');
+            
+            if (courseSelect && data.courses) {
+                courseSelect.innerHTML = '<option value="">Choose a course...</option>';
+                data.courses.forEach(course => {
+                    courseSelect.innerHTML += `
+                        <option value="${course.course_code}" 
+                                data-units="${course.units}" 
+                                data-description="${course.course_description}">
+                            ${course.course_code} - ${course.course_description}
+                        </option>
+                    `;
+                });
+            }
+            
+            if (classSelect && data.classes) {
+                classSelect.innerHTML = '<option value="">Choose a class...</option>';
+                data.classes.forEach(cls => {
+                    classSelect.innerHTML += `
+                        <option value="${cls.class_id}">
+                            ${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})
+                        </option>
+                    `;
+                });
+            }
+        } else {
+            showNotification(data.message || 'Failed to load data', 'error');
         }
     })
     .catch(error => {
         console.error('Error loading data:', error);
+        showNotification('Failed to load courses and classes', 'error');
     });
-}
-
-function populateCourseSelect(courses) {
-    const courseSelect = document.getElementById('courseSelect');
-    courseSelect.innerHTML = '<option value="">Choose a course...</option>';
     
-    courses.forEach(course => {
-        const option = document.createElement('option');
-        option.value = course.course_code;
-        option.textContent = `${course.course_code} - ${course.course_description}`;
-        option.setAttribute('data-units', course.units);
-        option.setAttribute('data-description', course.course_description);
-        courseSelect.appendChild(option);
-    });
-}
-
-function populateClassSelect(classes) {
-    const classSelect = document.getElementById('classSelect');
-    classSelect.innerHTML = '<option value="">Choose a class...</option>';
-    
-    classes.forEach(classItem => {
-        const option = document.createElement('option');
-        option.value = classItem.class_id;
-        option.textContent = `${classItem.class_code} - ${classItem.class_name} (Year ${classItem.year_level})`;
-        classSelect.appendChild(option);
-    });
+    populateTimeOptions('default');
 }
 
 function updateCourseInfo() {
@@ -579,6 +882,73 @@ function formatTime(time) {
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
 }
+
+function viewClassDetails(classId) {
+    showNotification('Class details view will be implemented soon', 'info');
+}
+
+function manageSchedule(classId) {
+    showNotification('Schedule management will be implemented soon', 'info');
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    const contentWrapper = document.getElementById('contentWrapper');
+
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+    contentWrapper.classList.toggle('sidebar-open');
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    const contentWrapper = document.getElementById('contentWrapper');
+
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+    contentWrapper.classList.remove('sidebar-open');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchContent();
+            }
+        });
+        searchInput.addEventListener('input', searchContent);
+        searchInput.focus();
+    }
+
+    document.addEventListener('click', function(e) {
+        const sidebar = document.getElementById('sidebar');
+        const toggle = document.querySelector('.announcement-toggle');
+
+        if (sidebar && toggle &&
+            window.innerWidth > 768 &&
+            !sidebar.contains(e.target) &&
+            !toggle.contains(e.target) &&
+            sidebar.classList.contains('open')) {
+            closeSidebar();
+        }
+    });
+});
+
+setInterval(function() {
+    if (!document.querySelector('.modal-overlay.show')) {
+        location.reload();
+    }
+}, 300000);
+
+document.addEventListener('click', function(e) {
+    const card = e.target.closest('.add-card');
+    if (card && card.dataset.modal) {
+        openModal(card.dataset.modal);
+    }
+});
 
 function viewClassDetails(classId) {
     showNotification('Class details view will be implemented soon', 'info');
