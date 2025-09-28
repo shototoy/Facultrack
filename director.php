@@ -129,11 +129,31 @@ function getProgramChairs($pdo) {
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
         .table-container {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border-radius: 0px 0px 12px 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+                        0 0 0 1px rgba(46, 125, 50, 0.08);
             overflow: hidden;
-            margin-top: 20px;
+            border: 1px solid rgba(222, 226, 230, 0.3);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .table-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(46, 125, 50, 0.3), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
         }
 
         .table-header {
@@ -141,14 +161,34 @@ function getProgramChairs($pdo) {
             justify-content: space-between;
             align-items: center;
             padding: 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 1px solid rgba(222, 226, 230, 0.5);
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8),
+                        0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .table-title {
             font-size: 1.2rem;
             font-weight: 600;
             color: #2c3e50;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+            position: relative;
+        }
+
+        .table-title::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #2E7D32, #4CAF50);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .table-container:hover .table-title::after {
+            width: 100%;
         }
 
         .table-actions {
@@ -159,50 +199,154 @@ function getProgramChairs($pdo) {
         .data-table {
             width: 100%;
             border-collapse: collapse;
+            background: transparent;
         }
 
         .data-table th,
         .data-table td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid rgba(222, 226, 230, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .data-table th {
-            background: #f8f9fa;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             font-weight: 600;
             color: #495057;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8),
+                        0 1px 3px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-table th::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(46, 125, 50, 0.05), transparent);
+            transition: left 0.6s;
+        }
+
+        .data-table th:hover::before {
+            left: 100%;
+        }
+
+        .data-table tr {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .data-table tr::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, rgba(46, 125, 50, 0.1), rgba(76, 175, 80, 0.05));
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .data-table tr:hover {
-            background: #f8f9fa;
+            background: linear-gradient(90deg, rgba(248, 249, 250, 0.8), rgba(233, 236, 239, 0.8));
+            transform: translateX(2px);
+            box-shadow: 0 2px 8px rgba(46, 125, 50, 0.1),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+
+        .data-table tr:hover::before {
+            width: 4px;
+        }
+
+        .data-table tr:hover td {
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
         }
 
         .data-table .item-checkbox {
             margin-right: 8px;
+            transform: scale(1.1);
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1));
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .data-table .item-checkbox:hover {
+            transform: scale(1.2);
+            filter: drop-shadow(0 2px 6px rgba(46, 125, 50, 0.3));
         }
 
         .bulk-actions {
             display: none;
-            background: #e3f2fd;
+            background: linear-gradient(135deg, rgba(227, 242, 253, 0.9), rgba(187, 222, 251, 0.9));
             padding: 12px;
-            border-radius: 6px;
+            border-radius: 8px;
             margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.15),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(25, 118, 210, 0.2);
+            backdrop-filter: blur(10px);
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .bulk-actions button {
-            background: #1976d2;
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
             color: white;
             border: none;
             padding: 6px 12px;
-            border-radius: 4px;
+            border-radius: 6px;
             margin-right: 8px;
             cursor: pointer;
             font-size: 0.8rem;
+            box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bulk-actions button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .bulk-actions button:hover::before {
+            left: 100%;
         }
 
         .bulk-actions button:hover {
-            background: #1565c0;
+            background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+            box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4),
+                        inset 0 2px 0 rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        .bulk-actions button:active {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 3px 12px rgba(25, 118, 210, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
     </style>
 </head>

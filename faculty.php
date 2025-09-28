@@ -548,6 +548,97 @@ function generateScheduleHTML($schedule_data) {
             background: #e9ecef;
             border-color: #aaa;
         }
+
+        @media (max-width: 768px){
+                .dashboard-grid {
+                    grid-template-columns: 1fr;
+                    grid-template-rows: auto auto;
+                }
+                
+                .schedule-section,
+                .location-section {
+                    padding: 20px;
+                }
+                
+                .schedule-section {
+                    grid-row: 1;
+                    grid-column: 1;
+                    border-left: none;
+                }
+                
+                .location-section {
+                    grid-row: 2;
+                    grid-column: 1;
+                    border-left: none;
+                    border-top: 1px solid #e0e0e0;
+                }
+                
+                .actions-section {
+                    position: fixed;
+                    bottom: 15px;
+                    left: 15px;
+                    right: 15px;
+                    z-index: 1000;
+                    background: transparent;
+                    padding: 0;
+                    grid-row: unset;
+                    grid-column: unset;
+                    border: none;
+                }
+                
+                .quick-actions h3 {
+                    display: none;
+                }
+                
+                .actions-grid {
+                    grid-template-columns: 1fr 1fr;
+                    gap: 15px;
+                }
+                
+                .action-card {
+                    background: rgba(255, 255, 255, 0.8);
+                    backdrop-filter: blur(15px);
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    color: white;
+                }
+                
+                .schedule-item {
+                    flex-direction: column;
+                    text-align: center;
+                    gap: 10px;
+                }
+                
+                .schedule-time {
+                    min-width: auto;
+                    margin-right: 0;
+                }
+                
+                .schedule-details {
+                    margin-right: 0;
+                    text-align: center;
+                }
+                
+                .schedule-info {
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+                
+                .location-actions {
+                    flex-direction: column;
+                }
+        }
+
+        @media (max-width: 480px){  
+            .schedule-section,
+            .location-section {
+                padding: 15px;
+            }
+            
+            .actions-grid {
+                gap: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -556,12 +647,6 @@ function generateScheduleHTML($schedule_data) {
             📢
             <span class="announcement-badge"><?php echo count($announcements); ?></span>
         </button>
-
-        <div class="user-info">
-            <span>Welcome, <?php echo htmlspecialchars($faculty_name); ?></span>
-            <span style="font-size: 0.8rem; color: #666;">(Faculty)</span>
-            <a href="logout.php" class="logout-btn">Logout</a>
-        </div>
 
         <div class="sidebar-overlay" onclick="closeSidebar()"></div>
 
@@ -597,6 +682,11 @@ function generateScheduleHTML($schedule_data) {
                 <h1>FaculTrack - Faculty Portal</h1>
                 <p>Sultan Kudarat State University - Isulan Campus</p>
                 <small>Employee ID: <strong><?php echo htmlspecialchars($faculty_info['employee_id']); ?></strong></small>
+                <div class="user-info">
+                    <span>Welcome, <?php echo htmlspecialchars($faculty_name); ?></span>
+                    <span style="font-size: 0.8rem; color: #666;">(Faculty)</span>
+                    <a href="logout.php" class="logout-btn">Logout</a>
+                </div>
             </div>
 
             <div class="dashboard-grid">
