@@ -1,5 +1,5 @@
 <?php
-require_once 'common_utilities.php';
+require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
 validateUserSession('class');
@@ -17,7 +17,7 @@ foreach ($faculty_data as $faculty) {
     $faculty_courses[$faculty['faculty_id']] = getFacultyCourses($pdo, $faculty['faculty_id'], $class_id);
 }
 
-require_once 'fetch_announcements.php';
+require_once 'assets/php/fetch_announcements.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
 function getClassInfo($pdo, $user_id) {
@@ -81,7 +81,7 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Faculty Locator</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
     <div class="main-container">
@@ -185,6 +185,6 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
         </div>
     </div>
 
-<script src="home.js"></script>
+<script src="assets/js/home.js"></script>
 </body>
 </html>

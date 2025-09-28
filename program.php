@@ -1,5 +1,5 @@
 <?php
-require_once 'common_utilities.php';
+require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
 validateUserSession('program_chair');
@@ -25,7 +25,7 @@ if (!empty($class_ids)) {
     }
 }
 
-require_once 'fetch_announcements.php';
+require_once 'assets/php/fetch_announcements.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
 function getProgramChairInfo($pdo, $user_id) {
@@ -117,7 +117,7 @@ function getClassSchedules($pdo, $class_id) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Program Chair Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>
         .classes-grid {
             display: grid;
@@ -255,6 +255,53 @@ function getClassSchedules($pdo, $class_id) {
         .schedule-time {
             color: #666;
             font-size: 0.8rem;
+        }
+
+        .add-card {
+            background: linear-gradient(135deg, #E8F5E8 0%, #F1F8E9 100%);
+            border: 2px dashed #2E7D32;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+        }
+
+        .add-card:hover {
+            background: linear-gradient(135deg, #C8E6C9 0%, #E8F5E8 100%);
+            border-color: #1B5E20;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.15);
+        }
+
+        .add-card-icon {
+            font-size: 3rem;
+            color: #2E7D32;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .add-card:hover .add-card-icon {
+            color: #1B5E20;
+            transform: scale(1.1);
+        }
+
+        .add-card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1B5E20;
+            margin-bottom: 8px;
+        }
+
+        .add-card-subtitle {
+            font-size: 0.9rem;
+            color: #2E7D32;
+            opacity: 0.8;
         }
     </style>
 </head>
@@ -514,10 +561,9 @@ function getClassSchedules($pdo, $class_id) {
         const facultySchedules = <?php echo json_encode($faculty_schedules); ?>;
         const facultyNames = <?php echo json_encode(array_column($faculty_data, 'faculty_name', 'faculty_id')); ?>;
     </script>
-    <?php include 'shared_modals.php'; ?>
+    <?php include 'assets/php/shared_modals.php'; ?>
 
-    <link rel="stylesheet" href="shared_styles.css">
-    <script src="shared_modals.js"></script>
-    <script src="program.js"></script>
+    <script src="assets/js/shared_modals.js"></script>
+    <script src="assets/js/program.js"></script>
 </body>
 </html>

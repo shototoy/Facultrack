@@ -1,5 +1,5 @@
 <?php
-require_once 'common_utilities.php';
+require_once 'assets/php/common_utilities.php';
 
 initializeSession();
 
@@ -122,7 +122,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Login</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>
         .login-container {
             display: flex;
