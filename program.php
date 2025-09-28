@@ -271,6 +271,10 @@ function getClassSchedules($pdo, $class_id) {
             justify-content: center;
             min-height: 200px;
         }
+         .add-card-course {
+            min-height: 80px;
+            padding: 8px;
+        }
 
         .add-card:hover {
             background: linear-gradient(135deg, #C8E6C9 0%, #E8F5E8 100%);
@@ -286,7 +290,13 @@ function getClassSchedules($pdo, $class_id) {
             transition: all 0.3s ease;
         }
 
-        .add-card:hover .add-card-icon {
+        .add-card-course-icon {
+            font-size: 1.5rem;
+            color: #2E7D32;
+            margin-bottom: 0;
+        }
+
+        .add-card:hover .add-card-icon{
             color: #1B5E20;
             transform: scale(1.1);
         }
@@ -295,7 +305,7 @@ function getClassSchedules($pdo, $class_id) {
             font-size: 1.2rem;
             font-weight: bold;
             color: #1B5E20;
-            margin-bottom: 8px;
+            margin-bottom: 0;
         }
 
         .add-card-subtitle {
@@ -467,13 +477,14 @@ function getClassSchedules($pdo, $class_id) {
                                 </div>
                             </div>
                         <?php endforeach; ?>
+                        <div class="add-card add-card-course" data-modal="addCourseModal">
+                        <div class="add-card-icon add-card-course-icon">📘</div>
+                        <div class="add-card-title">Add Course</div>
+                        <div class="add-card-subtitle">Create a new course entry</div>
+                </div>
                     </div>
                 <?php endif; ?>
-                <div class="add-card" data-modal="addCourseModal">
-                    <div class="add-card-icon">📘</div>
-                    <div class="add-card-title">Add Course</div>
-                    <div class="add-card-subtitle">Create a new course entry</div>
-                </div>
+                
             </div>
 
             <div class="tab-content" id="classes-content">
