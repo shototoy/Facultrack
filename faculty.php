@@ -283,7 +283,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
     }
 }
-
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_location_history') {
+    validateUserSession('faculty');
+    $user_id = $_SESSION['user_id'];
+    
+    try {
+        $faculty_info = getFacultyInfo($pdo, $user_id);
+        if (!$faculty_info) {
+            sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
+        }
+        
+        $history = getLocationHistory($pdo, $faculty_info['faculty_id'], 10);
+        
+        $html = '';
+        if (!empty($history)) {
+            foreach ($history as $index => $h) {
+                $isCurrent = $index === 0 && $h['time_changed'] === null;
+                $timeDisplay = $h['time_changed'] 
+                    ? date('M j, Y g:i A', strtotime($h['time_changed']))
+                    : date('M j, Y g:i A', strtotime($h['time_set']));
+                
+                $html .= '<div class="history-item' . ($isCurrent ? ' current-location' : '') . '">';
+                $html .= '<div class="history-location-name">' . htmlspecialchars($h['location']) . '</div>';
+                $html .= '<div class="history-timestamp">' . $timeDisplay . '</div>';
+                if ($isCurrent) {
+                    $html .= '<div class="current-badge">Current</div>';
+                }
+                $html .= '</div>';
+            }
+        } else {
+            $html = '<div class="no-history"><p>No location history available</p></div>';
+        }
+        
+        sendJsonResponse(['success' => true, 'html' => $html]);
+    } catch (Exception $e) {
+        sendJsonResponse(['success' => false, 'message' => 'Database error']);
+    }
+}
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_status') {
     validateUserSession('faculty');
     $user_id = $_SESSION['user_id'];
@@ -1124,6 +1160,90 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 padding-bottom: 80px !important;
             }
         }
+
+        .location-history-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            border-radius: 8px;
+            border-left: 3px solid #9E9E9E;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .history-item:hover {
+            background: linear-gradient(145deg, #e9ecef, #dee2e6);
+            transform: translateX(3px);
+        }
+
+        .history-item.current-location {
+            background: linear-gradient(135deg, rgba(232, 245, 232, 0.9), rgba(200, 230, 201, 0.9));
+            border-left-color: #4CAF50;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
+        }
+
+        .history-location-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+        }
+
+        .history-timestamp {
+            font-size: 0.85rem;
+            color: #666;
+            margin-left: 15px;
+        }
+
+        .current-badge {
+            position: absolute;
+            top: -8px;
+            right: 10px;
+            background: #4CAF50;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .no-history {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .no-history p {
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 480px) {
+            .history-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+            
+            .history-timestamp {
+                margin-left: 0;
+                font-size: 0.8rem;
+            }
+            
+            .history-location-name {
+                font-size: 0.9rem;
+            }
+        }
 </style>
 </head>
 <body>
@@ -1380,46 +1500,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                     <button type="button" class="modal-close" onclick="closeLocationHistoryModal()">&times;</button>
                 </div>
                 
-        <div class="modal-overlay" id="locationHistoryModal">
-            <div class="modal">
-                <div class="modal-header">
-                    <h3 class="modal-title">Location History</h3>
-                    <button type="button" class="modal-close" onclick="closeLocationHistoryModal()">&times;</button>
-                </div>
-                
                 <div class="location-history-list">
-                    <?php if (!empty($location_history)): ?>
-                        <?php foreach ($location_history as $history): ?>
-                        <div class="history-item">
-                            <div class="history-location">
-                                <?php echo htmlspecialchars($history['location']); ?>
-                            </div>
-                            <div class="history-time">
-                                <div>From: <?php echo date('M j, Y g:i A', strtotime($history['time_set'])); ?></div>
-                                <?php if ($history['time_changed']): ?>
-                                    <div>To: <?php echo date('M j, Y g:i A', strtotime($history['time_changed'])); ?></div>
-                                    <div class="history-duration">
-                                        Duration: <?php 
-                                            $start = strtotime($history['time_set']);
-                                            $end = strtotime($history['time_changed']);
-                                            $diff = $end - $start;
-                                            $hours = floor($diff / 3600);
-                                            $minutes = floor(($diff % 3600) / 60);
-                                            echo $hours > 0 ? $hours . 'h ' : '';
-                                            echo $minutes . 'm';
-                                        ?>
-                                    </div>
-                                <?php else: ?>
-                                    <div style="color: #4CAF50; font-weight: 500;">Current Location</div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="no-history">
-                            <p>No location history available</p>
-                        </div>
-                    <?php endif; ?>
                 </div>
                 
                 <div class="modal-actions">
@@ -1427,245 +1508,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 </div>
             </div>
         </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-secondary" onclick="closeLocationHistoryModal()">Close</button>
-                </div>
-            </div>
-        </div>
 
-        <script>
-            function toggleSidebar() {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.querySelector('.sidebar-overlay');
-                const contentWrapper = document.getElementById('contentWrapper');
-
-                sidebar.classList.toggle('open');
-                overlay.classList.toggle('show');
-                contentWrapper.classList.toggle('sidebar-open');
-            }
-
-            function closeSidebar() {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.querySelector('.sidebar-overlay');
-                const contentWrapper = document.getElementById('contentWrapper');
-
-                sidebar.classList.remove('open');
-                overlay.classList.remove('show');
-                contentWrapper.classList.remove('sidebar-open');
-            }
-
-            function openLocationModal() {
-                document.getElementById('locationModal').classList.add('show');
-                document.body.style.overflow = 'hidden';
-            }
-
-            function closeLocationModal() {
-                document.getElementById('locationModal').classList.remove('show');
-                document.body.style.overflow = 'auto';
-                document.getElementById('locationForm').reset();
-            }
-
-            function viewLocationHistory() {
-                document.getElementById('locationHistoryModal').classList.add('show');
-                document.body.style.overflow = 'hidden';
-            }
-
-            function closeLocationHistoryModal() {
-                document.getElementById('locationHistoryModal').classList.remove('show');
-                document.body.style.overflow = 'auto';
-            }
-
-            async function updateLocation() {
-                const form = document.getElementById('locationForm');
-                const formData = new FormData(form);
-                
-                const customLocation = formData.get('custom_location');
-                const selectedLocation = formData.get('location');
-                
-                if (!customLocation && !selectedLocation) {
-                    alert('Please select a location or enter a custom location.');
-                    return;
-                }
-                
-                const finalLocation = customLocation || selectedLocation;
-                
-                try {
-                    const response = await fetch(window.location.pathname, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `action=update_location&location=${encodeURIComponent(finalLocation)}`
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        document.getElementById('currentLocation').textContent = finalLocation;
-                        
-                        const locationUpdated = document.querySelector('.location-updated');
-                        locationUpdated.textContent = 'Last updated: Just now';
-                        
-                        closeLocationModal();
-                        
-                        showNotification('Location updated successfully!', 'success');
-                    } else {
-                        alert('Error updating location: ' + result.message);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('An error occurred while updating location. Please try again.');
-                }
-            }
-
-            function viewFullSchedule() {
-                showNotification('Full schedule view coming soon!', 'info');
-            }
-
-            function updateProfile() {
-                showNotification('Profile update feature coming soon!', 'info');
-            }
-
-            function viewStudents() {
-                showNotification('Student management feature coming soon!', 'info');
-            }
-
-            function leaveRequest() {
-                showNotification('Leave request feature coming soon!', 'info');
-            }
-
-            function markAttendance(scheduleId) {
-                if (confirm('Mark yourself as present for this class?')) {
-                    showNotification('Attendance marked successfully!', 'success');
-                }
-            }
-
-            function showNotification(message, type = 'info') {
-                const existingNotifications = document.querySelectorAll('.notification');
-                existingNotifications.forEach(notification => notification.remove());
-
-                const notification = document.createElement('div');
-                notification.className = `notification notification-${type}`;
-                notification.innerHTML = `
-                    <div class="notification-content">
-                        <span class="notification-message">${message}</span>
-                        <button class="notification-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
-                    </div>
-                `;
-
-                document.body.appendChild(notification);
-
-                setTimeout(() => {
-                    if (notification.parentElement) {
-                        notification.remove();
-                    }
-                }, 3000);
-            }
-
-            document.addEventListener('DOMContentLoaded', function() {
-                const locationSelect = document.getElementById('locationSelect');
-                const customLocationInput = document.getElementById('customLocation');
-
-                if (locationSelect && customLocationInput) {
-                    locationSelect.addEventListener('change', function() {
-                        if (this.value) {
-                            customLocationInput.value = '';
-                        }
-                    });
-
-                    customLocationInput.addEventListener('input', function() {
-                        if (this.value) {
-                            locationSelect.value = '';
-                        }
-                    });
-                }
-            });
-
-            document.addEventListener('click', function(e) {
-                if (e.target.classList.contains('modal-overlay')) {
-                    if (e.target.id === 'locationModal') {
-                        closeLocationModal();
-                    } else if (e.target.id === 'locationHistoryModal') {
-                        closeLocationHistoryModal();
-                    }
-                }
-            });
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    const openModal = document.querySelector('.modal-overlay.show');
-                    if (openModal) {
-                        if (openModal.id === 'locationModal') {
-                            closeLocationModal();
-                        } else if (openModal.id === 'locationHistoryModal') {
-                            closeLocationHistoryModal();
-                        }
-                    }
-                }
-            });
-
-            setInterval(function() {
-                if (document.visibilityState === 'visible') {
-                    updateLocationStatus();
-                }
-            }, 300000);
-
-            async function updateLocationStatus() {
-                try {
-                    const response = await fetch(window.location.pathname + '?action=get_status');
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        const locationUpdated = document.querySelector('.location-updated');
-                        if (locationUpdated) {
-                            locationUpdated.textContent = `Last updated: ${result.last_updated}`;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error updating location status:', error);
-                }
-            }
-
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('Faculty dashboard loaded');
-                
-                const ongoingClasses = document.querySelectorAll('.schedule-item.ongoing');
-                if (ongoingClasses.length > 0) {
-                    showNotification(`You have ${ongoingClasses.length} ongoing class(es)`, 'info');
-                }
-            });
-
-            async function switchScheduleTab(days, tabElement) {
-                document.querySelectorAll('.schedule-tab').forEach(tab => tab.classList.remove('active'));
-                tabElement.classList.add('active');
-                
-                try {
-                    const response = await fetch(window.location.pathname, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `action=get_schedule&days=${encodeURIComponent(days)}`
-                    });
-
-                    const result = await response.json();
-                    const scheduleList = document.getElementById('scheduleList');
-                    
-                    if (result.success) {
-                        scheduleList.innerHTML = result.html;
-                    } else {
-                        scheduleList.innerHTML = `
-                            <div class="no-schedule">
-                                <div class="no-schedule-icon">📅</div>
-                                <div class="no-schedule-text">No classes scheduled</div>
-                                <div class="no-schedule-subtitle">for ${days}</div>
-                            </div>
-                        `;
-                    }
-                } catch (error) {
-                    console.error('Error loading schedule:', error);
-                }
-            }
-        </script>
+    <script src="assets/js/faculty.js"></script>
     </body>
 </html>
