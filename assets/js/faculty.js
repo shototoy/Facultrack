@@ -249,7 +249,7 @@ async function markAttendance(scheduleId) {
     }
     
     try {
-        const scheduleResponse = await fetch(window.location.pathname, {
+        const response = await fetch(window.location.pathname, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -257,30 +257,17 @@ async function markAttendance(scheduleId) {
             body: `action=mark_attendance&schedule_id=${scheduleId}`
         });
 
-        const scheduleResult = await scheduleResponse.json();
+        const result = await response.json();
 
-        if (scheduleResult.success) {
-            const updateResponse = await fetch(window.location.pathname, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `action=update_location&location=${encodeURIComponent(scheduleResult.location)}`
-            });
-
-            const updateResult = await updateResponse.json();
+        if (result.success) {
+            document.getElementById('currentLocation').textContent = result.location;
+            const locationUpdated = document.querySelector('.location-updated');
+            locationUpdated.textContent = 'Last updated: Just now';
             
-            if (updateResult.success) {
-                document.getElementById('currentLocation').textContent = scheduleResult.location;
-                const locationUpdated = document.querySelector('.location-updated');
-                locationUpdated.textContent = 'Last updated: Just now';
-                showNotification(`Attendance marked! Location updated to ${scheduleResult.location}`, 'success');
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                showNotification('Attendance marked but location update failed', 'warning');
-            }
+            showNotification(`Attendance marked! Location updated to ${result.location}`, 'success');
+            setTimeout(() => location.reload(), 1500);
         } else {
-            showNotification('Error: ' + scheduleResult.message, 'error');
+            showNotification('Error: ' + result.message, 'error');
         }
     } catch (error) {
         console.error('Error:', error);

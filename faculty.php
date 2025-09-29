@@ -3,93 +3,6 @@ require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_location') {
-    validateUserSession('faculty');
-    $user_id = $_SESSION['user_id'];
-    $location = validateInput($_POST['location'] ?? '');
-    
-    if (empty($location)) {
-        sendJsonResponse(['success' => false, 'message' => 'Location cannot be empty']);
-    }
-    
-    try {
-        $update_query = "UPDATE faculty SET current_location = ?, last_location_update = NOW() WHERE user_id = ? AND is_active = TRUE";
-        $stmt = $pdo->prepare($update_query);
-        $success = $stmt->execute([$location, $user_id]);
-        
-        if ($success && $stmt->rowCount() > 0) {
-            sendJsonResponse([
-                'success' => true,
-                'message' => 'Location updated successfully',
-                'location' => $location,
-                'timestamp' => date('Y-m-d H:i:s')
-            ]);
-        } else {
-            sendJsonResponse(['success' => false, 'message' => 'Failed to update location']);
-        }
-    } catch (Exception $e) {
-        sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
-    }
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_status') {
-    validateUserSession('faculty');
-    $user_id = $_SESSION['user_id'];
-    
-    try {
-        $status_query = "SELECT last_location_update FROM faculty WHERE user_id = ? AND is_active = TRUE";
-        $stmt = $pdo->prepare($status_query);
-        $stmt->execute([$user_id]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($result) {
-            sendJsonResponse(['success' => true, 'last_updated' => getTimeAgo($result['last_location_update'])]);
-        } else {
-            sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
-        }
-    } catch (Exception $e) {
-        sendJsonResponse(['success' => false, 'message' => 'Database error']);
-    }
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'get_schedule') {
-    validateUserSession('faculty');
-    $days = $_POST['days'] ?? '';
-    $faculty_id = getFacultyInfo($pdo, $_SESSION['user_id'])['faculty_id'];
-    $schedule_data = getScheduleForDays($pdo, $faculty_id, $days);
-    
-    if (empty($schedule_data)) {
-        sendJsonResponse(['success' => false, 'message' => 'No schedule found']);
-    }
-    
-    $html = generateScheduleHTML($schedule_data);
-    sendJsonResponse(['success' => true, 'html' => $html]);
-}
-
-validateUserSession('faculty');
-
-$user_id = $_SESSION['user_id'];
-$faculty_name = $_SESSION['full_name'];
-$faculty_info = getFacultyInfo($pdo, $user_id);
-
-if (!$faculty_info) {
-    die("Faculty information not found");
-}
-
-$today_schedule = getTodaySchedule($pdo, $faculty_info['faculty_id']);
-$location_history = getLocationHistory($pdo, $faculty_info['faculty_id']);
-$schedule_tabs = getScheduleTabs($pdo, $faculty_info['faculty_id']);
-
-require_once 'assets/php/fetch_announcements.php';
-$announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
-
-function getFacultyInfo($pdo, $user_id) {
-    $faculty_query = "SELECT f.*, u.full_name FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.user_id = ? AND f.is_active = TRUE";
-    $stmt = $pdo->prepare($faculty_query);
-    $stmt->execute([$user_id]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
-
 $DEBUG_MODE = true;
 $DEBUG_TIME = '10:30:00';
 $DEBUG_DATE = '2025-01-29';
@@ -98,58 +11,11 @@ $current_time = $DEBUG_MODE ? $DEBUG_TIME : date('H:i:s');
 $current_date = $DEBUG_MODE ? $DEBUG_DATE : date('Y-m-d');
 $current_day = $DEBUG_MODE ? date('w', strtotime($DEBUG_DATE)) : date('w');
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'mark_attendance') {
-    validateUserSession('faculty');
-    $user_id = $_SESSION['user_id'];
-    $schedule_id = validateInput($_POST['schedule_id'] ?? '');
-    
-    if (empty($schedule_id)) {
-        sendJsonResponse(['success' => false, 'message' => 'Schedule ID is required']);
-    }
-    
-    try {
-        $location_query = "SELECT s.room, c.course_code, c.course_description 
-                          FROM schedules s 
-                          JOIN courses c ON s.course_code = c.course_code 
-                          WHERE s.schedule_id = ? AND s.is_active = TRUE";
-        $stmt = $pdo->prepare($location_query);
-        $stmt->execute([$schedule_id]);
-        $schedule_info = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$schedule_info) {
-            sendJsonResponse(['success' => false, 'message' => 'Schedule not found']);
-        }
-        
-        $faculty_query = "SELECT faculty_id FROM faculty WHERE user_id = ? AND is_active = TRUE";
-        $stmt = $pdo->prepare($faculty_query);
-        $stmt->execute([$user_id]);
-        $faculty = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$faculty) {
-            sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
-        }
-        
-        $location = $schedule_info['room'] ?: 'In Class';
-        $update_location_query = "UPDATE faculty 
-                                  SET current_location = ?, 
-                                      last_location_update = NOW() 
-                                  WHERE faculty_id = ? AND is_active = TRUE";
-        $stmt = $pdo->prepare($update_location_query);
-        $location_updated = $stmt->execute([$location, $faculty['faculty_id']]);
-        
-        if ($location_updated) {
-            sendJsonResponse([
-                'success' => true,
-                'message' => 'Attendance marked and location updated',
-                'location' => $location,
-                'course' => $schedule_info['course_code']
-            ]);
-        } else {
-            sendJsonResponse(['success' => false, 'message' => 'Failed to update location']);
-        }
-    } catch (Exception $e) {
-        sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
-    }
+function getFacultyInfo($pdo, $user_id) {
+    $faculty_query = "SELECT f.*, u.full_name FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.user_id = ? AND f.is_active = TRUE";
+    $stmt = $pdo->prepare($faculty_query);
+    $stmt->execute([$user_id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 function getTodaySchedule($pdo, $faculty_id) {
@@ -229,8 +95,13 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getLocationHistory($pdo, $faculty_id) {
-    $query = "SELECT current_location, last_location_update FROM faculty WHERE faculty_id = ? ORDER BY last_location_update DESC LIMIT 5";
+function getLocationHistory($pdo, $faculty_id, $limit = 10) {
+    $limit = (int)$limit;
+    $query = "SELECT location, time_set, time_changed 
+              FROM location_history 
+              WHERE faculty_id = ? 
+              ORDER BY time_set DESC 
+              LIMIT " . $limit;
     $stmt = $pdo->prepare($query);
     $stmt->execute([$faculty_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -241,10 +112,6 @@ function getScheduleTabs($pdo, $faculty_id) {
     $stmt = $pdo->prepare($days_query);
     $stmt->execute([$faculty_id]);
     $schedule_days = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    return createDayTabs($schedule_days);
-}
-
-function createDayTabs($schedule_days) {
     return array_unique($schedule_days);
 }
 
@@ -290,6 +157,185 @@ function generateScheduleHTML($schedule_data) {
     }
     return $html;
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'mark_attendance') {
+    validateUserSession('faculty');
+    $user_id = $_SESSION['user_id'];
+    $schedule_id = validateInput($_POST['schedule_id'] ?? '');
+    
+    if (empty($schedule_id)) {
+        sendJsonResponse(['success' => false, 'message' => 'Schedule ID is required']);
+    }
+    
+    try {
+        $pdo->beginTransaction();
+        
+        $location_query = "SELECT s.room, c.course_code, c.course_description 
+                          FROM schedules s 
+                          JOIN courses c ON s.course_code = c.course_code 
+                          WHERE s.schedule_id = ? AND s.is_active = TRUE";
+        $stmt = $pdo->prepare($location_query);
+        $stmt->execute([$schedule_id]);
+        $schedule_info = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$schedule_info) {
+            $pdo->rollBack();
+            sendJsonResponse(['success' => false, 'message' => 'Schedule not found']);
+        }
+        
+        $faculty_query = "SELECT faculty_id FROM faculty WHERE user_id = ? AND is_active = TRUE";
+        $stmt = $pdo->prepare($faculty_query);
+        $stmt->execute([$user_id]);
+        $faculty = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$faculty) {
+            $pdo->rollBack();
+            sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
+        }
+        
+        $faculty_id = $faculty['faculty_id'];
+        $location = !empty($schedule_info['room']) ? $schedule_info['room'] : 'In Class';
+        
+        $update_prev_query = "UPDATE location_history 
+                             SET time_changed = NOW() 
+                             WHERE faculty_id = ? AND time_changed IS NULL";
+        $stmt = $pdo->prepare($update_prev_query);
+        $stmt->execute([$faculty_id]);
+        
+        $insert_history_query = "INSERT INTO location_history (faculty_id, location, time_set) 
+                                VALUES (?, ?, NOW())";
+        $stmt = $pdo->prepare($insert_history_query);
+        $stmt->execute([$faculty_id, $location]);
+        
+        $update_location_query = "UPDATE faculty 
+                                  SET current_location = ?, 
+                                      last_location_update = NOW() 
+                                  WHERE faculty_id = ? AND is_active = TRUE";
+        $stmt = $pdo->prepare($update_location_query);
+        $stmt->execute([$location, $faculty_id]);
+        
+        $pdo->commit();
+        
+        sendJsonResponse([
+            'success' => true,
+            'message' => 'Attendance marked and location updated',
+            'location' => $location,
+            'course' => $schedule_info['course_code']
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_location') {
+    validateUserSession('faculty');
+    $user_id = $_SESSION['user_id'];
+    $location = validateInput($_POST['location'] ?? '');
+    
+    if (empty($location)) {
+        sendJsonResponse(['success' => false, 'message' => 'Location cannot be empty']);
+    }
+    
+    try {
+        $pdo->beginTransaction();
+        
+        $faculty_query = "SELECT faculty_id FROM faculty WHERE user_id = ? AND is_active = TRUE";
+        $stmt = $pdo->prepare($faculty_query);
+        $stmt->execute([$user_id]);
+        $faculty = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$faculty) {
+            $pdo->rollBack();
+            sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
+        }
+        
+        $faculty_id = $faculty['faculty_id'];
+        
+        $update_prev_query = "UPDATE location_history 
+                             SET time_changed = NOW() 
+                             WHERE faculty_id = ? AND time_changed IS NULL";
+        $stmt = $pdo->prepare($update_prev_query);
+        $stmt->execute([$faculty_id]);
+        
+        $insert_history_query = "INSERT INTO location_history (faculty_id, location, time_set) 
+                                VALUES (?, ?, NOW())";
+        $stmt = $pdo->prepare($insert_history_query);
+        $stmt->execute([$faculty_id, $location]);
+        
+        $update_query = "UPDATE faculty 
+                        SET current_location = ?, 
+                            last_location_update = NOW() 
+                        WHERE user_id = ? AND is_active = TRUE";
+        $stmt = $pdo->prepare($update_query);
+        $stmt->execute([$location, $user_id]);
+        
+        $pdo->commit();
+        
+        sendJsonResponse([
+            'success' => true,
+            'message' => 'Location updated successfully',
+            'location' => $location,
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_status') {
+    validateUserSession('faculty');
+    $user_id = $_SESSION['user_id'];
+    
+    try {
+        $status_query = "SELECT last_location_update FROM faculty WHERE user_id = ? AND is_active = TRUE";
+        $stmt = $pdo->prepare($status_query);
+        $stmt->execute([$user_id]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result) {
+            sendJsonResponse(['success' => true, 'last_updated' => getTimeAgo($result['last_location_update'])]);
+        } else {
+            sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
+        }
+    } catch (Exception $e) {
+        sendJsonResponse(['success' => false, 'message' => 'Database error']);
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'get_schedule') {
+    validateUserSession('faculty');
+    $days = $_POST['days'] ?? '';
+    $faculty_info = getFacultyInfo($pdo, $_SESSION['user_id']);
+    $faculty_id = $faculty_info['faculty_id'];
+    $schedule_data = getScheduleForDays($pdo, $faculty_id, $days);
+    
+    if (empty($schedule_data)) {
+        sendJsonResponse(['success' => false, 'message' => 'No schedule found']);
+    }
+    
+    $html = generateScheduleHTML($schedule_data);
+    sendJsonResponse(['success' => true, 'html' => $html]);
+}
+
+validateUserSession('faculty');
+
+$user_id = $_SESSION['user_id'];
+$faculty_name = $_SESSION['full_name'];
+$faculty_info = getFacultyInfo($pdo, $user_id);
+
+if (!$faculty_info) {
+    die("Faculty information not found");
+}
+
+$today_schedule = getTodaySchedule($pdo, $faculty_info['faculty_id']);
+$location_history = getLocationHistory($pdo, $faculty_info['faculty_id'], 10);
+$schedule_tabs = getScheduleTabs($pdo, $faculty_info['faculty_id']);
+
+require_once 'assets/php/fetch_announcements.php';
+$announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
+
 ?>
 
 <!DOCTYPE html>
@@ -1265,7 +1311,6 @@ function generateScheduleHTML($schedule_data) {
                 </div>
             </div>
         </div>
-
         <div class="modal-overlay" id="locationModal">
             <div class="modal">
                 <div class="modal-header">
@@ -1278,25 +1323,37 @@ function generateScheduleHTML($schedule_data) {
                         <label class="form-label">Current Location *</label>
                         <select id="locationSelect" name="location" class="form-select" required>
                             <option value="">Select your location</option>
-                            <option value="Faculty Lounge - 1st Floor">Faculty Lounge - 1st Floor</option>
-                            <option value="Faculty Lounge - 2nd Floor">Faculty Lounge - 2nd Floor</option>
-                            <option value="Faculty Lounge - 3rd Floor">Faculty Lounge - 3rd Floor</option>
-                            <option value="Room 101 - CCS Building">Room 101 - CCS Building</option>
-                            <option value="Room 102 - CCS Building">Room 102 - CCS Building</option>
-                            <option value="Room 201 - CCS Building">Room 201 - CCS Building</option>
-                            <option value="Room 202 - CCS Building">Room 202 - CCS Building</option>
-                            <option value="Room 301 - CCS Building">Room 301 - CCS Building</option>
-                            <option value="Room 302 - CCS Building">Room 302 - CCS Building</option>
-                            <option value="Library - Main Floor">Library - Main Floor</option>
-                            <option value="Library - 2nd Floor">Library - 2nd Floor</option>
-                            <option value="Registrar Office">Registrar Office</option>
-                            <option value="Dean Office - CCS">Dean Office - CCS</option>
-                            <option value="Conference Room A">Conference Room A</option>
-                            <option value="Conference Room B">Conference Room B</option>
-                            <option value="Cafeteria">Cafeteria</option>
+                            <option value="NR102">NR102</option>
+                            <option value="NR103">NR103</option>
+                            <option value="NR104">NR104</option>
+                            <option value="NR105">NR105</option>
+                            <option value="NR106">NR106</option>
+                            <option value="NR107">NR107</option>
+                            <option value="NR108">NR108</option>
+                            <option value="NR109">NR109</option>
+                            <option value="NR202">NR202</option>
+                            <option value="NR203">NR203</option>
+                            <option value="NR204">NR204</option>
+                            <option value="NR205">NR205</option>
+                            <option value="NR206">NR206</option>
+                            <option value="NR207">NR207</option>
+                            <option value="CL208">CL208</option>
+                            <option value="CL209">CL209</option>
+                            <option value="NR302">NR302</option>
+                            <option value="NR303">NR303</option>
+                            <option value="NR304">NR304</option>
+                            <option value="NR305">NR305</option>
+                            <option value="NR306">NR306</option>
+                            <option value="NR307">NR307</option>
+                            <option value="CL308">CL308</option>
+                            <option value="CL309">CL309</option>
                             <option value="Gymnasium">Gymnasium</option>
+                            <option value="Cafeteria">Cafeteria</option>
+                            <option value="Library">Library</option>
+                            <option value="Registrar">Registrar</option>
                             <option value="Outside Campus">Outside Campus</option>
                             <option value="In Meeting">In Meeting</option>
+                            <option value="Idle">Idle</option>
                             <option value="On Leave">On Leave</option>
                         </select>
                     </div>
@@ -1304,7 +1361,7 @@ function generateScheduleHTML($schedule_data) {
                     <div class="form-group">
                         <label class="form-label">Custom Location</label>
                         <input type="text" id="customLocation" name="custom_location" class="form-input" 
-                               placeholder="Type custom location if not in list above">
+                            placeholder="Type custom location if not in list above">
                         <small class="form-help">Leave empty to use selected location above</small>
                     </div>
                     
@@ -1323,17 +1380,53 @@ function generateScheduleHTML($schedule_data) {
                     <button type="button" class="modal-close" onclick="closeLocationHistoryModal()">&times;</button>
                 </div>
                 
-                <div class="location-history-list">
-                    <?php foreach ($location_history as $history): ?>
-                    <div class="history-item">
-                        <div class="history-location"><?php echo htmlspecialchars($history['current_location']); ?></div>
-                        <div class="history-time">
-                            <?php echo date('M j, Y g:i A', strtotime($history['last_location_update'])); ?>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
+        <div class="modal-overlay" id="locationHistoryModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Location History</h3>
+                    <button type="button" class="modal-close" onclick="closeLocationHistoryModal()">&times;</button>
                 </div>
                 
+                <div class="location-history-list">
+                    <?php if (!empty($location_history)): ?>
+                        <?php foreach ($location_history as $history): ?>
+                        <div class="history-item">
+                            <div class="history-location">
+                                <?php echo htmlspecialchars($history['location']); ?>
+                            </div>
+                            <div class="history-time">
+                                <div>From: <?php echo date('M j, Y g:i A', strtotime($history['time_set'])); ?></div>
+                                <?php if ($history['time_changed']): ?>
+                                    <div>To: <?php echo date('M j, Y g:i A', strtotime($history['time_changed'])); ?></div>
+                                    <div class="history-duration">
+                                        Duration: <?php 
+                                            $start = strtotime($history['time_set']);
+                                            $end = strtotime($history['time_changed']);
+                                            $diff = $end - $start;
+                                            $hours = floor($diff / 3600);
+                                            $minutes = floor(($diff % 3600) / 60);
+                                            echo $hours > 0 ? $hours . 'h ' : '';
+                                            echo $minutes . 'm';
+                                        ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div style="color: #4CAF50; font-weight: 500;">Current Location</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="no-history">
+                            <p>No location history available</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeLocationHistoryModal()">Close</button>
+                </div>
+            </div>
+        </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeLocationHistoryModal()">Close</button>
                 </div>
