@@ -242,3 +242,48 @@ async function switchScheduleTab(days, tabElement) {
         console.error('Error loading schedule:', error);
     }
 }
+
+async function markAttendance(scheduleId) {
+    if (!confirm('Mark yourself as present for this class?')) {
+        return;
+    }
+    
+    try {
+        const scheduleResponse = await fetch(window.location.pathname, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=mark_attendance&schedule_id=${scheduleId}`
+        });
+
+        const scheduleResult = await scheduleResponse.json();
+
+        if (scheduleResult.success) {
+            const updateResponse = await fetch(window.location.pathname, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=update_location&location=${encodeURIComponent(scheduleResult.location)}`
+            });
+
+            const updateResult = await updateResponse.json();
+            
+            if (updateResult.success) {
+                document.getElementById('currentLocation').textContent = scheduleResult.location;
+                const locationUpdated = document.querySelector('.location-updated');
+                locationUpdated.textContent = 'Last updated: Just now';
+                showNotification(`Attendance marked! Location updated to ${scheduleResult.location}`, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification('Attendance marked but location update failed', 'warning');
+            }
+        } else {
+            showNotification('Error: ' + scheduleResult.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('An error occurred while marking attendance', 'error');
+    }
+}

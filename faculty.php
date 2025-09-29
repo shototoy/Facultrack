@@ -90,16 +90,81 @@ function getFacultyInfo($pdo, $user_id) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
+$DEBUG_MODE = true;
+$DEBUG_TIME = '10:30:00';
+$DEBUG_DATE = '2025-01-29';
+
+$current_time = $DEBUG_MODE ? $DEBUG_TIME : date('H:i:s');
+$current_date = $DEBUG_MODE ? $DEBUG_DATE : date('Y-m-d');
+$current_day = $DEBUG_MODE ? date('w', strtotime($DEBUG_DATE)) : date('w');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'mark_attendance') {
+    validateUserSession('faculty');
+    $user_id = $_SESSION['user_id'];
+    $schedule_id = validateInput($_POST['schedule_id'] ?? '');
+    
+    if (empty($schedule_id)) {
+        sendJsonResponse(['success' => false, 'message' => 'Schedule ID is required']);
+    }
+    
+    try {
+        $location_query = "SELECT s.room, c.course_code, c.course_description 
+                          FROM schedules s 
+                          JOIN courses c ON s.course_code = c.course_code 
+                          WHERE s.schedule_id = ? AND s.is_active = TRUE";
+        $stmt = $pdo->prepare($location_query);
+        $stmt->execute([$schedule_id]);
+        $schedule_info = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$schedule_info) {
+            sendJsonResponse(['success' => false, 'message' => 'Schedule not found']);
+        }
+        
+        $faculty_query = "SELECT faculty_id FROM faculty WHERE user_id = ? AND is_active = TRUE";
+        $stmt = $pdo->prepare($faculty_query);
+        $stmt->execute([$user_id]);
+        $faculty = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$faculty) {
+            sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
+        }
+        
+        $location = $schedule_info['room'] ?: 'In Class';
+        $update_location_query = "UPDATE faculty 
+                                  SET current_location = ?, 
+                                      last_location_update = NOW() 
+                                  WHERE faculty_id = ? AND is_active = TRUE";
+        $stmt = $pdo->prepare($update_location_query);
+        $location_updated = $stmt->execute([$location, $faculty['faculty_id']]);
+        
+        if ($location_updated) {
+            sendJsonResponse([
+                'success' => true,
+                'message' => 'Attendance marked and location updated',
+                'location' => $location,
+                'course' => $schedule_info['course_code']
+            ]);
+        } else {
+            sendJsonResponse(['success' => false, 'message' => 'Failed to update location']);
+        }
+    } catch (Exception $e) {
+        sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+}
+
 function getTodaySchedule($pdo, $faculty_id) {
-    $today = date('w');
+    global $DEBUG_MODE, $current_day, $current_time;
+    
     $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
-    $today_code = $day_mapping[$today];
+    $today_code = $day_mapping[$current_day];
+    
+    $time_condition = $DEBUG_MODE ? "TIME('$current_time')" : "TIME(NOW())";
     
     $schedule_query = "
         SELECT s.*, c.course_description, cl.class_name, cl.class_code,
             CASE 
-                WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 'ongoing'
-                WHEN TIME(NOW()) < s.time_start THEN 'upcoming'
+                WHEN $time_condition BETWEEN s.time_start AND s.time_end THEN 'ongoing'
+                WHEN $time_condition < s.time_start THEN 'upcoming'
                 ELSE 'finished'
             END as status
         FROM schedules s
@@ -114,9 +179,53 @@ function getTodaySchedule($pdo, $faculty_id) {
             (s.days = 'WF' AND ? IN ('W', 'F')) OR
             (s.days = 'MTWTHF' AND ? NOT IN ('S', 'SAT'))
         )
-        ORDER BY s.time_start";
+        ORDER BY 
+            CASE 
+                WHEN $time_condition > s.time_end THEN 1
+                WHEN $time_condition BETWEEN s.time_start AND s.time_end THEN 2
+                WHEN $time_condition < s.time_start THEN 3
+                ELSE 4
+            END,
+            s.time_start";
     $stmt = $pdo->prepare($schedule_query);
     $stmt->execute([$faculty_id, $today_code, $today_code, $today_code, $today_code, $today_code, $today_code, $today_code]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getScheduleForDays($pdo, $faculty_id, $days) {
+    global $DEBUG_MODE, $current_time;
+    
+    $time_condition = $DEBUG_MODE ? "TIME('$current_time')" : "TIME(NOW())";
+    
+    $schedule_query = "
+        SELECT s.*, c.course_description, cl.class_name, cl.class_code,
+            CASE 
+                WHEN $time_condition BETWEEN s.time_start AND s.time_end THEN 'ongoing'
+                WHEN $time_condition < s.time_start THEN 'upcoming'
+                ELSE 'finished'
+            END as status
+        FROM schedules s
+        JOIN courses c ON s.course_code = c.course_code
+        JOIN classes cl ON s.class_id = cl.class_id
+        WHERE s.faculty_id = ? AND s.is_active = TRUE 
+        AND (s.days = ? OR 
+            (s.days = 'MW' AND ? IN ('M', 'W', 'MW')) OR
+            (s.days = 'MF' AND ? IN ('M', 'F', 'MF')) OR
+            (s.days = 'WF' AND ? IN ('W', 'F', 'WF')) OR
+            (s.days = 'MWF' AND ? IN ('M', 'W', 'F', 'MWF')) OR
+            (s.days = 'TTH' AND ? IN ('T', 'TH', 'TTH')) OR
+            (s.days = 'MTWTHF' AND ? IN ('M', 'T', 'W', 'TH', 'F', 'MTWTHF'))
+        )
+        ORDER BY 
+            CASE 
+                WHEN $time_condition > s.time_end THEN 1
+                WHEN $time_condition BETWEEN s.time_start AND s.time_end THEN 2
+                WHEN $time_condition < s.time_start THEN 3
+                ELSE 4
+            END,
+            s.time_start";
+    $stmt = $pdo->prepare($schedule_query);
+    $stmt->execute([$faculty_id, $days, $days, $days, $days, $days, $days, $days]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -137,32 +246,6 @@ function getScheduleTabs($pdo, $faculty_id) {
 
 function createDayTabs($schedule_days) {
     return array_unique($schedule_days);
-}
-
-function getScheduleForDays($pdo, $faculty_id, $days) {
-    $schedule_query = "
-        SELECT s.*, c.course_description, cl.class_name, cl.class_code,
-            CASE 
-                WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 'ongoing'
-                WHEN TIME(NOW()) < s.time_start THEN 'upcoming'
-                ELSE 'finished'
-            END as status
-        FROM schedules s
-        JOIN courses c ON s.course_code = c.course_code
-        JOIN classes cl ON s.class_id = cl.class_id
-        WHERE s.faculty_id = ? AND s.is_active = TRUE 
-        AND (s.days = ? OR 
-            (s.days = 'MW' AND ? IN ('M', 'W', 'MW')) OR
-            (s.days = 'MF' AND ? IN ('M', 'F', 'MF')) OR
-            (s.days = 'WF' AND ? IN ('W', 'F', 'WF')) OR
-            (s.days = 'MWF' AND ? IN ('M', 'W', 'F', 'MWF')) OR
-            (s.days = 'TTH' AND ? IN ('T', 'TH', 'TTH')) OR
-            (s.days = 'MTWTHF' AND ? IN ('M', 'T', 'W', 'TH', 'F', 'MTWTHF'))
-        )
-        ORDER BY s.time_start";
-    $stmt = $pdo->prepare($schedule_query);
-    $stmt->execute([$faculty_id, $days, $days, $days, $days, $days, $days, $days]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function getScheduleStatus($status) {
@@ -233,7 +316,7 @@ function generateScheduleHTML($schedule_data) {
             grid-row: 1 / 3;
             grid-column: 1;
             background: linear-gradient(145deg, #ffffff, #f8f9fa);
-            padding: 25px;
+            padding: 2rem;
             overflow-y: auto;
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
                         0 4px 15px rgba(0, 0, 0, 0.05);
@@ -320,6 +403,7 @@ function generateScheduleHTML($schedule_data) {
             gap: 15px;
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .schedule-item {
@@ -1047,10 +1131,15 @@ function generateScheduleHTML($schedule_data) {
             <div class="dashboard-grid">
                 <div class="schedule-section">
                     <div class="schedule-card">
-                        <div class="schedule-header">
-                            <h3>Schedule</h3>
-                            <div class="schedule-date"><?php echo date('F j, Y - l'); ?></div>
+                    <div class="schedule-header">
+                        <h3>Schedule</h3>
+                        <div class="schedule-date">
+                            <?php 
+                            $display_date = $DEBUG_MODE ? date('F j, Y - l', strtotime($DEBUG_DATE)) : date('F j, Y - l');
+                            echo $display_date;
+                            ?>
                         </div>
+                    </div>
                         
                         <div class="schedule-tabs">
                             <?php if (!empty($schedule_tabs)): ?>
