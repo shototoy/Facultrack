@@ -141,110 +141,109 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
     <title>FaculTrack - Faculty Locator</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
+        .course-info {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            color: black;
+        }
 
-.course-info {
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px;
-    margin-bottom: 8px;
-    border-radius: 4px;
-    transition: all 0.3s ease;
-    color: black;
-}
+        .course-content {
+            flex: 1;
+            padding-right: 10px;
+        }
 
-.course-content {
-    flex: 1;
-    padding-right: 10px;
-}
+        .course-status-label {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
 
-.course-status-label {
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-}
+        .course-info.course-finished {
+            opacity: 0.85;
+            background-color: #f5f5f5;
+            border-left: 4px solid #9e9e9e;
+        }
 
-.course-info.course-finished {
-    opacity: 0.85;
-    background-color: #f5f5f5;
-    border-left: 4px solid #9e9e9e;
-}
+        .course-status-label.status-finished {
+            background: linear-gradient(135deg, #9E9E9E 0%, #BDBDBD 100%);
+            color: white;
+        }
 
-.course-status-label.status-finished {
-    background: linear-gradient(135deg, #9E9E9E 0%, #BDBDBD 100%);
-    color: white;
-}
+        .course-info.course-current {
+            background-color: #c8e6c9;
+            border-left: 4px solid #4caf50;
+            padding-left: 8px;
+        }
 
-.course-info.course-current {
-    background-color: #c8e6c9;
-    border-left: 4px solid #4caf50;
-    padding-left: 8px;
-}
+        .course-status-label.status-current {
+            background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+            color: white;
+            animation: pulse-current 2s infinite;
+        }
 
-.course-status-label.status-current {
-    background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
-    color: white;
-    animation: pulse-current 2s infinite;
-}
+        @keyframes pulse-current {
+            0%, 100% {
+                box-shadow: 0 2px 6px rgba(76, 175, 80, 0.4),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            }
+            50% {
+                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.6),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            }
+        }
 
-@keyframes pulse-current {
-    0%, 100% {
-        box-shadow: 0 2px 6px rgba(76, 175, 80, 0.4),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    }
-    50% {
-        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.6),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-    }
-}
+        .course-info.course-upcoming {
+            background-color: #bbdefb;
+            border-left: 4px solid #2196f3;
+            padding-left: 8px;
+        }
 
-.course-info.course-upcoming {
-    background-color: #bbdefb;
-    border-left: 4px solid #2196f3;
-    padding-left: 8px;
-}
+        .course-status-label.status-upcoming {
+            background: linear-gradient(135deg, #2196F3 0%, #42A5F5 100%);
+            color: white;
+        }
 
-.course-status-label.status-upcoming {
-    background: linear-gradient(135deg, #2196F3 0%, #42A5F5 100%);
-    color: white;
-}
+        .course-info.course-not-today {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            color: #999;
+            padding-left: 8px;
+            margin-top: 12px;
+        }
 
-.course-info.course-not-today {
-    background-color: #fff8e1;
-    border-left: 4px solid #ffc107;
-    color: #999;
-    padding-left: 8px;
-    margin-top: 12px;
-}
+        .course-status-label.status-not-today {
+            background: linear-gradient(135deg, #FFC107 0%, #FFD54F 100%);
+            color: #333;
+        }
 
-.course-status-label.status-not-today {
-    background: linear-gradient(135deg, #FFC107 0%, #FFD54F 100%);
-    color: #333;
-}
+        .course-info.course-not-today:first-of-type {
+            margin-top: 16px;
+        }
 
-.course-info.course-not-today:first-of-type {
-    margin-top: 16px;
-}
-
-@media (max-width: 768px) {
-    .course-info {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    
-    .course-status-label {
-        align-self: flex-end;
-    }
-}
+        @media (max-width: 768px) {
+            .course-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .course-status-label {
+                align-self: flex-end;
+            }
+        }
 
         .location-info {
             background: linear-gradient(135deg, rgba(232, 245, 232, 0.9), rgba(241, 248, 233, 0.9));
