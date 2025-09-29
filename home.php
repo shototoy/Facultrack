@@ -64,8 +64,8 @@ function getClassFaculty($pdo, $class_id) {
 }
 
 function getFacultyCourses($pdo, $faculty_id, $class_id) {
-    $debug_time = '09:30:00'; // Debug time
-    $debug_day = 'W'; // Debug day: M, T, W, TH, F, S
+    $debug_time = '13:30:00'; // Debug time
+    $debug_day = 'M'; // Debug day: M, T, W, TH, F, S
     
     $courses_query = "
         SELECT s.course_code, c.course_description, s.days, s.time_start, s.time_end, s.room,
@@ -100,30 +100,31 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
         WHERE s.faculty_id = ? AND s.class_id = ? AND s.is_active = TRUE
         ORDER BY 
             CASE 
-                WHEN TIME('$debug_time') BETWEEN s.time_start AND s.time_end 
-                     AND (s.days = '$debug_day' OR 
-                          (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                          (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                          (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                          (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                          (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
-                     THEN 1
-                WHEN TIME('$debug_time') < s.time_start 
-                     AND (s.days = '$debug_day' OR 
-                          (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                          (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                          (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                          (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                          (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
-                     THEN 2
                 WHEN (s.days = '$debug_day' OR 
-                      (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                      (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                      (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                      (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                      (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
-                     THEN 3
-                ELSE 4
+                    (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                    (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                    (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                    (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                    (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                    AND TIME('$debug_time') > s.time_end
+                    THEN 1  -- Finished (already done today)
+                WHEN TIME('$debug_time') BETWEEN s.time_start AND s.time_end 
+                    AND (s.days = '$debug_day' OR 
+                        (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                        (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                        (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                        (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                        (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                    THEN 2  -- Current (happening now)
+                WHEN TIME('$debug_time') < s.time_start 
+                    AND (s.days = '$debug_day' OR 
+                        (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                        (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                        (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                        (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                        (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                    THEN 3  -- Upcoming (later today)
+                ELSE 4  -- Not today
             END,
             s.time_start";
     $stmt = $pdo->prepare($courses_query);
@@ -155,9 +156,12 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
         }
 
         .course-info.course-current {
-            background-color: #c8e6c9;
+            background-color: #9ff8a2ff;
             border-left: 4px solid #4caf50;
-            padding-left: 8px;
+            padding-left: 8px; font-size: 1.1rem; font-weight: 500;
+            border-top: red solid 3px;
+            border-right: red solid 3px;
+            border-bottom: red solid 3px;
         }
 
         .course-info.course-upcoming {

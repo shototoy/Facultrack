@@ -389,11 +389,71 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
             font-size: 0.8rem;
         }
 
-        .course-code {
-            font-weight: bold;
-            color: #2c3e50;
+        .course-info {
+            background: linear-gradient(135deg, rgba(240, 244, 255, 0.9), rgba(227, 242, 253, 0.9));
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 8px;
             font-size: 0.85rem;
-            line-height: 1.2;
+            border-left: 3px solid #2196F3;
+            clear: both;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .course-info:last-child {
+            margin-bottom: 0;
+        }
+
+        .location-info {
+            background: linear-gradient(135deg, rgba(232, 245, 232, 0.9), rgba(241, 248, 233, 0.9));
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 8px;
+            clear: both;
+            border-left: 3px solid #FFC107;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        .location-status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .location-text {
+            font-weight: bold;
+            color: #333;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .time-info {
+            color: #666;
+            font-size: 0.75rem;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(238, 238, 238, 0.8);
+        }
+
+        .office-hours {
+            font-size: 0.7rem;
+            color: #666;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .faculty-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
         }
 
         .room-info {
