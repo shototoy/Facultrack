@@ -65,11 +65,19 @@ function getClassFaculty($pdo, $class_id) {
 
 function getFacultyCourses($pdo, $faculty_id, $class_id) {
     $debug_time = '13:30:00'; // Debug time
-    $debug_day = 'M'; // Debug day: M, T, W, TH, F, S
+    $debug_day = 'F'; // Debug day: M, T, W, TH, F, S
     
     $courses_query = "
         SELECT s.course_code, c.course_description, s.days, s.time_start, s.time_end, s.room,
         CASE 
+            WHEN (s.days = '$debug_day' OR 
+                  (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                  (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                  (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                  (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                  (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                 AND TIME('$debug_time') > s.time_end
+                 THEN 'finished'
             WHEN TIME('$debug_time') BETWEEN s.time_start AND s.time_end 
                  AND (s.days = '$debug_day' OR 
                       (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
@@ -86,13 +94,6 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                       (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
                       (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
                  THEN 'upcoming'
-            WHEN (s.days = '$debug_day' OR 
-                  (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                  (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                  (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                  (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                  (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
-                 THEN 'finished'
             ELSE 'not-today'
         END as status
         FROM schedules s
@@ -101,30 +102,30 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
         ORDER BY 
             CASE 
                 WHEN (s.days = '$debug_day' OR 
-                    (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                    (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                    (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                    (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                    (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
-                    AND TIME('$debug_time') > s.time_end
-                    THEN 1  -- Finished (already done today)
+                      (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                      (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                      (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                      (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                      (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                     AND TIME('$debug_time') > s.time_end
+                     THEN 1
                 WHEN TIME('$debug_time') BETWEEN s.time_start AND s.time_end 
-                    AND (s.days = '$debug_day' OR 
-                        (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                        (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                        (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                        (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                        (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
-                    THEN 2  -- Current (happening now)
+                     AND (s.days = '$debug_day' OR 
+                          (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                          (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                          (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                          (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                          (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                     THEN 2
                 WHEN TIME('$debug_time') < s.time_start 
-                    AND (s.days = '$debug_day' OR 
-                        (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                        (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                        (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                        (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                        (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
-                    THEN 3  -- Upcoming (later today)
-                ELSE 4  -- Not today
+                     AND (s.days = '$debug_day' OR 
+                          (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
+                          (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
+                          (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
+                          (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
+                          (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                     THEN 3
+                ELSE 4
             END,
             s.time_start";
     $stmt = $pdo->prepare($courses_query);
@@ -140,55 +141,110 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
     <title>FaculTrack - Faculty Locator</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        .course-info {
-            padding: 8px;
-            margin-bottom: 8px;
-            border-radius: 4px;
-            transition: all 0.3s ease;
-            color: black;
-        }
 
-        .course-info.course-finished {
-            opacity: 0.85;
-            background-color: #f5f5f5;
-            border-left: 4px solid #9e9e9e;
-            color: #d32f2f;
-        }
+.course-info {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    color: black;
+}
 
-        .course-info.course-current {
-            background-color: #9ff8a2ff;
-            border-left: 4px solid #4caf50;
-            padding-left: 8px; font-size: 1.1rem; font-weight: 500;
-            border-top: red solid 3px;
-            border-right: red solid 3px;
-            border-bottom: red solid 3px;
-        }
+.course-content {
+    flex: 1;
+    padding-right: 10px;
+}
 
-        .course-info.course-upcoming {
-            background-color: #bbdefb;
-            border-left: 4px solid #2196f3;
-            padding-left: 8px;
-        }
+.course-status-label {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
 
-        .course-info.course-not-today {
-            background-color: #fff8e1;
-            border-left: 4px solid #ffc107;
-            color: #999;
-            padding-left: 8px;
-            margin-top: 12px;
-        }
+.course-info.course-finished {
+    opacity: 0.85;
+    background-color: #f5f5f5;
+    border-left: 4px solid #9e9e9e;
+}
 
-        .course-info.course-not-today:first-of-type {
-            margin-top: 16px;
-        }
-            
-        .courses-list {
-            margin: 12px 0;
-        }
+.course-status-label.status-finished {
+    background: linear-gradient(135deg, #9E9E9E 0%, #BDBDBD 100%);
+    color: white;
+}
 
-        .course-info:last-child {
-            margin-bottom: 0;
-        }
+.course-info.course-current {
+    background-color: #c8e6c9;
+    border-left: 4px solid #4caf50;
+    padding-left: 8px;
+}
+
+.course-status-label.status-current {
+    background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+    color: white;
+    animation: pulse-current 2s infinite;
+}
+
+@keyframes pulse-current {
+    0%, 100% {
+        box-shadow: 0 2px 6px rgba(76, 175, 80, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.6),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+}
+
+.course-info.course-upcoming {
+    background-color: #bbdefb;
+    border-left: 4px solid #2196f3;
+    padding-left: 8px;
+}
+
+.course-status-label.status-upcoming {
+    background: linear-gradient(135deg, #2196F3 0%, #42A5F5 100%);
+    color: white;
+}
+
+.course-info.course-not-today {
+    background-color: #fff8e1;
+    border-left: 4px solid #ffc107;
+    color: #999;
+    padding-left: 8px;
+    margin-top: 12px;
+}
+
+.course-status-label.status-not-today {
+    background: linear-gradient(135deg, #FFC107 0%, #FFD54F 100%);
+    color: #333;
+}
+
+.course-info.course-not-today:first-of-type {
+    margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+    .course-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .course-status-label {
+        align-self: flex-end;
+    }
+}
 
         .location-info {
             background: linear-gradient(135deg, rgba(232, 245, 232, 0.9), rgba(241, 248, 233, 0.9));
@@ -292,8 +348,9 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                     <div class="faculty-program"><?php echo htmlspecialchars($faculty['program']); ?></div>
                     
                 <div class="courses-list">
-                    <?php foreach ($faculty_courses[$faculty['faculty_id']] as $course): ?>
-                    <div class="course-info course-<?php echo $course['status']; ?>">
+                <?php foreach ($faculty_courses[$faculty['faculty_id']] as $course): ?>
+                <div class="course-info course-<?php echo $course['status']; ?>">
+                    <div class="course-content">
                         <strong><?php echo htmlspecialchars($course['course_code']); ?>:</strong> 
                         <?php echo htmlspecialchars($course['course_description']); ?>
                         <br>
@@ -303,9 +360,19 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                             <?php echo htmlspecialchars($course['room']); ?>
                         </small>
                     </div>
-                    <?php endforeach; ?>
+                    <span class="course-status-label status-<?php echo $course['status']; ?>">
+                        <?php 
+                            switch($course['status']) {
+                                case 'current': echo 'CURRENT'; break;
+                                case 'upcoming': echo 'UPCOMING'; break;
+                                case 'finished': echo 'DONE'; break;
+                                case 'not-today': echo 'NOT TODAY'; break;
+                            }
+                        ?>
+                    </span>
                 </div>
-
+                <?php endforeach; ?>
+            </div>
                     <div class="location-info">
                         <div class="location-status">
                             <span class="status-dot status-<?php echo $faculty['status']; ?>"></span>
