@@ -109,6 +109,41 @@ CREATE TABLE `announcements` (
   FOREIGN KEY (`created_by`) REFERENCES `users`(`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE `locations` (
+  `location_id` int(11) NOT NULL AUTO_INCREMENT,
+  `location_code` varchar(50) NOT NULL,
+  PRIMARY KEY (`location_id`),
+  UNIQUE KEY `location_code` (`location_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `faculty_status` (
+  `status_id` int(11) NOT NULL AUTO_INCREMENT,
+  `status_name` varchar(50) NOT NULL,
+  PRIMARY KEY (`status_id`),
+  UNIQUE KEY `status_name` (`status_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `location_history` (
+  `location_history_id` int(11) NOT NULL AUTO_INCREMENT,
+  `faculty_id` int(11) NOT NULL,
+  `location_id` int(11) NOT NULL,
+  `status_id` int(11) NOT NULL,
+  `time_set` timestamp NOT NULL DEFAULT current_timestamp(),
+  `time_changed` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`location_history_id`),
+  KEY `faculty_id` (`faculty_id`),
+  KEY `location_id` (`location_id`),
+  KEY `status_id` (`status_id`),
+  KEY `idx_location_time_set` (`time_set`),
+  KEY `idx_location_time_changed` (`time_changed`),
+  KEY `idx_location_faculty_time` (`faculty_id`, `time_set`),
+  KEY `idx_location_active` (`faculty_id`, `time_changed`),
+  KEY `idx_location_status_time` (`status_id`, `time_set`),
+  FOREIGN KEY (`faculty_id`) REFERENCES `faculty`(`faculty_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`location_id`) REFERENCES `locations`(`location_id`),
+  FOREIGN KEY (`status_id`) REFERENCES `faculty_status`(`status_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 INSERT INTO `users` VALUES 
 (1, 'admin', 'admin123', 'Campus Director', 'campus_director', NOW(), NOW(), 1),
 (2, 'chair_it', 'chair123', 'Dr. Information Technology Chair', 'program_chair', NOW(), NOW(), 1),
@@ -144,6 +179,43 @@ INSERT INTO `announcements` VALUES
 (7, 'Budget Planning Meeting', 'Department budget planning session scheduled for next Tuesday at 10:00 AM. Attendance is mandatory for all Program Chairs.', 'high', 'program_chairs', 1, NOW(), NOW(), 1),
 (8, 'Curriculum Review Process', 'Annual curriculum review process begins next month. Please prepare necessary documentation and recommendations.', 'medium', 'program_chairs', 1, NOW(), NOW(), 1);
 
+INSERT INTO `locations` VALUES
+(1, 'NR102'),
+(2, 'NR103'),
+(3, 'NR104'),
+(4, 'NR105'),
+(5, 'NR106'),
+(6, 'NR107'),
+(7, 'NR108'),
+(8, 'NR109'),
+(9, 'NR202'),
+(10, 'NR203'),
+(11, 'NR204'),
+(12, 'NR205'),
+(13, 'NR206'),
+(14, 'NR207'),
+(15, 'CL208'),
+(16, 'CL209'),
+(17, 'NR302'),
+(18, 'NR303'),
+(19, 'NR304'),
+(20, 'NR305'),
+(21, 'NR306'),
+(22, 'NR307'),
+(23, 'CL308'),
+(24, 'CL309'),
+(25, 'Library'),
+(26, 'Registrar'),
+(27, 'CCS Faculty'),
+(28, 'Gymnasium'),
+(29, 'Cafeteria'),
+(30, 'Outside Campus');
+
+INSERT INTO `faculty_status` VALUES
+(1, 'In a Meeting'),
+(2, 'In Class'),
+(3, 'Idle');
+
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_faculty_program ON faculty(program);
@@ -158,5 +230,8 @@ CREATE INDEX idx_schedules_time ON schedules(days, time_start, time_end);
 CREATE INDEX idx_schedules_active ON schedules(is_active);
 CREATE INDEX idx_announcements_target ON announcements(target_audience, created_at);
 CREATE INDEX idx_announcements_active ON announcements(is_active);
+CREATE INDEX idx_locations_code ON locations(location_code);
+CREATE INDEX idx_faculty_status_name ON faculty_status(status_name);
 
 COMMIT;
+
