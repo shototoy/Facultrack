@@ -503,6 +503,21 @@ body::before {
     animation: fadeInUp 0.4s ease-out;
 }
 
+/* PROGRAM PAGE TAB CONTENT - Same background as dashboard tabs */
+body:has(.courses-grid) .tab-content.active,
+body:has(.classes-grid) .tab-content.active,
+body:has(.faculty-grid) .tab-content.active {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 0px 0px 12px 12px;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    height: calc(100vh - 260px);
+    overflow-y: auto;
+    padding: 20px;
+    margin-bottom: 40px;
+    box-sizing: border-box;
+}
+
 @keyframes fadeInUp {
     from {
         opacity: 0;
