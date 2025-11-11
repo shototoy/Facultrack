@@ -17,7 +17,7 @@ foreach ($faculty_data as $faculty) {
     $faculty_courses[$faculty['faculty_id']] = getFacultyCourses($pdo, $faculty['faculty_id'], $class_id);
 }
 
-require_once 'assets/php/fetch_announcements.php';
+require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
 function getClassInfo($pdo, $user_id) {
@@ -319,15 +319,27 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
         </div>
 
         <div class="content-wrapper" id="contentWrapper">
-            <div class="header">
-                <h1>FaculTrack</h1>
-                <p>Sultan Kudarat State University - Isulan Campus</p>
-                <small>Showing faculty for: <strong><?php echo htmlspecialchars($class_info['class_name']); ?></strong></small>
-                <div class="user-info">
-                    <span>Welcome, <?php echo htmlspecialchars($class_info['class_name']); ?></span>
-                <a href="logout.php" class="logout-btn">Logout</a>
-        </div>
-            </div>
+            <?php 
+            $online_faculty = count(array_filter($faculty_data, function($faculty) {
+                return $faculty['status'] === 'available';
+            }));
+            
+            $header_config = [
+                'page_title' => 'FaculTrack',
+                'page_subtitle' => 'Sultan Kudarat State University - Isulan Campus',
+                'user_name' => $class_info['class_name'],
+                'user_role' => 'Student Portal',
+                'user_details' => 'Year ' . $class_info['year_level'] . ' - ' . $class_info['semester'],
+                'announcements_count' => count($announcements),
+                'announcements' => $announcements,
+                'stats' => [
+                    ['label' => 'Faculty', 'value' => count($faculty_data)],
+                    ['label' => 'Online', 'value' => $online_faculty],
+                    ['label' => 'Courses', 'value' => count(array_unique(array_column($faculty_data, 'course_code')))]
+                ]
+            ];
+            include 'assets/php/page_header.php';
+            ?>
 
             <div class="search-bar">
                 <input type="text" class="search-input" placeholder="Search faculty by name or department..." id="searchInput">

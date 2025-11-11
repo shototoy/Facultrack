@@ -25,7 +25,7 @@ if (!empty($class_ids)) {
     }
 }
 
-require_once 'assets/php/fetch_announcements.php';
+require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
 function getProgramChairInfo($pdo, $user_id) {
@@ -947,24 +947,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
 </head>
 <body>
     <div class="main-container">
-        <button class="announcement-toggle" onclick="toggleSidebar()">
-            📢
-            <span class="announcement-badge"><?php echo count($announcements); ?></span>
-        </button>
 
-        <div class="sidebar-overlay" onclick="closeSidebar()"></div>
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <button class="close-btn" onclick="closeSidebar()">×</button>
-                <div class="sidebar-title">Announcements</div>
-                <div class="sidebar-subtitle">Latest Updates</div>
-            </div>
-            <div class="announcements-container" id="announcementsContainer">
-                <?php foreach ($announcements as $announcement): ?>
-                    <?php echo renderAnnouncementCard($announcement); ?>
-                <?php endforeach; ?>
-            </div>
-        </div>
         <div class="content-wrapper" id="contentWrapper">
             <?php 
             // Configure header for program chair page
@@ -981,6 +964,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
                 'user_name' => $program_chair_name,
                 'user_role' => 'Program Chair',
                 'user_details' => $program,
+                'announcements_count' => count($announcements),
+                'announcements' => $announcements,
                 'stats' => [
                     ['label' => 'Faculty', 'value' => count($faculty_data)],
                     ['label' => 'Classes', 'value' => count($classes_data)],

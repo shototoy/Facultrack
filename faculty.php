@@ -369,7 +369,7 @@ $today_schedule = getTodaySchedule($pdo, $faculty_info['faculty_id']);
 $location_history = getLocationHistory($pdo, $faculty_info['faculty_id'], 10);
 $schedule_tabs = getScheduleTabs($pdo, $faculty_info['faculty_id']);
 
-require_once 'assets/php/fetch_announcements.php';
+require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
 ?>
@@ -1241,10 +1241,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 </head>
 <body>
     <div class="main-container">
-        <button class="announcement-toggle" onclick="toggleSidebar()">
-            📢
-            <span class="announcement-badge"><?php echo count($announcements); ?></span>
-        </button>
 
         <div class="sidebar-overlay" onclick="closeSidebar()"></div>
 
@@ -1276,16 +1272,33 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
         </div>
 
         <div class="content-wrapper" id="contentWrapper">
-            <div class="header">
-                <h1>FaculTrack - Faculty Portal</h1>
-                <p>Sultan Kudarat State University - Isulan Campus</p>
-                <small>Employee ID: <strong><?php echo htmlspecialchars($faculty_info['employee_id']); ?></strong></small>
-                <div class="user-info">
-                    <span>Welcome, <?php echo htmlspecialchars($faculty_name); ?></span>
-                    <span style="font-size: 0.8rem; color: #666;">(Faculty)</span>
-                    <a href="logout.php" class="logout-btn">Logout</a>
-                </div>
-            </div>
+            <?php 
+            // Configure header for faculty page
+            $ongoing_classes = count(array_filter($today_schedule, function($schedule) {
+                return $schedule['status'] === 'ongoing';
+            }));
+            $completed_classes = count(array_filter($today_schedule, function($schedule) {
+                return $schedule['status'] === 'finished';
+            }));
+            $total_classes = count($today_schedule);
+            
+            $header_config = [
+                'page_title' => 'FaculTrack - Faculty Portal',
+                'page_subtitle' => 'Sultan Kudarat State University - Isulan Campus',
+                'user_name' => $faculty_name,
+                'user_role' => 'Faculty Member',
+                'user_details' => $faculty_info['employee_id'] ? 'ID: ' . $faculty_info['employee_id'] : '',
+                'announcements_count' => count($announcements),
+                'announcements' => $announcements,
+                'stats' => [
+                    ['label' => 'Today', 'value' => $total_classes],
+                    ['label' => 'Ongoing', 'value' => $ongoing_classes],
+                    ['label' => 'Completed', 'value' => $completed_classes],
+                    ['label' => 'Status', 'value' => 'Active']
+                ]
+            ];
+            include 'assets/php/page_header.php';
+            ?>
 
             <div class="dashboard-grid">
                 <div class="schedule-section">

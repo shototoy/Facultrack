@@ -7,7 +7,7 @@ validateUserSession('campus_director');
 $user_id = $_SESSION['user_id'];
 $director_name = $_SESSION['full_name'];
 
-require_once 'assets/php/fetch_announcements.php';
+require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
 $faculty_data = getAllFaculty($pdo);
@@ -129,7 +129,6 @@ function getProgramChairs($pdo) {
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        /* Director-specific animations and enhancements */
         .table-container::before {
             content: '';
             position: absolute;
@@ -276,33 +275,29 @@ function getProgramChairs($pdo) {
 </head>
 <body>
     <div class="main-container">
-        <div class="header">
-            <h1>FaculTrack - Campus Director</h1>
-            <p>Sultan Kudarat State University - Isulan Campus</p>
-            <div class="user-info">
-                <span>Welcome, <?php echo htmlspecialchars($director_name); ?></span>
-                <a href="logout.php" class="logout-btn">Logout</a>
-            </div>
-        </div>
-
-        <div class="stats-cards">
-            <div class="stat-card">
-                <div class="stat-number" id="total-faculty"><?php echo count($faculty_data); ?></div>
-                <div class="stat-label">Total Faculty</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="total-classes"><?php echo count($classes_data); ?></div>
-                <div class="stat-label">Total Classes</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="total-courses"><?php echo count($courses_data); ?></div>
-                <div class="stat-label">Total Courses</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="active-announcements"><?php echo count($all_announcements); ?></div>
-                <div class="stat-label">Active Announcements</div>
-            </div>
-        </div>
+        <?php 
+        $online_faculty = count(array_filter($faculty_data, function($faculty) {
+            return $faculty['status'] === 'Available';
+        }));
+        
+        $header_config = [
+            'page_title' => 'FaculTrack - Campus Director',
+            'page_subtitle' => 'Sultan Kudarat State University - Isulan Campus',
+            'user_name' => $director_name,
+            'user_role' => 'Campus Director',
+            'user_details' => 'System Administrator',
+            'announcements_count' => count($announcements),
+            'announcements' => $announcements,
+            'stats' => [
+                ['label' => 'Faculty', 'value' => count($faculty_data)],
+                ['label' => 'Classes', 'value' => count($classes_data)],
+                ['label' => 'Courses', 'value' => count($courses_data)],
+                ['label' => 'Online', 'value' => $online_faculty],
+                ['label' => 'Announcements', 'value' => count($all_announcements)]
+            ]
+        ];
+        include 'assets/php/page_header.php';
+        ?>
 
         <div class="dashboard-tabs">
             <button class="tab-button active" onclick="switchTab('faculty')" data-tab="faculty">
