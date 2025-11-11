@@ -299,25 +299,6 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
 </head>
 <body>
     <div class="main-container">
-        <button class="announcement-toggle" onclick="toggleSidebar()">
-            📢
-            <span class="announcement-badge"><?php echo count($announcements); ?></span>
-        </button>
-
-        <div class="sidebar-overlay" onclick="closeSidebar()"></div>
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <button class="close-btn" onclick="closeSidebar()">×</button>
-                <div class="sidebar-title">Announcements</div>
-                <div class="sidebar-subtitle">Latest Updates</div>
-            </div>
-            <div class="announcements-container" id="announcementsContainer">
-                <?php foreach ($announcements as $announcement): ?>
-                    <?php echo renderAnnouncementCard($announcement); ?>
-                <?php endforeach; ?>
-            </div>
-        </div>
-
         <div class="content-wrapper" id="contentWrapper">
             <?php 
             $online_faculty = count(array_filter($faculty_data, function($faculty) {
@@ -329,7 +310,7 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                 'page_subtitle' => 'Sultan Kudarat State University - Isulan Campus',
                 'user_name' => $class_info['class_name'],
                 'user_role' => 'Student Portal',
-                'user_details' => 'Year ' . $class_info['year_level'] . ' - ' . $class_info['semester'],
+                'user_details' => 'Year ' . ($class_info['year_level'] ?? 'N/A') . ' - ' . ($class_info['semester'] ?? 'N/A'),
                 'announcements_count' => count($announcements),
                 'announcements' => $announcements,
                 'stats' => [
@@ -346,7 +327,8 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                 <button class="search-btn" onclick="searchFaculty()">🔍</button>
             </div>
 
-            <div class="faculty-grid" id="facultyGrid">
+            <div class="home-content-wrapper">
+                <div class="faculty-grid" id="facultyGrid">
                 <?php if (empty($faculty_data)): ?>
                 <div class="empty-state">
                     <h3>No faculty assigned</h3>
@@ -418,6 +400,7 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                 </div>
                 <?php endforeach; ?>
                 <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
