@@ -69,14 +69,13 @@ body::before {
     opacity: 0.8;
 }
 
-/* USER INFO */
+/* USER INFO - NO POSITIONING CONSTRAINTS */
 .user-info {
-    position: fixed;
-    top: 40px;
-    left: 30px;
-    color: white;
-    font-size: 0.9rem;
-    z-index: 999;
+    /* Completely free - no positioning, no fixed dimensions */
+}
+
+/* USER INFO CONTAINER - Includes avatar and info */
+.header-left {
     backdrop-filter: blur(12px);
     background: rgba(0, 0, 0, 0.2);
     padding: 10px 15px;
@@ -86,19 +85,24 @@ body::before {
 }
 
 .logout-btn {
-    color: var(--warning-color);
+    background: var(--btn-primary-bg);
+    color: white;
     text-decoration: none;
-    margin-left: 10px;
+    margin: 0;
     font-weight: 600;
-    padding: 5px 10px;
+    padding: 8px 16px;
     border-radius: 6px;
+    border: none;
+    cursor: pointer;
     transition: all 0.25s ease;
     display: inline-block;
+    text-align: center;
 }
 
 .logout-btn:hover {
-    background: rgba(255, 193, 7, 0.15);
-    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+    background: var(--btn-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* SEARCH BAR */
@@ -829,67 +833,125 @@ body:has(.faculty-grid) .tab-content.active {
 }
 
 
-/* RESPONSIVE */
+/* RESPONSIVE DESIGN - 3 BREAKPOINTS */
+
+/* TABLET RESPONSIVE (769px - 1024px) */
+@media (max-width: 1024px) and (min-width: 769px) {
+    body {
+        padding: 16px;
+    }
+    
+    .faculty-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+    
+    .stats-cards {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+    }
+    
+    .modal {
+        width: 85%;
+        padding: 24px;
+    }
+    
+    .dashboard-tabs {
+        flex-wrap: nowrap;
+    }
+    
+    .tab-button {
+        padding: 18px 24px;
+        font-size: 0.9rem;
+    }
+    
+    .dashboard-tabs .search-bar {
+        max-width: 250px;
+        padding: 10px 16px;
+    }
+    
+    .search-input {
+        padding: 12px 40px 12px 16px;
+        font-size: 14px;
+    }
+    
+    .search-btn {
+        width: 32px;
+        height: 32px;
+        right: 8px;
+    }
+}
+
+/* PHONE RESPONSIVE (≤768px) */
 @media (max-width: 768px) {
+    body {
+        padding: 12px;
+    }
+    
     .faculty-grid {
         grid-template-columns: 1fr;
         gap: 10px;
     }
     
-    .sidebar {
-        position: fixed;
-        top: 0;
-        right: -100%;
-        width: 100%;
-        height: 100%;
-        background: #ffffff;
-        z-index: 9999;
-        transition: right 0.35s ease;
-        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
-    }
-
-    .sidebar.open {
-        right: 0;
-    }
-
-    
     .stats-cards {
         grid-template-columns: repeat(2, 1fr);
-        display: none;
+        gap: 10px;
     }
     
     .modal {
         width: 95%;
-        padding: 20px;
-        margin: 20px;
+        padding: 16px;
+        margin: 10px;
     }
     
     .btn-secondary,
     .btn-primary {
         width: 100%;
         padding: 12px;
+        font-size: 0.9rem;
     }
     
-    .user-info {
-        position: static;
-        text-align: center;
-        margin-bottom: 20px;
-        background: rgba(0, 0, 0, 0.15);
-        padding: 10px;
-        border-radius: 8px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-
     .dashboard-tabs {
         flex-wrap: wrap;
+        border-radius: 8px 8px 0 0;
     }
 
     .tab-button {
         flex: 1;
-        min-width: 120px;
+        min-width: 100px;
+        font-size: 0.8rem;
+        padding: 12px 8px;
+    }
+    
+    .dashboard-tabs .search-bar {
+        width: 100%;
+        max-width: none;
+        padding: 8px 12px;
+        order: 10;
+        flex-basis: 100%;
+    }
+    
+    .search-input {
+        padding: 10px 35px 10px 14px;
+        font-size: 14px;
+        border-radius: 20px;
+    }
+    
+    .search-btn {
+        width: 28px;
+        height: 28px;
+        right: 6px;
         font-size: 0.9rem;
-        padding: 10px 15px;
+    }
+    
+    /* Adjust content heights for mobile */
+    .table-container,
+    body:has(.courses-grid) .tab-content.active,
+    body:has(.classes-grid) .tab-content.active,
+    body:has(.faculty-grid) .tab-content.active,
+    .home-content-wrapper {
+        height: calc(100vh - 220px);
+        margin-bottom: 20px;
     }
 }
 
