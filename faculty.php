@@ -380,6 +380,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Faculty Dashboard</title>
+    <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>            
         .dashboard-grid {
@@ -391,17 +392,16 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             background: linear-gradient(135deg, #e0e0e0 0%, #d6d6d6 100%);
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-modal);
         }
 
         .schedule-section {
             grid-row: 1 / 3;
             grid-column: 1;
-            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            background: var(--bg-glass);
             padding: 2rem;
             overflow-y: auto;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
-                        0 4px 15px rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--shadow-medium);
             backdrop-filter: blur(10px);
             position: relative;
         }
@@ -425,23 +425,21 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
         .location-section {
             grid-row: 1;
             grid-column: 2;
-            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            background: var(--bg-glass);
             padding: 25px;
-            border-left: 1px solid rgba(224, 224, 224, 0.5);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
-                        0 4px 15px rgba(0, 0, 0, 0.05);
+            border-left: 1px solid var(--border-medium);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--shadow-medium);
             backdrop-filter: blur(10px);
         }
 
         .actions-section {
             grid-row: 2;
             grid-column: 2;
-            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            background: var(--bg-glass);
             padding: 25px;
-            border-left: 1px solid rgba(224, 224, 224, 0.5);
-            border-top: 1px solid rgba(224, 224, 224, 0.5);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
-                        0 4px 15px rgba(0, 0, 0, 0.05);
+            border-left: 1px solid var(--border-medium);
+            border-top: 1px solid var(--border-medium);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--shadow-medium);
             backdrop-filter: blur(10px);
         }
 
@@ -465,7 +463,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
         }
 
         .schedule-header h3 {
-            color: #1B5E20;
+            color: var(--text-green-primary);
             margin: 0;
             font-size: 1.4rem;
             text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8);
@@ -473,7 +471,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
         }
 
         .schedule-date {
-            color: #666;
+            color: var(--text-secondary);
             font-size: 0.9rem;
             font-weight: 500;
             text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
@@ -492,12 +490,11 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             display: flex;
             align-items: center;
             padding: 15px;
-            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            background: var(--bg-glass-semi);
             border-radius: 12px;
             border-left: 4px solid #e0e0e0;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            box-shadow: var(--shadow-medium), inset 0 1px 0 rgba(255, 255, 255, 0.9);
             position: relative;
             overflow: hidden;
             gap: 10px;
@@ -520,23 +517,20 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
         .schedule-item:hover {
             transform: translateY(-3px) translateX(2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12),
-                        inset 0 2px 0 rgba(255, 255, 255, 1);
+            box-shadow: var(--shadow-heavy), inset 0 2px 0 rgba(255, 255, 255, 1);
         }
 
         .schedule-item.ongoing {
-            background: linear-gradient(135deg, rgba(232, 245, 232, 0.9), rgba(200, 230, 201, 0.9));
-            border-left-color: #4CAF50;
-            box-shadow: 0 4px 20px rgba(76, 175, 80, 0.25),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            background: var(--status-available-bg);
+            border-left-color: var(--primary-green-light);
+            box-shadow: 0 4px 20px rgba(76, 175, 80, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
             border: 1px solid rgba(76, 175, 80, 0.2);
         }
 
         .schedule-item.upcoming {
-            background: linear-gradient(135deg, rgba(255, 243, 224, 0.9), rgba(255, 224, 178, 0.9));
-            border-left-color: #FF9800;
-            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.2),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            background: var(--status-busy-bg);
+            border-left-color: var(--warning-dark);
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9);
             border: 1px solid rgba(255, 152, 0, 0.2);
         }
 
@@ -566,7 +560,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
         }
 
         .location-header h3 {
-            color: #1B5E20;
+            color: var(--text-green-primary);
             margin: 0;
             font-size: 1.2rem;
             text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8);
@@ -578,7 +572,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             align-items: center;
             gap: 5px;
             font-size: 0.85rem;
-            color: #4CAF50;
+            color: var(--primary-green-light);
             text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
             padding: 4px 8px;
             background: rgba(76, 175, 80, 0.1);
@@ -587,20 +581,19 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
         }
 
         .location-display {
-            background: linear-gradient(135deg, rgba(248, 249, 250, 0.9), rgba(233, 236, 239, 0.9));
+            background: var(--bg-glass-semi);
             padding: 12px;
             border-radius: 10px;
-            border-left: 3px solid #FFC107;
+            border-left: 3px solid var(--warning-color);
             margin-bottom: 15px;
             flex: 1;
-            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.15),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9);
             text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
         }
 
         .location-updated {
             font-size: 0.8rem;
-            color: #666;
+            color: var(--text-secondary);
             text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
         }
 

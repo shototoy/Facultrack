@@ -921,6 +921,231 @@ function viewCourseLoad(facultyId) {
     generateScheduleView(facultyId, 'courseload');
 }
 
+function assignCourseToYearLevel(courseCode) {
+    openModal('curriculumAssignModal');
+    
+    const modalTitle = document.getElementById('curriculumModalTitle');
+    modalTitle.textContent = `Assign ${courseCode} to Curriculum`;
+    
+    const content = document.getElementById('curriculumAssignContent');
+    content.innerHTML = '<div class="loading">Loading curriculum options...</div>';
+    
+    // Load curriculum assignment form
+    loadCurriculumAssignmentForm(courseCode);
+}
+
+function loadCurriculumAssignmentForm(courseCode) {
+    const formData = new FormData();
+    formData.append('action', 'get_curriculum_assignment_data');
+    formData.append('course_code', courseCode);
+    
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            generateCurriculumAssignmentForm(courseCode, data.existingAssignments);
+        } else {
+            document.getElementById('curriculumAssignContent').innerHTML = 
+                '<div class="error">Failed to load curriculum data: ' + (data.message || 'Unknown error') + '</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading curriculum data:', error);
+        document.getElementById('curriculumAssignContent').innerHTML = 
+            '<div class="error">Failed to load curriculum data. Please try again.</div>';
+    });
+}
+
+function generateCurriculumAssignmentForm(courseCode, existingAssignments) {
+    const content = document.getElementById('curriculumAssignContent');
+    
+    content.innerHTML = `
+        <div class="course-info-section">
+            <h4>Course: ${courseCode}</h4>
+            <p>Assign this course to specific year levels and semesters in your program curriculum.</p>
+        </div>
+        
+        <div class="curriculum-assignment-section">
+            <h4>Curriculum Assignment</h4>
+            <form id="curriculumAssignForm" onsubmit="event.preventDefault(); submitCurriculumAssignment(this, '${courseCode}');">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Year Level:</label>
+                        <select name="year_level" class="form-select" required>
+                            <option value="">Select Year Level</option>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Semester:</label>
+                        <select name="semester" class="form-select" required>
+                            <option value="">Select Semester</option>
+                            <option value="1st">1st Semester</option>
+                            <option value="2nd">2nd Semester</option>
+                            <option value="Summer">Summer</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Academic Year:</label>
+                    <select name="academic_year" class="form-select" required>
+                        <option value="">Select Academic Year</option>
+                        <option value="2024-2025">2024-2025</option>
+                        <option value="2025-2026">2025-2026</option>
+                        <option value="2026-2027">2026-2027</option>
+                    </select>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('curriculumAssignModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Add to Curriculum</button>
+                </div>
+            </form>
+        </div>
+        
+        ${existingAssignments.length > 0 ? `
+        <div class="existing-assignments-section">
+            <h4>Current Curriculum Assignments</h4>
+            <div class="assignments-list">
+                ${existingAssignments.map(assignment => `
+                    <div class="assignment-item">
+                        <strong>Year ${assignment.year_level}</strong> - ${assignment.semester}
+                        <span class="academic-year">${assignment.academic_year}</span>
+                        <button class="btn-danger small" onclick="removeCurriculumAssignment('${courseCode}', ${assignment.curriculum_id})">Remove</button>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+    `;
+}
+
+function submitCurriculumAssignment(form, courseCode) {
+    const formData = new FormData(form);
+    formData.append('action', 'assign_course_to_curriculum');
+    formData.append('course_code', courseCode);
+    
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Course assigned to curriculum successfully!', 'success');
+            closeModal('curriculumAssignModal');
+            location.reload();
+        } else {
+            showNotification(data.message || 'Failed to assign course to curriculum', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred while assigning the course to curriculum', 'error');
+    });
+}
+
+function removeCurriculumAssignment(courseCode, curriculumId) {
+    if (!confirm('Are you sure you want to remove this course from the curriculum?')) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'remove_curriculum_assignment');
+    formData.append('curriculum_id', curriculumId);
+    
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Course removed from curriculum successfully!', 'success');
+            loadCurriculumAssignmentForm(courseCode); // Reload the form
+        } else {
+            showNotification(data.message || 'Failed to remove course from curriculum', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred while removing the course', 'error');
+    });
+}
+
+function deleteCourse(courseCode) {
+    if (!confirm(`Are you sure you want to delete the course ${courseCode}? This will also remove all related curriculum assignments and schedules.`)) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'delete_course');
+    formData.append('course_code', courseCode);
+    
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Course deleted successfully!', 'success');
+            location.reload();
+        } else {
+            showNotification(data.message || 'Failed to delete course', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred while deleting the course', 'error');
+    });
+}
+
+function toggleClassDetailsOverlay(button) {
+    // Close all other open overlays first
+    document.querySelectorAll('.class-details-overlay.show').forEach(overlay => {
+        overlay.classList.remove('show');
+        const card = overlay.closest('.class-card');
+        const otherButton = card.querySelector('.class-details-toggle');
+        otherButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+    });
+    
+    // Find the overlay within this card
+    const card = button.closest('.class-card');
+    const overlay = card.querySelector('.class-details-overlay');
+    const isShown = overlay.classList.contains('show');
+    
+    if (isShown) {
+        // Close this overlay
+        overlay.classList.remove('show');
+        button.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+    } else {
+        // Open this overlay
+        overlay.classList.add('show');
+        button.innerHTML = 'Back to Class Info <span class="arrow">▲</span>';
+    }
+}
+
+// Close overlay when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.class-card')) {
+        document.querySelectorAll('.class-details-overlay.show').forEach(overlay => {
+            overlay.classList.remove('show');
+            const card = overlay.closest('.class-card');
+            const toggleButton = card.querySelector('.class-details-toggle');
+            toggleButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+        });
+    }
+});
+
 function loadCourseAndClassData() {
     const formData = new FormData();
     formData.append('action', 'get_courses_and_classes');
@@ -946,17 +1171,17 @@ function loadCourseAndClassData() {
                         </option>
                     `;
                 });
+                
+                // Add event listener for course selection to enable class dropdown
+                courseSelect.addEventListener('change', function() {
+                    updateClassDropdownBasedOnCourse(this.value, data.classes);
+                });
             }
             
             if (classSelect && data.classes) {
-                classSelect.innerHTML = '<option value="">Choose a class...</option>';
-                data.classes.forEach(cls => {
-                    classSelect.innerHTML += `
-                        <option value="${cls.class_id}">
-                            ${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})
-                        </option>
-                    `;
-                });
+                // Initially disable class dropdown
+                classSelect.disabled = true;
+                classSelect.innerHTML = '<option value="">Select a course first...</option>';
             }
         } else {
             showNotification(data.message || 'Failed to load data', 'error');
@@ -982,6 +1207,54 @@ function updateCourseInfo() {
     } else {
         courseInfoDiv.style.display = 'none';
     }
+}
+
+function updateClassDropdownBasedOnCourse(courseCode, allClasses) {
+    const classSelect = document.getElementById('classSelect');
+    
+    if (!courseCode) {
+        classSelect.disabled = true;
+        classSelect.innerHTML = '<option value="">Select a course first...</option>';
+        return;
+    }
+    
+    // Enable class dropdown and fetch classes that have this course in their curriculum
+    classSelect.disabled = false;
+    classSelect.innerHTML = '<option value="">Loading classes...</option>';
+    
+    // Fetch classes that have this course assigned in curriculum
+    const formData = new FormData();
+    formData.append('action', 'get_classes_for_course');
+    formData.append('course_code', courseCode);
+    
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            classSelect.innerHTML = '<option value="">Choose a class...</option>';
+            
+            if (data.classes.length === 0) {
+                classSelect.innerHTML += '<option value="" disabled>No classes have this course in their curriculum</option>';
+            } else {
+                data.classes.forEach(cls => {
+                    classSelect.innerHTML += `
+                        <option value="${cls.class_id}">
+                            ${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})
+                        </option>
+                    `;
+                });
+            }
+        } else {
+            classSelect.innerHTML = '<option value="" disabled>Error loading classes</option>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading classes for course:', error);
+        classSelect.innerHTML = '<option value="" disabled>Error loading classes</option>';
+    });
 }
 
 function submitCourseAssignment(form, facultyId) {

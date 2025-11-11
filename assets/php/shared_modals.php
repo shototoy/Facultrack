@@ -249,3 +249,18 @@ $role = $_SESSION['role'] ?? '';
         </div>
     </div>
 </div>
+
+<div class="modal-overlay" id="curriculumAssignModal">
+    <div class="modal large-modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="curriculumModalTitle">Assign Course to Curriculum</h3>
+            <button type="button" class="modal-close" onclick="closeModal('curriculumAssignModal')">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <div id="curriculumAssignContent">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+</div>
