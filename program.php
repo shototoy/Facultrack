@@ -201,6 +201,37 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
     exit;
 }
 
+// Get curriculum assignment data with class names
+if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_data_with_classes') {
+    try {
+        $course_code = $_POST['course_code'];
+        
+        // Get existing curriculum assignments for this course with matching class names
+        $curriculum_query = "
+            SELECT cur.curriculum_id, cur.year_level, cur.semester, cur.academic_year,
+                   GROUP_CONCAT(DISTINCT c.class_code SEPARATOR ', ') as class_names
+            FROM curriculum cur
+            LEFT JOIN classes c ON c.year_level = cur.year_level 
+                                AND c.semester = cur.semester 
+                                AND c.academic_year = cur.academic_year
+                                AND c.is_active = TRUE
+            WHERE cur.course_code = ? AND cur.is_active = TRUE
+            GROUP BY cur.curriculum_id, cur.year_level, cur.semester, cur.academic_year
+            ORDER BY cur.year_level, cur.semester";
+        $stmt = $pdo->prepare($curriculum_query);
+        $stmt->execute([$course_code]);
+        $existingAssignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'success' => true,
+            'existingAssignments' => $existingAssignments
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
 // Assign course to curriculum
 if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum') {
     try {
@@ -365,7 +396,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
         .class-card {
             background: white;
             border-radius: 12px;
-            padding: 20px 20px 50px 20px;
+            padding: 0;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             border-left: 4px solid var(--text-green-secondary);
             transition: transform 0.3s ease;
@@ -433,38 +464,206 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
 
         .courses-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
         }
 
         .course-card {
-            background: #fff;
-            border: 1px solid #ddd;
-            padding: 12px 24px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            background: var(--faculty-card-bg);
+            border: 1px solid var(--border-dark);
+            border-left: 4px solid var(--text-green-secondary);
+            padding: 0;
+            border-radius: 10px;
+            box-shadow: var(--faculty-card-shadow);
+            transition: all 0.3s ease;
+            position: relative;
+            min-height: 160px;
+        }
+
+        .course-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--faculty-card-hover-shadow);
+            border-color: rgba(46, 125, 50, 0.3);
         }
 
         .course-header {
             display: flex;
             justify-content: space-between;
-            font-weight: bold;
+            align-items: flex-start;
             margin-bottom: 8px;
         }
 
         .course-code {
             color: var(--text-primary);
-            font-size: 2.25rem;
+            font-size: 1.3rem;
+            font-weight: 700;
+            line-height: 1.2;
         }
 
         .course-units {
-            color: var(--text-secondary);
-            font-size: 1.2rem;
+            color: var(--text-green-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(46, 125, 50, 0.1);
+            padding: 3px 6px;
+            border-radius: 10px;
+            white-space: nowrap;
         }
 
         .course-description {
             font-size: 1rem;
             color: var(--text-primary);
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .course-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        .course-actions .action-btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .course-actions .action-btn.primary {
+            background: var(--text-green-secondary);
+            color: white;
+            border: none;
+        }
+
+        .course-actions .action-btn.primary:hover {
+            background: var(--text-green-primary);
+            transform: translateY(-1px);
+        }
+
+        .course-actions .action-btn.danger {
+            background: transparent;
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+
+        .course-actions .action-btn.danger:hover {
+            background: #dc3545;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .course-card-content {
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 40px);
+        }
+
+        .course-card-default-content {
+            margin: 16px 20px 60px 20px;
+        }
+
+        .course-details-toggle {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 0 0 10px 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            z-index: 200;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 40px;
+        }
+
+        .course-details-toggle:hover {
+            background: #f8f9fa;
+            border-color: var(--text-green-secondary);
+            color: var(--text-green-secondary);
+        }
+
+        .course-details-toggle .arrow {
+            margin-left: 8px;
+        }
+
+        .course-details-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            border-radius: 10px 10px 0 0;
+            z-index: 100;
+            transform: translateY(-100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 4px solid var(--text-green-secondary);
+            border-right: 1px solid #e0e0e0;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        .course-details-overlay.show {
+            transform: translateY(0);
+        }
+
+        .course-details-overlay .overlay-header {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e0e0e0;
+            background: var(--faculty-card-bg);
+            border-radius: 10px 10px 0 0;
+            flex-shrink: 0;
+        }
+
+        .course-details-overlay .overlay-header h4 {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .course-details-overlay .overlay-body {
+            flex: 1;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+        }
+
+        .assignment-item .btn-danger {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .assignment-item .btn-danger:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+
+        .assignment-item {
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .assignment-item:last-child {
+            border-bottom: none;
         }
 
         .schedule-preview {
@@ -569,22 +768,23 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
 
         .class-details-toggle {
             position: absolute;
-            bottom: 10px;
-            left: 10px;
-            right: 10px;
+            bottom: 0;
+            left: 0;
+            right: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 6px;
+            padding: 0;
             background: white;
             border: 1px solid #e0e0e0;
-            border-radius: 4px;
+            border-radius: 0 0 12px 12px;
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 0.8rem;
             color: var(--text-secondary);
             z-index: 200;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 40px;
         }
 
         .class-details-toggle:hover {
@@ -600,6 +800,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
         .class-card-content {
             position: relative;
             overflow: hidden;
+            height: calc(100% - 40px);
+        }
+
+        .class-card-default-content {
+            margin: 20px 20px 60px 20px;
         }
 
         .class-details-overlay {
@@ -607,7 +812,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
             top: 0;
             left: 0;
             right: 0;
-            height: 100%;
+            bottom: 0;
             background: white;
             border-radius: 12px 12px 0 0;
             z-index: 100;
@@ -761,48 +966,30 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
             </div>
         </div>
         <div class="content-wrapper" id="contentWrapper">
-            <div class="header">
-                <h1>FaculTrack - Program Chair</h1>
-                <p>Sultan Kudarat State University - Isulan Campus</p>
-                <small>Program: <strong><?php echo htmlspecialchars($program); ?></strong></small>
-                <div class="user-info">
-                    <span>Welcome, <?php echo htmlspecialchars($program_chair_name); ?></span>
-                    <span style="font-size: 0.8rem; color: white;">(<?php echo htmlspecialchars($program); ?>)</span>
-                    <a href="logout.php" class="logout-btn">Logout</a>
-                </div>
-            </div>
-            <div class="stats-cards">
-                <div class="stat-card">
-                    <div class="stat-number"><?php echo count($faculty_data); ?></div>
-                    <div class="stat-label">Faculty Members</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number"><?php echo count($classes_data); ?></div>
-                    <div class="stat-label">Classes Managed</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">
-                        <?php 
-                        $online_count = array_reduce($faculty_data, function($count, $faculty) {
-                            return $count + ($faculty['status'] === 'available' ? 1 : 0);
-                        }, 0);
-                        echo $online_count;
-                        ?>
-                    </div>
-                    <div class="stat-label">Faculty Online</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">
-                        <?php 
-                        $total_schedules = array_reduce($classes_data, function($count, $class) {
-                            return $count + $class['total_subjects'];
-                        }, 0);
-                        echo $total_schedules;
-                        ?>
-                    </div>
-                    <div class="stat-label">Total Subjects</div>
-                </div>
-            </div>
+            <?php 
+            // Configure header for program chair page
+            $online_count = array_reduce($faculty_data, function($count, $faculty) {
+                return $count + ($faculty['status'] === 'available' ? 1 : 0);
+            }, 0);
+            $total_schedules = array_reduce($classes_data, function($count, $class) {
+                return $count + $class['total_subjects'];
+            }, 0);
+            
+            $header_config = [
+                'page_title' => 'FaculTrack - Program Chair',
+                'page_subtitle' => 'Sultan Kudarat State University - Isulan Campus',
+                'user_name' => $program_chair_name,
+                'user_role' => 'Program Chair',
+                'user_details' => $program,
+                'stats' => [
+                    ['label' => 'Faculty', 'value' => count($faculty_data)],
+                    ['label' => 'Classes', 'value' => count($classes_data)],
+                    ['label' => 'Online', 'value' => $online_count],
+                    ['label' => 'Subjects', 'value' => $total_schedules]
+                ]
+            ];
+            include 'assets/php/page_header.php';
+            ?>
             <div class="dashboard-tabs">
                 <button class="tab-button active" onclick="switchTab('faculty')" data-tab="faculty">
                     Faculty Members
@@ -895,22 +1082,43 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
                 <?php else: ?>
                     <div class="courses-grid">
                         <?php foreach ($courses_data as $course): ?>
-                            <div class="course-card">
-                                <div class="course-header">
-                                    <div class="course-code"><?php echo htmlspecialchars($course['course_code']); ?></div>
-                                    <div class="course-units"><?php echo htmlspecialchars($course['units']); ?> unit<?php echo $course['units'] > 1 ? 's' : ''; ?></div>
+                            <div class="course-card" data-course="<?php echo htmlspecialchars($course['course_code']); ?>">
+                                <div class="course-card-content">
+                                    <div class="course-card-default-content">
+                                        <div class="course-header">
+                                            <div class="course-code"><?php echo htmlspecialchars($course['course_code']); ?></div>
+                                            <div class="course-units"><?php echo htmlspecialchars($course['units']); ?> unit<?php echo $course['units'] > 1 ? 's' : ''; ?></div>
+                                        </div>
+                                        <div class="course-description">
+                                            <?php echo htmlspecialchars($course['course_description']); ?>
+                                        </div>
+                                        
+                                        <div class="course-actions">
+                                            <button class="action-btn primary" onclick="assignCourseToYearLevel('<?php echo htmlspecialchars($course['course_code']); ?>')">
+                                                Assign to Year Level
+                                            </button>
+                                            <button class="action-btn danger" onclick="deleteCourse('<?php echo htmlspecialchars($course['course_code']); ?>')">
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="course-details-overlay">
+                                        <div class="overlay-header">
+                                            <h4>Current Assignments</h4>
+                                        </div>
+                                        <div class="overlay-body">
+                                            <div class="assignments-preview" style="padding: 12px;">
+                                                <div class="loading-assignments">Loading assignments...</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="course-description">
-                                    <?php echo htmlspecialchars($course['course_description']); ?>
-                                </div>
-                                <div class="course-actions">
-                                    <button class="action-btn primary" onclick="assignCourseToYearLevel('<?php echo htmlspecialchars($course['course_code']); ?>')">
-                                        Assign to Year Level
-                                    </button>
-                                    <button class="action-btn danger" onclick="deleteCourse('<?php echo htmlspecialchars($course['course_code']); ?>')">
-                                        Delete
-                                    </button>
-                                </div>
+
+                                <button class="course-details-toggle" onclick="toggleCourseDetailsOverlay(this, '<?php echo htmlspecialchars($course['course_code']); ?>')">
+                                    View Assignments
+                                    <span class="arrow">▼</span>
+                                </button>
                             </div>
                         <?php endforeach; ?>
                         <div class="add-card add-card-course" data-modal="addCourseModal">
@@ -934,24 +1142,26 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
                         <?php foreach ($classes_data as $class): ?>
                             <div class="class-card" data-name="<?php echo htmlspecialchars($class['class_name']); ?>" data-code="<?php echo htmlspecialchars($class['class_code']); ?>">
                                 <div class="class-card-content">
-                                    <div class="class-header">
-                                        <div class="class-info">
-                                            <div class="class-name"><?php echo htmlspecialchars($class['class_name']); ?></div>
-                                            <div class="class-code"><?php echo htmlspecialchars($class['class_code']); ?></div>
-                                            <div class="class-meta">
-                                                Year <?php echo $class['year_level']; ?> • <?php echo $class['semester']; ?> Semester • <?php echo $class['academic_year']; ?>
+                                    <div class="class-card-default-content">
+                                        <div class="class-header">
+                                            <div class="class-info">
+                                                <div class="class-name"><?php echo htmlspecialchars($class['class_name']); ?></div>
+                                                <div class="class-code"><?php echo htmlspecialchars($class['class_code']); ?></div>
+                                                <div class="class-meta">
+                                                    Year <?php echo $class['year_level']; ?> • <?php echo $class['semester']; ?> Semester • <?php echo $class['academic_year']; ?>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div class="class-stats">
-                                        <div class="class-stat">
-                                            <div class="class-stat-number"><?php echo $class['total_subjects']; ?></div>
-                                            <div class="class-stat-label">Subjects</div>
-                                        </div>
-                                        <div class="class-stat">
-                                            <div class="class-stat-number"><?php echo $class['assigned_faculty']; ?></div>
-                                            <div class="class-stat-label">Faculty</div>
+                                        <div class="class-stats">
+                                            <div class="class-stat">
+                                                <div class="class-stat-number"><?php echo $class['total_subjects']; ?></div>
+                                                <div class="class-stat-label">Subjects</div>
+                                            </div>
+                                            <div class="class-stat">
+                                                <div class="class-stat-number"><?php echo $class['assigned_faculty']; ?></div>
+                                                <div class="class-stat-label">Faculty</div>
+                                            </div>
                                         </div>
                                     </div>
 

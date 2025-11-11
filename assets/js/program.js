@@ -963,68 +963,45 @@ function generateCurriculumAssignmentForm(courseCode, existingAssignments) {
     const content = document.getElementById('curriculumAssignContent');
     
     content.innerHTML = `
-        <div class="course-info-section">
-            <h4>Course: ${courseCode}</h4>
-            <p>Assign this course to specific year levels and semesters in your program curriculum.</p>
-        </div>
-        
-        <div class="curriculum-assignment-section">
-            <h4>Curriculum Assignment</h4>
-            <form id="curriculumAssignForm" onsubmit="event.preventDefault(); submitCurriculumAssignment(this, '${courseCode}');">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Year Level:</label>
-                        <select name="year_level" class="form-select" required>
-                            <option value="">Select Year Level</option>
-                            <option value="1">1st Year</option>
-                            <option value="2">2nd Year</option>
-                            <option value="3">3rd Year</option>
-                            <option value="4">4th Year</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Semester:</label>
-                        <select name="semester" class="form-select" required>
-                            <option value="">Select Semester</option>
-                            <option value="1st">1st Semester</option>
-                            <option value="2nd">2nd Semester</option>
-                            <option value="Summer">Summer</option>
-                        </select>
-                    </div>
-                </div>
-                
+        <form id="curriculumAssignForm" onsubmit="event.preventDefault(); submitCurriculumAssignment(this, '${courseCode}');">
+            <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Academic Year:</label>
-                    <select name="academic_year" class="form-select" required>
-                        <option value="">Select Academic Year</option>
-                        <option value="2024-2025">2024-2025</option>
-                        <option value="2025-2026">2025-2026</option>
-                        <option value="2026-2027">2026-2027</option>
+                    <label class="form-label">Year Level:</label>
+                    <select name="year_level" class="form-select" required>
+                        <option value="">Select Year Level</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
                     </select>
                 </div>
                 
-                <div class="modal-actions">
-                    <button type="button" class="btn-secondary" onclick="closeModal('curriculumAssignModal')">Cancel</button>
-                    <button type="submit" class="btn-primary">Add to Curriculum</button>
+                <div class="form-group">
+                    <label class="form-label">Semester:</label>
+                    <select name="semester" class="form-select" required>
+                        <option value="">Select Semester</option>
+                        <option value="1st">1st Semester</option>
+                        <option value="2nd">2nd Semester</option>
+                        <option value="Summer">Summer</option>
+                    </select>
                 </div>
-            </form>
-        </div>
-        
-        ${existingAssignments.length > 0 ? `
-        <div class="existing-assignments-section">
-            <h4>Current Curriculum Assignments</h4>
-            <div class="assignments-list">
-                ${existingAssignments.map(assignment => `
-                    <div class="assignment-item">
-                        <strong>Year ${assignment.year_level}</strong> - ${assignment.semester}
-                        <span class="academic-year">${assignment.academic_year}</span>
-                        <button class="btn-danger small" onclick="removeCurriculumAssignment('${courseCode}', ${assignment.curriculum_id})">Remove</button>
-                    </div>
-                `).join('')}
             </div>
-        </div>
-        ` : ''}
+            
+            <div class="form-group">
+                <label class="form-label">Academic Year:</label>
+                <select name="academic_year" class="form-select" required>
+                    <option value="">Select Academic Year</option>
+                    <option value="2024-2025">2024-2025</option>
+                    <option value="2025-2026">2025-2026</option>
+                    <option value="2026-2027">2026-2027</option>
+                </select>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('curriculumAssignModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Add to Curriculum</button>
+            </div>
+        </form>
     `;
 }
 
@@ -1156,20 +1133,116 @@ function toggleClassDetailsOverlay(button) {
     console.log('Button text after:', button.innerHTML); // Debug log
 }
 
-// Close overlay when clicking outside
-document.addEventListener('click', function(event) {
-    // Don't close if clicking on the toggle button (let the toggle function handle it)
-    if (event.target.closest('.class-details-toggle')) {
+function toggleCourseDetailsOverlay(button, courseCode) {
+    // Prevent event bubbling
+    event.stopPropagation();
+    
+    console.log('Course toggle function called for:', courseCode); // Debug log
+    
+    // Find the overlay within this card
+    const card = button.closest('.course-card');
+    const overlay = card.querySelector('.course-details-overlay');
+    
+    if (!overlay) {
+        console.error('Course overlay not found'); // Debug log
         return;
     }
     
-    if (!event.target.closest('.class-card')) {
-        document.querySelectorAll('.class-details-overlay.show').forEach(overlay => {
+    const isShown = overlay.classList.contains('show');
+    console.log('Course overlay is shown before toggle:', isShown); // Debug log
+    
+    // Close all other open overlays first (both class and course)
+    document.querySelectorAll('.course-details-overlay.show, .class-details-overlay.show').forEach(otherOverlay => {
+        if (otherOverlay !== overlay) {
+            otherOverlay.classList.remove('show');
+            const otherCard = otherOverlay.closest('.course-card, .class-card');
+            const otherButton = otherCard.querySelector('.course-details-toggle, .class-details-toggle');
+            if (otherButton) {
+                if (otherButton.classList.contains('course-details-toggle')) {
+                    otherButton.innerHTML = 'View Assignments <span class="arrow">▼</span>';
+                } else {
+                    otherButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+                }
+            }
+        }
+    });
+    
+    if (isShown) {
+        // Close this overlay
+        overlay.classList.remove('show');
+        button.innerHTML = 'View Assignments <span class="arrow">▼</span>';
+        console.log('Course overlay closed'); // Debug log
+    } else {
+        // Open this overlay and load assignments
+        overlay.classList.add('show');
+        button.innerHTML = 'Back to Course Info <span class="arrow">▲</span>';
+        loadCourseAssignments(courseCode, overlay);
+        console.log('Course overlay opened'); // Debug log
+    }
+}
+
+function loadCourseAssignments(courseCode, overlay) {
+    const assignmentsContainer = overlay.querySelector('.assignments-preview');
+    assignmentsContainer.innerHTML = '<div class="loading-assignments">Loading assignments...</div>';
+    
+    const formData = new FormData();
+    formData.append('action', 'get_curriculum_assignment_data_with_classes');
+    formData.append('course_code', courseCode);
+    
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.existingAssignments.length > 0) {
+                assignmentsContainer.innerHTML = data.existingAssignments.map(assignment => `
+                    <div class="assignment-item" style="padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-green-secondary); margin-bottom: 4px;">
+                                    ${assignment.class_names || 'No Classes Yet'}
+                                </div>
+                                <div style="font-size: 0.8rem; color: #666;">
+                                    Year ${assignment.year_level} • ${assignment.semester} • ${assignment.academic_year}
+                                </div>
+                            </div>
+                            <button class="btn-danger small" onclick="removeCurriculumAssignment('${courseCode}', ${assignment.curriculum_id})">Remove</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                assignmentsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;"><em>No curriculum assignments yet</em></div>';
+            }
+        } else {
+            assignmentsContainer.innerHTML = '<div style="color: #dc3545; text-align: center;">Error loading assignments</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading assignments:', error);
+        assignmentsContainer.innerHTML = '<div style="color: #dc3545; text-align: center;">Error loading assignments</div>';
+    });
+}
+
+// Close overlay when clicking outside
+document.addEventListener('click', function(event) {
+    // Don't close if clicking on any toggle button (let the toggle function handle it)
+    if (event.target.closest('.class-details-toggle, .course-details-toggle')) {
+        return;
+    }
+    
+    if (!event.target.closest('.class-card, .course-card')) {
+        document.querySelectorAll('.class-details-overlay.show, .course-details-overlay.show').forEach(overlay => {
             overlay.classList.remove('show');
-            const card = overlay.closest('.class-card');
-            const toggleButton = card.querySelector('.class-details-toggle');
+            const card = overlay.closest('.class-card, .course-card');
+            const toggleButton = card.querySelector('.class-details-toggle, .course-details-toggle');
             if (toggleButton) {
-                toggleButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+                if (toggleButton.classList.contains('course-details-toggle')) {
+                    toggleButton.innerHTML = 'View Assignments <span class="arrow">▼</span>';
+                } else {
+                    toggleButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+                }
             }
         });
     }
