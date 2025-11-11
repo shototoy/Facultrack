@@ -15,6 +15,16 @@ body {
     box-sizing: border-box;
 }
 
+/* PHONE - Override body constraints for natural scrolling */
+@media (max-width: 768px) {
+    body {
+        height: auto !important;
+        min-height: 100vh !important;
+        overflow: auto !important;
+        padding: 12px !important;
+    }
+}
+
 body::before {
     content: '';
     position: fixed;
@@ -72,16 +82,35 @@ body::before {
 /* USER INFO - NO POSITIONING CONSTRAINTS */
 .user-info {
     /* Completely free - no positioning, no fixed dimensions */
+    margin: 0 !important;
 }
 
 /* USER INFO CONTAINER - Includes avatar and info */
 .header-left {
     backdrop-filter: blur(12px);
     background: rgba(0, 0, 0, 0.2);
-    padding: 10px 15px;
+    padding: 5px 15px;
     border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    margin: 0 !important;
+}
+
+/* USER AVATAR - Dynamic sizing based on container */
+.user-avatar {
+    border-radius: 50%;
+    background: var(--accent-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 60px;
+    max-height: 60px;
+    aspect-ratio: 1;
+    font-size: calc(100% * 0.4);
 }
 
 .logout-btn {
@@ -944,14 +973,20 @@ body:has(.faculty-grid) .tab-content.active {
         font-size: 0.9rem;
     }
     
-    /* Adjust content heights for mobile */
+    /* Adjust content heights for mobile - Remove fixed heights */
     .table-container,
     body:has(.courses-grid) .tab-content.active,
     body:has(.classes-grid) .tab-content.active,
     body:has(.faculty-grid) .tab-content.active,
     .home-content-wrapper {
-        height: calc(100vh - 220px);
+        height: auto !important;
+        min-height: 50vh !important;
         margin-bottom: 20px;
+    }
+    
+    .main-container {
+        padding-top: 0 !important;
+        height: auto !important;
     }
 }
 
