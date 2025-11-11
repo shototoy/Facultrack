@@ -13,6 +13,13 @@ function switchTab(tabName) {
     
     document.getElementById(tabName + '-content').classList.add('active');
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // Clear search and reset visibility when switching tabs
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    resetAllTabsVisibility();
 }
 function exportData(type) {
     const config = {
@@ -374,7 +381,171 @@ function setupFormHandlers() {
     });
 }
 
+// Search functionality
+function resetAllTabsVisibility() {
+    const rows = document.querySelectorAll('.data-table tbody tr');
+    rows.forEach(row => row.style.display = '');
+    const emptyStates = document.querySelectorAll('.search-empty-state');
+    emptyStates.forEach(state => state.remove());
+}
+
+function searchContent() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const activeTab = document.querySelector('.tab-content.active').id;
+    
+    if (activeTab === 'faculty-content') {
+        searchFaculty(searchTerm);
+    } else if (activeTab === 'classes-content') {
+        searchClasses(searchTerm);
+    } else if (activeTab === 'courses-content') {
+        searchCourses(searchTerm);
+    } else if (activeTab === 'announcements-content') {
+        searchAnnouncements(searchTerm);
+    }
+}
+
+function searchFaculty(searchTerm) {
+    const rows = document.querySelectorAll('#faculty-content .data-table tbody tr');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length === 0) return;
+        
+        const name = cells[0].textContent.toLowerCase();
+        const employeeId = cells[1].textContent.toLowerCase();
+        const program = cells[2].textContent.toLowerCase();
+        const email = cells[5].textContent.toLowerCase();
+        
+        if (name.includes(searchTerm) || employeeId.includes(searchTerm) || 
+            program.includes(searchTerm) || email.includes(searchTerm)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    updateEmptyState('#faculty-content .table-container', visibleCount, searchTerm, 'No faculty found', 'Try adjusting your search criteria');
+}
+
+function searchClasses(searchTerm) {
+    const rows = document.querySelectorAll('#classes-content .data-table tbody tr');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length === 0) return;
+        
+        const classCode = cells[0].textContent.toLowerCase();
+        const className = cells[1].textContent.toLowerCase();
+        const yearLevel = cells[2].textContent.toLowerCase();
+        const semester = cells[3].textContent.toLowerCase();
+        const academicYear = cells[4].textContent.toLowerCase();
+        const programChair = cells[5].textContent.toLowerCase();
+        
+        if (classCode.includes(searchTerm) || className.includes(searchTerm) || 
+            yearLevel.includes(searchTerm) || semester.includes(searchTerm) ||
+            academicYear.includes(searchTerm) || programChair.includes(searchTerm)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    updateEmptyState('#classes-content .table-container', visibleCount, searchTerm, 'No classes found', 'Try adjusting your search criteria');
+}
+
+function searchCourses(searchTerm) {
+    const rows = document.querySelectorAll('#courses-content .data-table tbody tr');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length === 0) return;
+        
+        const courseCode = cells[0].textContent.toLowerCase();
+        const courseDescription = cells[1].textContent.toLowerCase();
+        const units = cells[2].textContent.toLowerCase();
+        
+        if (courseCode.includes(searchTerm) || courseDescription.includes(searchTerm) || 
+            units.includes(searchTerm)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    updateEmptyState('#courses-content .table-container', visibleCount, searchTerm, 'No courses found', 'Try adjusting your search criteria');
+}
+
+function searchAnnouncements(searchTerm) {
+    const rows = document.querySelectorAll('#announcements-content .data-table tbody tr');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length === 0) return;
+        
+        const title = cells[0].textContent.toLowerCase();
+        const content = cells[1].textContent.toLowerCase();
+        const priority = cells[2].textContent.toLowerCase();
+        const targetAudience = cells[3].textContent.toLowerCase();
+        const createdBy = cells[4].textContent.toLowerCase();
+        
+        if (title.includes(searchTerm) || content.includes(searchTerm) || 
+            priority.includes(searchTerm) || targetAudience.includes(searchTerm) ||
+            createdBy.includes(searchTerm)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    updateEmptyState('#announcements-content .table-container', visibleCount, searchTerm, 'No announcements found', 'Try adjusting your search criteria');
+}
+
+function updateEmptyState(containerSelector, visibleCount, searchTerm, title, message) {
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+    
+    const existingEmptyState = container.querySelector('.search-empty-state');
+    
+    if (existingEmptyState) {
+        existingEmptyState.remove();
+    }
+
+    if (visibleCount === 0 && searchTerm.trim() !== '') {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'empty-state search-empty-state';
+        emptyState.style.textAlign = 'center';
+        emptyState.style.padding = '40px';
+        emptyState.style.color = '#666';
+        emptyState.innerHTML = `
+            <h3>${title}</h3>
+            <p>${message}</p>
+        `;
+        container.appendChild(emptyState);
+    }
+}
+
+// Add event listener for Enter key on search input
 document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                searchContent();
+            } else {
+                // Live search as user types
+                searchContent();
+            }
+        });
+    }
+    
     setTimeout(() => setupFormHandlers(), 500);
     setTimeout(() => setupFormHandlers(), 2000);
 });

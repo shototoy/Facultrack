@@ -985,10 +985,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
                 <button class="tab-button" onclick="switchTab('classes')" data-tab="classes">
                     Classes
                 </button>
-            </div>
-            <div class="search-bar">
-                <input type="text" class="search-input" placeholder="Search..." id="searchInput">
-                <button class="search-btn" onclick="searchContent()">🔍</button>
+                <div class="search-bar">
+                    <input type="text" class="search-input" placeholder="Search..." id="searchInput">
+                    <button class="search-btn" onclick="searchContent()">🔍</button>
+                </div>
             </div>
             <div class="tab-content active" id="faculty-content">
                 <div class="faculty-grid" id="facultyGrid">

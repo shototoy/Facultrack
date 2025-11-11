@@ -312,6 +312,10 @@ function getProgramChairs($pdo) {
             <button class="tab-button" onclick="switchTab('announcements')" data-tab="announcements">
                 Manage Announcements
             </button>
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="Search..." id="searchInput">
+                <button class="search-btn" onclick="searchContent()">🔍</button>
+            </div>
         </div>
 
         <div class="tab-content active" id="faculty-content">
