@@ -1110,38 +1110,67 @@ function deleteCourse(courseCode) {
 }
 
 function toggleClassDetailsOverlay(button) {
-    // Close all other open overlays first
-    document.querySelectorAll('.class-details-overlay.show').forEach(overlay => {
-        overlay.classList.remove('show');
-        const card = overlay.closest('.class-card');
-        const otherButton = card.querySelector('.class-details-toggle');
-        otherButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
-    });
+    // Prevent event bubbling
+    event.stopPropagation();
+    
+    console.log('Toggle function called'); // Debug log
     
     // Find the overlay within this card
     const card = button.closest('.class-card');
     const overlay = card.querySelector('.class-details-overlay');
+    
+    if (!overlay) {
+        console.error('Overlay not found'); // Debug log
+        return;
+    }
+    
     const isShown = overlay.classList.contains('show');
+    console.log('Is shown before toggle:', isShown); // Debug log
+    console.log('Button text before:', button.innerHTML); // Debug log
+    
+    // Close all other open overlays first (but not this one)
+    document.querySelectorAll('.class-details-overlay.show').forEach(otherOverlay => {
+        if (otherOverlay !== overlay) {
+            otherOverlay.classList.remove('show');
+            const otherCard = otherOverlay.closest('.class-card');
+            const otherButton = otherCard.querySelector('.class-details-toggle');
+            if (otherButton) {
+                otherButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+            }
+        }
+    });
     
     if (isShown) {
         // Close this overlay
         overlay.classList.remove('show');
         button.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+        console.log('Overlay closed'); // Debug log
     } else {
         // Open this overlay
         overlay.classList.add('show');
         button.innerHTML = 'Back to Class Info <span class="arrow">▲</span>';
+        console.log('Overlay opened'); // Debug log
     }
+    
+    console.log('Is shown after toggle:', overlay.classList.contains('show')); // Debug log
+    console.log('Button text after:', button.innerHTML); // Debug log
 }
 
 // Close overlay when clicking outside
 document.addEventListener('click', function(event) {
+    // Don't close if clicking on the toggle button (let the toggle function handle it)
+    if (event.target.closest('.class-details-toggle')) {
+        return;
+    }
+    
     if (!event.target.closest('.class-card')) {
         document.querySelectorAll('.class-details-overlay.show').forEach(overlay => {
             overlay.classList.remove('show');
             const card = overlay.closest('.class-card');
             const toggleButton = card.querySelector('.class-details-toggle');
-            toggleButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+            if (toggleButton) {
+                toggleButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+            }
         });
     }
 });

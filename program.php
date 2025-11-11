@@ -474,14 +474,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
         }
 
         .schedule-preview {
-            padding: 12px;
+            padding: 0;
+            margin: 0;
         }
 
         .schedule-item {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            padding: 10px 0;
+            padding: 8px 12px;
             font-size: 0.85rem;
             border-bottom: 1px solid #f0f0f0;
         }
@@ -617,6 +618,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
             border-top: 1px solid #e0e0e0;
             display: flex;
             flex-direction: column;
+            margin: 0;
+            box-sizing: border-box;
         }
 
         .class-details-overlay.show {
@@ -641,6 +644,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
         .class-details-overlay .overlay-body {
             flex: 1;
             padding: 0;
+            margin: 0;
             overflow-y: auto;
         }
 
