@@ -126,20 +126,10 @@ function getProgramChairs($pdo) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Campus Director Dashboard</title>
+    <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        .table-container {
-            background: linear-gradient(145deg, #ffffff, #f8f9fa);
-            border-radius: 0px 0px 12px 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.12),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-                        0 0 0 1px rgba(46, 125, 50, 0.08);
-            overflow: hidden;
-            border: 1px solid rgba(222, 226, 230, 0.3);
-            backdrop-filter: blur(10px);
-            position: relative;
-        }
-
+        /* Director-specific animations and enhancements */
         .table-container::before {
             content: '';
             position: absolute;
@@ -154,26 +144,6 @@ function getProgramChairs($pdo) {
         @keyframes shimmer {
             0% { left: -100%; }
             100% { left: 100%; }
-        }
-
-        .table-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-bottom: 1px solid rgba(222, 226, 230, 0.5);
-            backdrop-filter: blur(10px);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8),
-                        0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .table-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #2c3e50;
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-            position: relative;
         }
 
         .table-title::after {
@@ -191,36 +161,6 @@ function getProgramChairs($pdo) {
             width: 100%;
         }
 
-        .table-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: transparent;
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid rgba(222, 226, 230, 0.4);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .data-table th {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            font-weight: 600;
-            color: #495057;
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8),
-                        0 1px 3px rgba(0, 0, 0, 0.05);
-            position: relative;
-            overflow: hidden;
-        }
-
         .data-table th::before {
             content: '';
             position: absolute;
@@ -236,11 +176,6 @@ function getProgramChairs($pdo) {
             left: 100%;
         }
 
-        .data-table tr {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-        }
-
         .data-table tr::before {
             content: '';
             position: absolute;
@@ -250,13 +185,6 @@ function getProgramChairs($pdo) {
             width: 0;
             background: linear-gradient(90deg, rgba(46, 125, 50, 0.1), rgba(76, 175, 80, 0.05));
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .data-table tr:hover {
-            background: linear-gradient(90deg, rgba(248, 249, 250, 0.8), rgba(233, 236, 239, 0.8));
-            transform: translateX(2px);
-            box-shadow: 0 2px 8px rgba(46, 125, 50, 0.1),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.9);
         }
 
         .data-table tr:hover::before {
@@ -285,8 +213,7 @@ function getProgramChairs($pdo) {
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 16px;
-            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.15),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
             border: 1px solid rgba(25, 118, 210, 0.2);
             backdrop-filter: blur(10px);
             animation: slideIn 0.4s ease-out;
@@ -304,16 +231,15 @@ function getProgramChairs($pdo) {
         }
 
         .bulk-actions button {
-            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-            color: white;
+            background: var(--btn-blue-bg);
+            color: var(--text-white);
             border: none;
             padding: 6px 12px;
             border-radius: 6px;
             margin-right: 8px;
             cursor: pointer;
             font-size: 0.8rem;
-            box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -337,16 +263,14 @@ function getProgramChairs($pdo) {
         }
 
         .bulk-actions button:hover {
-            background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
-            box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4),
-                        inset 0 2px 0 rgba(255, 255, 255, 0.3);
+            background: var(--btn-blue-hover);
+            box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.3);
             transform: translateY(-2px) scale(1.05);
         }
 
         .bulk-actions button:active {
             transform: translateY(-1px) scale(1.02);
-            box-shadow: 0 3px 12px rgba(25, 118, 210, 0.3),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            box-shadow: 0 3px 12px rgba(25, 118, 210, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
     </style>
 </head>

@@ -179,9 +179,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Program Chair Dashboard</title>
+    <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/scheduling.css">
     <style>
+        /* Program-specific class and course layouts */
         .classes-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -193,7 +195,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border-left: 4px solid #2E7D32;
+            border-left: 4px solid var(--text-green-secondary);
             transition: transform 0.3s ease;
         }
 
@@ -216,19 +218,19 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
         .class-name {
             font-size: 1.1rem;
             font-weight: bold;
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 5px;
         }
 
         .class-code {
-            color: #2E7D32;
+            color: var(--text-green-secondary);
             font-weight: 500;
             font-size: 0.9rem;
         }
 
         .class-meta {
             font-size: 0.85rem;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .class-stats {
@@ -248,12 +250,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
         .class-stat-number {
             font-size: 1.2rem;
             font-weight: bold;
-            color: #2E7D32;
+            color: var(--text-green-secondary);
         }
 
         .class-stat-label {
             font-size: 0.75rem;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .courses-grid {
@@ -278,18 +280,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
         }
 
         .course-code {
-            color: #2c3e50;
+            color: var(--text-primary);
             font-size: 2.25rem;
         }
 
         .course-units {
-            color: #888;
+            color: var(--text-secondary);
             font-size: 1.2rem;
         }
 
         .course-description {
             font-size: 1rem;
-            color: #333;
+            color: var(--text-primary);
         }
 
         .schedule-preview {
@@ -313,17 +315,17 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
 
         .schedule-course {
             font-weight: 500;
-            color: #333;
+            color: var(--text-primary);
         }
 
         .schedule-time {
-            color: #666;
+            color: var(--text-secondary);
             font-size: 0.8rem;
         }
 
         .add-card {
             background: linear-gradient(135deg, #E8F5E8 0%, #F1F8E9 100%);
-            border: 2px dashed #2E7D32;
+            border: 2px dashed var(--text-green-secondary);
             border-radius: 12px;
             padding: 40px 20px;
             text-align: center;
@@ -344,14 +346,14 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
 
         .add-card:hover {
             background: linear-gradient(135deg, #C8E6C9 0%, #E8F5E8 100%);
-            border-color: #1B5E20;
+            border-color: var(--text-green-primary);
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(46, 125, 50, 0.15);
         }
 
         .add-card-icon {
             font-size: 3rem;
-            color: #2E7D32;
+            color: var(--text-green-secondary);
             margin-bottom: 15px;
             transition: all 0.3s ease;
         }
@@ -362,19 +364,19 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
         }
 
         .add-card:hover .add-card-icon {
-            color: #1B5E20;
+            color: var(--text-green-primary);
             transform: scale(1.1);
         }
 
         .add-card-title {
             font-size: 1.2rem;
             font-weight: bold;
-            color: #1B5E20;
+            color: var(--text-green-primary);
         }
 
         .add-card-subtitle {
             font-size: 0.9rem;
-            color: #2E7D32;
+            color: var(--text-green-secondary);
             opacity: 0.8;
         }
 
