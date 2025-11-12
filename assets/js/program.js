@@ -276,39 +276,30 @@ function generateScheduleView(facultyId, viewType = 'schedule') {
 }
 
 function populateScheduleContent(schedules, rightContent, isClickable = false) {
-    // Populate mobile pages
+    // Get all containers
     const mwfContainer = document.getElementById('mwfTableContainer');
     const tthContainer = document.getElementById('tthTableContainer');
     const mobileSummaryPanel = document.getElementById('mobileSummaryPanel');
+    const desktopContent = document.querySelector('.desktop-grid-content');
     
+    // COMPLETELY SEPARATE CONTENT FOR EACH MOBILE PAGE
+    
+    // PAGE 1: MWF Schedule ONLY
     if (mwfContainer) {
-        mwfContainer.innerHTML = `
-            <div class="schedule-table-wrapper">
-                ${generateMWFScheduleTable(schedules, isClickable ? 'clickable-cell' : '', isClickable ? 'onclick="handleTimeSlotClick(this)"' : '')}
-            </div>
-            <div class="page-summary">
-                ${generateMWFSummary(schedules)}
-            </div>
-        `;
+        mwfContainer.innerHTML = generateMWFPageContent(schedules, isClickable);
     }
     
+    // PAGE 2: TTH Schedule ONLY  
     if (tthContainer) {
-        tthContainer.innerHTML = `
-            <div class="schedule-table-wrapper">
-                ${generateTTHScheduleTable(schedules, isClickable ? 'clickable-cell' : '', isClickable ? 'onclick="handleTimeSlotClick(this)"' : '')}
-            </div>
-            <div class="page-summary">
-                ${generateTTHSummary(schedules)}
-            </div>
-        `;
+        tthContainer.innerHTML = generateTTHPageContent(schedules, isClickable);
     }
     
+    // PAGE 3: Complete Summary ONLY
     if (mobileSummaryPanel) {
         mobileSummaryPanel.innerHTML = rightContent;
     }
     
-    // Populate desktop/tablet grid
-    const desktopContent = document.querySelector('.desktop-grid-content');
+    // DESKTOP/TABLET: Normal grid layout
     if (desktopContent) {
         desktopContent.innerHTML = `
             <div class="modal-grid-container">
@@ -321,6 +312,63 @@ function populateScheduleContent(schedules, rightContent, isClickable = false) {
             </div>
         `;
     }
+}
+
+// DEDICATED PAGE CONTENT GENERATORS
+function generateMWFPageContent(schedules, isClickable = false) {
+    const mwfSchedules = schedules.filter(s => {
+        const days = s.days.toUpperCase();
+        return days.includes('M') || days.includes('W') || days.includes('F');
+    });
+    
+    const totalUnits = mwfSchedules.reduce((sum, schedule) => sum + parseInt(schedule.units), 0);
+    
+    return `
+        <div class="schedule-table-wrapper">
+            ${generateMWFScheduleTable(schedules, isClickable ? 'clickable-cell' : '', isClickable ? 'onclick="handleTimeSlotClick(this)"' : '')}
+        </div>
+        <div class="page-summary">
+            <div class="summary-header">
+                ${mwfSchedules.length} subjects, ${totalUnits} units
+            </div>
+            <div class="subjects-list" data-count="${getDataCount(mwfSchedules.length)}">
+                ${mwfSchedules.map(schedule => `
+                    <div class="subject-item">
+                        <div class="subject-code">${schedule.course_code}</div>
+                        <div class="subject-details">${schedule.course_description} • ${schedule.units}u • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function generateTTHPageContent(schedules, isClickable = false) {
+    const tthSchedules = schedules.filter(s => {
+        const days = s.days.toUpperCase();
+        return days.includes('T') || days.includes('TH') || days.includes('S');
+    });
+    
+    const totalUnits = tthSchedules.reduce((sum, schedule) => sum + parseInt(schedule.units), 0);
+    
+    return `
+        <div class="schedule-table-wrapper">
+            ${generateTTHScheduleTable(schedules, isClickable ? 'clickable-cell' : '', isClickable ? 'onclick="handleTimeSlotClick(this)"' : '')}
+        </div>
+        <div class="page-summary">
+            <div class="summary-header">
+                ${tthSchedules.length} subjects, ${totalUnits} units
+            </div>
+            <div class="subjects-list" data-count="${getDataCount(tthSchedules.length)}">
+                ${tthSchedules.map(schedule => `
+                    <div class="subject-item">
+                        <div class="subject-code">${schedule.course_code}</div>
+                        <div class="subject-details">${schedule.course_description} • ${schedule.units}u • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
 }
 
 function generateScheduleTables(schedules, isClickable = false) {
@@ -596,22 +644,15 @@ function generateMWFSummary(schedules) {
         return days.includes('M') || days.includes('W') || days.includes('F');
     });
     
-    const totalUnits = mwfSchedules.reduce((sum, schedule) => sum + parseInt(schedule.units), 0);
-    
+    // SIMPLE subject items only - NO headers, stats, or actions
     return `
-        <div class="page-summary-content">
-            <h5>MWF Schedule (${mwfSchedules.length} subjects, ${totalUnits} units)</h5>
-            <div class="subjects-list" data-count="${getDataCount(mwfSchedules.length)}">
-                ${mwfSchedules.map(schedule => `
-                    <div class="subject-item">
-                        <div class="subject-code">${schedule.course_code}</div>
-                        <div class="subject-details">
-                            ${schedule.course_description}<br>
-                            ${schedule.units} units • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)} • ${schedule.class_name}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
+        <div class="subjects-list" data-count="${getDataCount(mwfSchedules.length)}">
+            ${mwfSchedules.map(schedule => `
+                <div class="subject-item">
+                    <div class="subject-code">${schedule.course_code}</div>
+                    <div class="subject-details">${schedule.course_description} • ${schedule.units}u • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
+                </div>
+            `).join('')}
         </div>
     `;
 }
@@ -622,22 +663,15 @@ function generateTTHSummary(schedules) {
         return days.includes('T') || days.includes('TH') || days.includes('S');
     });
     
-    const totalUnits = tthSchedules.reduce((sum, schedule) => sum + parseInt(schedule.units), 0);
-    
+    // SIMPLE subject items only - NO headers, stats, or actions
     return `
-        <div class="page-summary-content">
-            <h5>TTH Schedule (${tthSchedules.length} subjects, ${totalUnits} units)</h5>
-            <div class="subjects-list" data-count="${getDataCount(tthSchedules.length)}">
-                ${tthSchedules.map(schedule => `
-                    <div class="subject-item">
-                        <div class="subject-code">${schedule.course_code}</div>
-                        <div class="subject-details">
-                            ${schedule.course_description}<br>
-                            ${schedule.units} units • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)} • ${schedule.class_name}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
+        <div class="subjects-list" data-count="${getDataCount(tthSchedules.length)}">
+            ${tthSchedules.map(schedule => `
+                <div class="subject-item">
+                    <div class="subject-code">${schedule.course_code}</div>
+                    <div class="subject-details">${schedule.course_description} • ${schedule.units}u • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
+                </div>
+            `).join('')}
         </div>
     `;
 }
