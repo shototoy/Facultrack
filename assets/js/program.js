@@ -258,7 +258,7 @@ function generateScheduleView(facultyId, viewType = 'schedule') {
     
     if (viewType === 'courseload') {
         title.textContent = `${facultyName} - Course Load Assignment`;
-        content.innerHTML = generateGridLayout(schedules, generateCourseLoadForm(facultyId), true);
+        populateScheduleContent(schedules, generateCourseLoadForm(facultyId), true);
         loadCourseAndClassData();
     } else {
         title.textContent = `${facultyName} - Schedule`;
@@ -271,21 +271,56 @@ function generateScheduleView(facultyId, viewType = 'schedule') {
             `;
             return;
         }
-        content.innerHTML = generateGridLayout(schedules, generateScheduleSummary(schedules, facultyId), false);
+        populateScheduleContent(schedules, generateScheduleSummary(schedules, facultyId), false);
     }
 }
 
-function generateGridLayout(schedules, rightContent, isClickable = false) {
-    return `
-        <div class="modal-grid-container" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; height: 100%;">
-            <div class="schedule-tables">
-                ${generateScheduleTables(schedules, isClickable)}
+function populateScheduleContent(schedules, rightContent, isClickable = false) {
+    // Populate mobile pages
+    const mwfContainer = document.getElementById('mwfTableContainer');
+    const tthContainer = document.getElementById('tthTableContainer');
+    const mobileSummaryPanel = document.getElementById('mobileSummaryPanel');
+    
+    if (mwfContainer) {
+        mwfContainer.innerHTML = `
+            <div class="schedule-table-wrapper">
+                ${generateMWFScheduleTable(schedules, isClickable ? 'clickable-cell' : '', isClickable ? 'onclick="handleTimeSlotClick(this)"' : '')}
             </div>
-            <div class="right-panel">
-                ${rightContent}
+            <div class="page-summary">
+                ${generateMWFSummary(schedules)}
             </div>
-        </div>
-    `;
+        `;
+    }
+    
+    if (tthContainer) {
+        tthContainer.innerHTML = `
+            <div class="schedule-table-wrapper">
+                ${generateTTHScheduleTable(schedules, isClickable ? 'clickable-cell' : '', isClickable ? 'onclick="handleTimeSlotClick(this)"' : '')}
+            </div>
+            <div class="page-summary">
+                ${generateTTHSummary(schedules)}
+            </div>
+        `;
+    }
+    
+    if (mobileSummaryPanel) {
+        mobileSummaryPanel.innerHTML = rightContent;
+    }
+    
+    // Populate desktop/tablet grid
+    const desktopContent = document.querySelector('.desktop-grid-content');
+    if (desktopContent) {
+        desktopContent.innerHTML = `
+            <div class="modal-grid-container">
+                <div class="schedule-tables">
+                    ${generateScheduleTables(schedules, isClickable)}
+                </div>
+                <div class="right-panel">
+                    ${rightContent}
+                </div>
+            </div>
+        `;
+    }
 }
 
 function generateScheduleTables(schedules, isClickable = false) {
@@ -519,7 +554,7 @@ function generateScheduleSummary(schedules, facultyId) {
     
     return `
         <div class="schedule-summary-content">
-            <h4>Schedule Summary</h4>
+            <h4>Complete Schedule Summary</h4>
             <div class="load-stats">
                 <div class="load-stat">
                     <div class="stat-number">${totalSubjects}</div>
@@ -531,8 +566,8 @@ function generateScheduleSummary(schedules, facultyId) {
                 </div>
             </div>
             
-            <div class="subjects-list">
-                <h5>Assigned Subjects</h5>
+            <div class="subjects-list" data-count="${getDataCount(schedules.length)}">
+                <h5>All Assigned Subjects</h5>
                 ${schedules.map(schedule => `
                     <div class="subject-item">
                         <div class="subject-code">${schedule.course_code}</div>
@@ -553,6 +588,64 @@ function generateScheduleSummary(schedules, facultyId) {
             </div>
         </div>
     `;
+}
+
+function generateMWFSummary(schedules) {
+    const mwfSchedules = schedules.filter(s => {
+        const days = s.days.toUpperCase();
+        return days.includes('M') || days.includes('W') || days.includes('F');
+    });
+    
+    const totalUnits = mwfSchedules.reduce((sum, schedule) => sum + parseInt(schedule.units), 0);
+    
+    return `
+        <div class="page-summary-content">
+            <h5>MWF Schedule (${mwfSchedules.length} subjects, ${totalUnits} units)</h5>
+            <div class="subjects-list" data-count="${getDataCount(mwfSchedules.length)}">
+                ${mwfSchedules.map(schedule => `
+                    <div class="subject-item">
+                        <div class="subject-code">${schedule.course_code}</div>
+                        <div class="subject-details">
+                            ${schedule.course_description}<br>
+                            ${schedule.units} units • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)} • ${schedule.class_name}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function generateTTHSummary(schedules) {
+    const tthSchedules = schedules.filter(s => {
+        const days = s.days.toUpperCase();
+        return days.includes('T') || days.includes('TH') || days.includes('S');
+    });
+    
+    const totalUnits = tthSchedules.reduce((sum, schedule) => sum + parseInt(schedule.units), 0);
+    
+    return `
+        <div class="page-summary-content">
+            <h5>TTH Schedule (${tthSchedules.length} subjects, ${totalUnits} units)</h5>
+            <div class="subjects-list" data-count="${getDataCount(tthSchedules.length)}">
+                ${tthSchedules.map(schedule => `
+                    <div class="subject-item">
+                        <div class="subject-code">${schedule.course_code}</div>
+                        <div class="subject-details">
+                            ${schedule.course_description}<br>
+                            ${schedule.units} units • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)} • ${schedule.class_name}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function getDataCount(count) {
+    if (count <= 2) return count.toString();
+    if (count <= 4) return count.toString();
+    return 'data-count-large';
 }
 
 function generateCourseLoadForm(facultyId) {
@@ -1511,6 +1604,27 @@ function toggleClassDetailsOverlay(button) {
         // Show overlay - slide down
         overlay.classList.add('overlay-visible');
         button.innerHTML = 'Hide Schedule Details <span class="arrow">▲</span>';
+    }
+}
+
+// Mobile pagination function
+function showMobilePage(pageNumber) {
+    // Update pagination buttons
+    document.querySelectorAll('.pagination-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (parseInt(btn.dataset.page) === pageNumber) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Update page content
+    document.querySelectorAll('.mobile-page').forEach(page => {
+        page.classList.remove('active');
+    });
+    
+    const targetPage = document.querySelector(`.page-${pageNumber}`);
+    if (targetPage) {
+        targetPage.classList.add('active');
     }
 }
 

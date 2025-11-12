@@ -227,8 +227,40 @@ $role = $_SESSION['role'] ?? '';
         </div>
 
         <div class="modal-body">
+            <!-- Mobile pagination navigation -->
+            <div class="mobile-pagination-nav">
+                <button class="pagination-btn active" onclick="showMobilePage(1)" data-page="1">MWF Schedule</button>
+                <button class="pagination-btn" onclick="showMobilePage(2)" data-page="2">TTH Schedule</button>
+                <button class="pagination-btn" onclick="showMobilePage(3)" data-page="3">Summary</button>
+            </div>
+            
+            <!-- Content area with both mobile pages and desktop grid -->
             <div id="scheduleContent">
-                <div class="loading">Loading schedule...</div>
+                <!-- Mobile paginated content -->
+                <div class="mobile-page-content">
+                    <div class="mobile-page page-1 active">
+                        <div class="schedule-table-container" id="mwfTableContainer">
+                            <div class="loading">Loading MWF schedule...</div>
+                        </div>
+                    </div>
+                    <div class="mobile-page page-2">
+                        <div class="schedule-table-container" id="tthTableContainer">
+                            <div class="loading">Loading TTH schedule...</div>
+                        </div>
+                    </div>
+                    <div class="mobile-page page-3">
+                        <div class="schedule-table-container" id="fullSummaryContainer">
+                            <div class="right-panel" id="mobileSummaryPanel">
+                                <div class="loading">Loading summary...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Desktop/tablet grid content -->
+                <div class="desktop-grid-content">
+                    <div class="loading">Loading schedule...</div>
+                </div>
             </div>
         </div>
     </div>
