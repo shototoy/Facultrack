@@ -13,7 +13,6 @@ $faculty_data = [];
 $class_schedules = [];
 $courses_data = [];
 $faculty_schedules = [];
-
 if (!empty($class_ids)) {
     $faculty_data = getAllFaculty($pdo);
     foreach ($faculty_data as $faculty) {
@@ -24,7 +23,6 @@ if (!empty($class_ids)) {
         $class_schedules[$class['class_id']] = getClassSchedules($pdo, $class['class_id']);
     }
 }
-
 require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
@@ -149,11 +147,27 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
         $time_start = $_POST['time_start'];
         $time_end = $_POST['time_end'];
         $room = $_POST['room'] ?? null;
+        $is_edit = isset($_POST['is_edit_mode']) && $_POST['is_edit_mode'] === 'true';
         
+        // For edit mode, get original values to exclude from conflict check
+        $original_course = $is_edit ? ($_POST['original_course_code'] ?? '') : '';
+        $original_time_start = $is_edit ? ($_POST['original_time_start'] ?? '') : '';
+        $original_days = $is_edit ? ($_POST['original_days'] ?? '') : '';
+        
+        // Check for conflicts, excluding original schedule if editing
         $conflict_query = "SELECT COUNT(*) as conflicts FROM schedules 
                           WHERE faculty_id = ? AND time_start = ? AND days = ? AND is_active = TRUE";
+        
+        if ($is_edit) {
+            $conflict_query .= " AND NOT (course_code = ? AND time_start = ? AND days = ?)";
+        }
+        
         $conflict_stmt = $pdo->prepare($conflict_query);
-        $conflict_stmt->execute([$faculty_id, $time_start, $days]);
+        if ($is_edit) {
+            $conflict_stmt->execute([$faculty_id, $time_start, $days, $original_course, $original_time_start, $original_days]);
+        } else {
+            $conflict_stmt->execute([$faculty_id, $time_start, $days]);
+        }
         $conflicts = $conflict_stmt->fetch(PDO::FETCH_ASSOC)['conflicts'];
         
         if ($conflicts > 0) {
@@ -161,14 +175,31 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
             exit;
         }
         
-        $insert_query = "INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, semester, academic_year, is_active) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, '1st', '2024-2025', TRUE)";
-        $stmt = $pdo->prepare($insert_query);
-        
-        if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room])) {
-            echo json_encode(['success' => true, 'message' => 'Course assigned successfully']);
+        if ($is_edit) {
+            // Update existing schedule
+            $update_query = "UPDATE schedules 
+                            SET faculty_id = ?, course_code = ?, class_id = ?, days = ?, 
+                                time_start = ?, time_end = ?, room = ?
+                            WHERE course_code = ? AND time_start = ? AND days = ? AND is_active = TRUE";
+            $stmt = $pdo->prepare($update_query);
+            
+            if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room, 
+                               $original_course, $original_time_start, $original_days])) {
+                echo json_encode(['success' => true, 'message' => 'Course assignment updated successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to update course assignment']);
+            }
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to assign course']);
+            // Insert new schedule
+            $insert_query = "INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, semester, academic_year, is_active) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, '1st', '2024-2025', TRUE)";
+            $stmt = $pdo->prepare($insert_query);
+            
+            if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room])) {
+                echo json_encode(['success' => true, 'message' => 'Course assigned successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to assign course']);
+            }
         }
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
@@ -354,6 +385,350 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
     }
     exit;
 }
+
+if (isset($_POST['action']) && $_POST['action'] === 'get_faculty_schedules') {
+    try {
+        // Get all faculty schedules for the current program chair
+        $faculty_data = getAllFaculty($pdo);
+        $faculty_schedules = [];
+        
+        foreach ($faculty_data as $faculty) {
+            $faculty_schedules[$faculty['faculty_id']] = getFacultySchedules($pdo, $faculty['faculty_id']);
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'faculty_schedules' => $faculty_schedules
+        ]);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Error fetching faculty schedules: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
+if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
+    try {
+        $faculty_id = $_POST['faculty_id'];
+        $course_code = $_POST['course_code'];
+        $class_id = $_POST['class_id'];
+        $time_start = $_POST['time_start'];
+        $time_end = $_POST['time_end'];
+        $days = $_POST['days'];
+        $is_edit = isset($_POST['is_edit']) && $_POST['is_edit'] === 'true';
+        
+        // For edit mode, get original values to exclude
+        $original_course = $is_edit ? $_POST['original_course'] : '';
+        $original_time_start = $is_edit ? $_POST['original_time_start'] : '';
+        $original_days = $is_edit ? $_POST['original_days'] : '';
+        
+        $conflicts = [];
+        
+        // 1. Check Faculty Schedule Conflicts
+        $faculty_check = "SELECT s.course_code, s.time_start, s.time_end, s.days, s.room 
+                         FROM schedules s
+                         JOIN courses c ON s.course_code = c.course_code
+                         WHERE s.faculty_id = ? AND s.is_active = TRUE";
+        
+        if ($is_edit) {
+            $faculty_check .= " AND NOT (s.course_code = ? AND s.time_start = ? AND s.days = ?)";
+        }
+        
+        $stmt = $pdo->prepare($faculty_check);
+        if ($is_edit) {
+            $stmt->execute([$faculty_id, $original_course, $original_time_start, $original_days]);
+        } else {
+            $stmt->execute([$faculty_id]);
+        }
+        
+        $faculty_schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($faculty_schedules as $schedule) {
+            // Check day overlap
+            $schedule_days = strtoupper($schedule['days']);
+            $new_days = strtoupper($days);
+            $has_day_overlap = false;
+            
+            for ($i = 0; $i < strlen($new_days); $i++) {
+                if (strpos($schedule_days, $new_days[$i]) !== false) {
+                    $has_day_overlap = true;
+                    break;
+                }
+            }
+            
+            if ($has_day_overlap) {
+                // Check time overlap
+                $schedule_start = strtotime($schedule['time_start']);
+                $schedule_end = strtotime($schedule['time_end']);
+                $new_start = strtotime($time_start);
+                $new_end = strtotime($time_end);
+                
+                if (($new_start < $schedule_end) && ($new_end > $schedule_start)) {
+                    $conflicts[] = "Faculty conflict: Already teaching {$schedule['course_code']} at " . 
+                                 date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) . 
+                                 " on " . $schedule['days'];
+                }
+            }
+        }
+        
+        // 2. Check Class Schedule Conflicts
+        $class_check = "SELECT s.course_code, s.time_start, s.time_end, s.days, u.full_name as faculty_name
+                       FROM schedules s
+                       JOIN faculty f ON s.faculty_id = f.faculty_id
+                       JOIN users u ON f.user_id = u.user_id
+                       WHERE s.class_id = ? AND s.is_active = TRUE";
+        
+        if ($is_edit) {
+            $class_check .= " AND NOT (s.course_code = ? AND s.time_start = ? AND s.days = ?)";
+        }
+        
+        $stmt = $pdo->prepare($class_check);
+        if ($is_edit) {
+            $stmt->execute([$class_id, $original_course, $original_time_start, $original_days]);
+        } else {
+            $stmt->execute([$class_id]);
+        }
+        
+        $class_schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($class_schedules as $schedule) {
+            // Check day overlap
+            $schedule_days = strtoupper($schedule['days']);
+            $new_days = strtoupper($days);
+            $has_day_overlap = false;
+            
+            for ($i = 0; $i < strlen($new_days); $i++) {
+                if (strpos($schedule_days, $new_days[$i]) !== false) {
+                    $has_day_overlap = true;
+                    break;
+                }
+            }
+            
+            if ($has_day_overlap) {
+                // Check time overlap
+                $schedule_start = strtotime($schedule['time_start']);
+                $schedule_end = strtotime($schedule['time_end']);
+                $new_start = strtotime($time_start);
+                $new_end = strtotime($time_end);
+                
+                if (($new_start < $schedule_end) && ($new_end > $schedule_start)) {
+                    $conflicts[] = "Class conflict: {$schedule['course_code']} already scheduled with {$schedule['faculty_name']} at " . 
+                                 date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) . 
+                                 " on " . $schedule['days'];
+                }
+            }
+        }
+        
+        // 3. Check Room Conflicts (if room is specified)
+        if (isset($_POST['room']) && !empty($_POST['room'])) {
+            $room = $_POST['room'];
+            $room_check = "SELECT s.course_code, s.time_start, s.time_end, s.days, u.full_name as faculty_name
+                          FROM schedules s
+                          JOIN faculty f ON s.faculty_id = f.faculty_id
+                          JOIN users u ON f.user_id = u.user_id
+                          WHERE s.room = ? AND s.is_active = TRUE";
+            
+            if ($is_edit) {
+                $room_check .= " AND NOT (s.course_code = ? AND s.time_start = ? AND s.days = ?)";
+            }
+            
+            $stmt = $pdo->prepare($room_check);
+            if ($is_edit) {
+                $stmt->execute([$room, $original_course, $original_time_start, $original_days]);
+            } else {
+                $stmt->execute([$room]);
+            }
+            
+            $room_schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($room_schedules as $schedule) {
+                // Check day overlap
+                $schedule_days = strtoupper($schedule['days']);
+                $new_days = strtoupper($days);
+                $has_day_overlap = false;
+                
+                for ($i = 0; $i < strlen($new_days); $i++) {
+                    if (strpos($schedule_days, $new_days[$i]) !== false) {
+                        $has_day_overlap = true;
+                        break;
+                    }
+                }
+                
+                if ($has_day_overlap) {
+                    // Check time overlap
+                    $schedule_start = strtotime($schedule['time_start']);
+                    $schedule_end = strtotime($schedule['time_end']);
+                    $new_start = strtotime($time_start);
+                    $new_end = strtotime($time_end);
+                    
+                    if (($new_start < $schedule_end) && ($new_end > $schedule_start)) {
+                        $conflicts[] = "Room conflict: {$room} already booked for {$schedule['course_code']} with {$schedule['faculty_name']} at " . 
+                                     date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) . 
+                                     " on " . $schedule['days'];
+                    }
+                }
+            }
+        }
+        
+        echo json_encode([
+            'success' => count($conflicts) === 0,
+            'conflicts' => $conflicts,
+            'has_conflicts' => count($conflicts) > 0,
+            'message' => count($conflicts) > 0 ? implode('; ', $conflicts) : 'No conflicts detected'
+        ]);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Validation error: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
+if (isset($_POST['action']) && $_POST['action'] === 'get_course_curriculum') {
+    try {
+        $course_code = $_POST['course_code'];
+        
+        $curriculum_query = "SELECT DISTINCT year_level, semester 
+                           FROM curriculum 
+                           WHERE course_code = ? AND is_active = TRUE
+                           ORDER BY year_level, semester";
+        
+        $stmt = $pdo->prepare($curriculum_query);
+        $stmt->execute([$course_code]);
+        $curriculum = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'success' => true,
+            'curriculum' => $curriculum
+        ]);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error fetching course curriculum: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
+if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
+    try {
+        // Get unique rooms from existing schedules + predefined rooms
+        $room_query = "SELECT DISTINCT room 
+                      FROM schedules 
+                      WHERE room IS NOT NULL AND room != '' AND is_active = TRUE
+                      ORDER BY room";
+        
+        $stmt = $pdo->prepare($room_query);
+        $stmt->execute();
+        $existing_rooms = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        // Predefined room options
+        $predefined_rooms = [
+            'Room 101', 'Room 102', 'Room 103', 'Room 104', 'Room 105',
+            'Room 201', 'Room 202', 'Room 203', 'Room 204', 'Room 205',
+            'Room 301', 'Room 302', 'Room 303', 'Room 304', 'Room 305',
+            'Computer Lab 1', 'Computer Lab 2', 'Physics Lab', 'Chemistry Lab',
+            'Library', 'Auditorium', 'Conference Room', 'TBA'
+        ];
+        
+        // Combine and remove duplicates
+        $all_rooms = array_unique(array_merge($existing_rooms, $predefined_rooms));
+        sort($all_rooms);
+        
+        echo json_encode([
+            'success' => true,
+            'rooms' => $all_rooms
+        ]);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error fetching room options: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
+if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
+    try {
+        $selected_course = $_POST['selected_course'] ?? null;
+        
+        $response = [
+            'success' => true,
+            'courses' => [],
+            'classes' => [],
+            'rooms' => []
+        ];
+        
+        // COURSE OPTIONS: Check curriculum (all active courses)
+        $courses_query = "SELECT DISTINCT c.course_code, c.course_description, c.units 
+                         FROM courses c 
+                         WHERE c.is_active = TRUE
+                         ORDER BY c.course_code";
+        $courses_stmt = $pdo->prepare($courses_query);
+        $courses_stmt->execute();
+        $response['courses'] = $courses_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // CLASS OPTIONS: Check if course covers class year level via curriculum
+        if ($selected_course) {
+            $classes_query = "SELECT DISTINCT cl.class_id, cl.class_code, cl.class_name, cl.year_level
+                             FROM classes cl
+                             JOIN curriculum cur ON cl.year_level = cur.year_level 
+                                                AND cl.semester = cur.semester 
+                                                AND cl.academic_year = cur.academic_year
+                             WHERE cur.course_code = ? AND cur.is_active = TRUE 
+                             AND cl.is_active = TRUE AND cl.program_chair_id = ?
+                             ORDER BY cl.year_level, cl.class_name";
+            $classes_stmt = $pdo->prepare($classes_query);
+            $classes_stmt->execute([$selected_course, $user_id]);
+        } else {
+            $classes_query = "SELECT class_id, class_code, class_name, year_level 
+                             FROM classes 
+                             WHERE program_chair_id = ? AND is_active = TRUE 
+                             ORDER BY year_level, class_name";
+            $classes_stmt = $pdo->prepare($classes_query);
+            $classes_stmt->execute([$user_id]);
+        }
+        $response['classes'] = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // ROOM OPTIONS: All available rooms
+        $room_query = "SELECT DISTINCT room 
+                      FROM schedules 
+                      WHERE room IS NOT NULL AND room != '' AND is_active = TRUE
+                      ORDER BY room";
+        
+        $stmt = $pdo->prepare($room_query);
+        $stmt->execute();
+        $existing_rooms = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        $predefined_rooms = [
+            'Room 101', 'Room 102', 'Room 103', 'Room 104', 'Room 105',
+            'Room 201', 'Room 202', 'Room 203', 'Room 204', 'Room 205',
+            'Room 301', 'Room 302', 'Room 303', 'Room 304', 'Room 305',
+            'Computer Lab 1', 'Computer Lab 2', 'Physics Lab', 'Chemistry Lab',
+            'Library', 'Auditorium', 'Conference Room', 'TBA'
+        ];
+        
+        $all_rooms = array_unique(array_merge($existing_rooms, $predefined_rooms));
+        sort($all_rooms);
+        $response['rooms'] = $all_rooms;
+        
+        echo json_encode($response);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error fetching validated options: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -366,7 +741,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/scheduling.css">
     <style>
-        /* Program page overlay animations and styling */
+        
         .course-card,
         .class-card {
             position: relative;
@@ -833,14 +1208,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
         
         // Ensure toggleSearch is available immediately
         if (typeof window.toggleSearch !== 'function') {
-            console.log('toggleSearch not found, defining fallback');
             window.toggleSearch = function() {
-                console.log('Fallback toggleSearch called');
                 const container = document.getElementById('searchContainer');
                 const searchInput = document.getElementById('searchInput');
                 
                 if (!container || !searchInput) {
-                    console.log('Search elements not found in fallback');
                     return;
                 }
                 

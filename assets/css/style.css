@@ -1,4 +1,4 @@
-/* UNIFORM GENERAL STYLES */
+
 * {
     margin: 0;
     padding: 0;
@@ -15,8 +15,6 @@ body {
     box-sizing: border-box;
 }
 
-/* RESPONSIVE HEADER STYLES - Moved from page_header.php */
-/* DESKTOP (>1024px) - 30% left, 40% middle, 30% right */
 @media (min-width: 1025px) {
     .header-content {
         align-items: center;
@@ -103,7 +101,7 @@ body {
     }
 }
 
-/* DESKTOP WIDTH CONSTRAINTS - Header actions wrap to row 2 */
+
 @media (max-width: 1300px) and (min-width: 1025px) {
     .header-right {
         flex-direction: column;
@@ -133,7 +131,7 @@ body {
     
 }
 
-/* TABLET (769px-1024px) - 30% left, 40% middle, 30% right */
+
 @media (max-width: 1024px) and (min-width: 769px) {
     
     .header-left {
@@ -274,10 +272,10 @@ body {
     }
 }
 
-/* PHONE (≤768px) - Header scrolls with content naturally */
+
 @media (max-width: 768px) {
     
-    /* Ensure page can scroll on phone */
+    
     body {
         overflow: auto !important;
         height: auto !important;
@@ -296,7 +294,7 @@ body {
         gap: 1rem;
     }
     
-    /* Phone Row 1: User info (left) + Details (right) */
+    
     .header-content > .phone-top-row {
         display: flex;
         align-items: center;
@@ -322,7 +320,7 @@ body {
         gap: 2px;
     }
     
-    /* Fallback for non-wrapped layout */
+    
     .header-left:not(.phone-top-row .header-left) {
         order: 1;
         flex: 0 0 50%;
@@ -394,7 +392,7 @@ body {
         opacity: 0.8;
     }
     
-    /* Phone Row 2: Stats, then Logout/Toggle stacked */
+    
     .header-right {
         order: 2;
         width: 100%;
@@ -446,9 +444,7 @@ body {
         height: auto;
         flex: 1;
     }
-    
-    
-    /* When constrained - Details on TOP, User info BELOW */
+
     @media (max-width: 600px) {
         .header-content {
             flex-direction: column;
@@ -508,7 +504,7 @@ body {
         }
     }
     
-    /* Full width sidebar for phone */
+    
     .sidebar {
         width: 100% !important;
         right: -100% !important;
@@ -519,7 +515,7 @@ body {
     }
 }
 
-/* PHONE - Override body constraints for natural scrolling */
+
 @media (max-width: 768px) {
     body {
         height: auto !important;
@@ -552,7 +548,7 @@ body::before {
     transition: margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* HEADER */
+
 .header {
     background: var(--bg-overlay);
     color: var(--text-white);
@@ -583,13 +579,13 @@ body::before {
     opacity: 0.8;
 }
 
-/* USER INFO - NO POSITIONING CONSTRAINTS */
+
 .user-info {
-    /* Completely free - no positioning, no fixed dimensions */
+    
     margin: 0 !important;
 }
 
-/* USER INFO CONTAINER - Includes avatar and info */
+
 .header-left {
     backdrop-filter: blur(12px);
     background: rgba(0, 0, 0, 0.2);
@@ -600,7 +596,7 @@ body::before {
     margin: 0 !important;
 }
 
-/* FEATHER ICONS */
+
 .feather {
     width: 1em;
     height: 1em;
@@ -627,7 +623,7 @@ body::before {
     height: 2em;
 }
 
-/* USER AVATAR - Dynamic sizing based on container */
+
 .user-avatar {
     border-radius: 50%;
     background: var(--accent-color);
@@ -664,7 +660,7 @@ body::before {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-/* SEARCH BAR */
+
 .search-bar {
     max-width: 1024px;
     margin: 24px auto;
@@ -716,7 +712,7 @@ body::before {
     transform: translateY(-50%) scale(1.05);
 }
 
-/* FORMS */
+
 .form-group {
     margin-bottom: 20px;
     text-align: left;
@@ -754,7 +750,7 @@ body::before {
     cursor: pointer;
 }
 
-/* BUTTONS */
+
 .btn-primary {
     background: var(--btn-primary-bg) !important;
     color: var(--text-white) !important;
@@ -795,7 +791,7 @@ body::before {
     transform: translateY(-1px);
 }
 
-/* MESSAGES */
+
 .message.success,
 .success-message {
     background: var(--success-bg);
@@ -822,7 +818,7 @@ body::before {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-/* STATUS BADGES */
+
 .status-available {
     background: var(--status-available-bg);
     color: var(--status-available-text);
@@ -850,7 +846,7 @@ body::before {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* PRIORITY STYLES */
+
 .priority-high {
     color: var(--priority-high-text);
     background: var(--priority-high-bg);
@@ -866,7 +862,7 @@ body::before {
     background: var(--priority-low-bg);
 }
 
-/* FACULTY GRID */
+
 .faculty-grid {
     display: grid;
     grid-template-columns: repeat(3, 30%);
@@ -923,7 +919,7 @@ body::before {
     font-size: 0.8rem;
 }
 
-/* MODALS */
+
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -1010,7 +1006,7 @@ body::before {
     border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-/* TABS SYSTEM */
+
 .dashboard-tabs {
     display: flex;
     align-items: center;
@@ -1040,6 +1036,7 @@ body::before {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid rgba(255, 255, 255, 0.3);
+    transform-origin: left center;
 }
 
 .dashboard-tabs .search-container:hover {
@@ -1167,7 +1164,7 @@ body::before {
     animation: fadeInUp 0.4s ease-out;
 }
 
-/* PROGRAM PAGE TAB CONTENT - Same background as dashboard tabs */
+
 body:has(.courses-grid) .tab-content.active,
 body:has(.classes-grid) .tab-content.active,
 body:has(.faculty-grid) .tab-content.active {
@@ -1193,7 +1190,7 @@ body:has(.faculty-grid) .tab-content.active {
     }
 }
 
-/* STATS CARDS */
+
 .stats-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1233,7 +1230,7 @@ body:has(.faculty-grid) .tab-content.active {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-/* TABLE SYSTEM */
+
 .table-container {
     background: linear-gradient(145deg, #ffffff, #f8f9fa);
     border-radius: 0px 0px 12px 12px;
@@ -1314,7 +1311,7 @@ body:has(.faculty-grid) .tab-content.active {
     box-shadow: 0 2px 8px rgba(46, 125, 50, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-/* ADDITIONAL BUTTONS */
+
 .add-btn,
 .export-btn {
     background: var(--btn-blue-bg);
@@ -1411,7 +1408,7 @@ body:has(.faculty-grid) .tab-content.active {
     transform: translateY(-2px);
 }
 
-/* STATUS DOT */
+
 .status-dot {
     width: 8px;
     height: 8px;
@@ -1426,7 +1423,7 @@ body:has(.faculty-grid) .tab-content.active {
     50% { opacity: 0.6; }
 }
 
-/* SIDEBAR */
+
 .sidebar {
     position: fixed;
     top: 0;
@@ -1492,8 +1489,6 @@ body:has(.faculty-grid) .tab-content.active {
     transform: scale(1.1);
 }
 
-
-/* FACULTY DASHBOARD STYLES */
 .dashboard-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -1688,7 +1683,7 @@ body:has(.faculty-grid) .tab-content.active {
     text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
-/* Faculty page specific - White icons for primary buttons */
+
 .action-card.btn-primary .action-icon {
     color: white;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
@@ -1699,7 +1694,7 @@ body:has(.faculty-grid) .tab-content.active {
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
 }
 
-/* PROGRAM PAGE ADD CARDS - First position styling */
+
 .add-card-first {
     order: -1;
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(248, 249, 250, 0.85));
@@ -1763,9 +1758,6 @@ body:has(.faculty-grid) .tab-content.active {
     text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
-/* RESPONSIVE DESIGN - 3 BREAKPOINTS */
-
-/* TABLET RESPONSIVE (769px - 1024px) */
 @media (max-width: 1024px) and (min-width: 769px) {
     body {
         padding: 16px;
@@ -1819,7 +1811,7 @@ body:has(.faculty-grid) .tab-content.active {
         height: 32px;
     }
     
-    /* Faculty Dashboard - Tablet */
+    
     .dashboard-grid {
         grid-template-columns: 1fr !important;
         grid-template-rows: auto 1fr !important;
@@ -1937,7 +1929,7 @@ body:has(.faculty-grid) .tab-content.active {
     }
 }
 
-/* PHONE RESPONSIVE (≤768px) */
+
 @media (max-width: 768px) {
     body {
         padding: 12px;
@@ -1985,14 +1977,20 @@ body:has(.faculty-grid) .tab-content.active {
         flex-basis: 100%;
     }
     
+    .dashboard-tabs .search-container {
+        transform-origin: center !important;
+    }
+    
     .dashboard-tabs .search-container.expanded {
         width: 100%;
+        transform-origin: center;
     }
     
     .dashboard-tabs .search-container.collapsed {
         width: 32px;
         height: 32px;
         margin: 0 auto;
+        transform-origin: center;
     }
     
     .dashboard-tabs .search-toggle {
@@ -2006,7 +2004,7 @@ body:has(.faculty-grid) .tab-content.active {
         height: 28px;
     }
     
-    /* Adjust content heights for mobile - Remove fixed heights */
+    
     .table-container,
     body:has(.courses-grid) .tab-content.active,
     body:has(.classes-grid) .tab-content.active,
@@ -2022,7 +2020,7 @@ body:has(.faculty-grid) .tab-content.active {
         height: auto !important;
     }
     
-    /* Faculty Dashboard - Phone */
+    
     .dashboard-grid {
         grid-template-columns: 1fr !important;
         grid-template-rows: auto 1fr !important;
@@ -2158,8 +2156,6 @@ body:has(.faculty-grid) .tab-content.active {
     }
 }
 
-
-/* DIRECTOR PAGE STYLES */
 .table-container::before {
     content: '';
     position: absolute;
@@ -2303,7 +2299,7 @@ body:has(.faculty-grid) .tab-content.active {
     box-shadow: 0 3px 12px rgba(25, 118, 210, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-/* HOME PAGE COURSE STATUS STYLES */
+
 .course-info {
     position: relative;
     display: flex;
@@ -2393,7 +2389,7 @@ body:has(.faculty-grid) .tab-content.active {
     margin-top: 16px;
 }
 
-/* SHARED LOCATION AND CONTACT INFO STYLES */
+
 .location-info {
     background: linear-gradient(135deg, rgba(232, 245, 232, 0.9), rgba(241, 248, 233, 0.9));
     border-radius: 8px;
@@ -2468,8 +2464,6 @@ body:has(.faculty-grid) .tab-content.active {
     transition: all 0.3s ease;
 }
 
-/* RESPONSIVE FACULTY ACTIONS */
-/* Desktop - 2x2 grid when constrained */
 @media (max-width: 1400px) and (min-width: 1025px) {
     .faculty-actions .btn-action {
         flex: 1 1 calc(50% - 3px);
@@ -2480,7 +2474,7 @@ body:has(.faculty-grid) .tab-content.active {
     }
 }
 
-/* Tablet - Maintain 2x2 grid */
+
 @media (max-width: 1024px) and (min-width: 769px) {
     .contact-info .office-hours {
         flex: 0 0 30%;
@@ -2499,7 +2493,7 @@ body:has(.faculty-grid) .tab-content.active {
     }
 }
 
-/* Phone - Stack buttons vertically */
+
 @media (max-width: 768px) {
     .contact-info {
         flex-direction: column;
@@ -2530,7 +2524,7 @@ body:has(.faculty-grid) .tab-content.active {
     }
 }
 
-/* Small phone - Single column */
+
 @media (max-width: 480px) {
     .faculty-actions .btn-action {
         flex: 1 1 100%;
@@ -2540,7 +2534,7 @@ body:has(.faculty-grid) .tab-content.active {
     }
 }
 
-/* PROGRAM PAGE GRID LAYOUTS */
+
 .classes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -2553,7 +2547,7 @@ body:has(.faculty-grid) .tab-content.active {
     gap: 16px;
 }
 
-/* CLASS CARD STYLES */
+
 .class-card {
     background: white;
     border-radius: 12px;
@@ -2623,7 +2617,7 @@ body:has(.faculty-grid) .tab-content.active {
     color: var(--text-secondary);
 }
 
-/* COURSE CARD STYLES */
+
 .course-card {
     background: var(--faculty-card-bg);
     border: 1px solid var(--border-dark);
@@ -2709,7 +2703,7 @@ body:has(.faculty-grid) .tab-content.active {
     transform: translateY(-1px);
 }
 
-/* ADD CARD STYLES */
+
 .add-card {
     background: linear-gradient(135deg, #E8F5E8 0%, #F1F8E9 100%);
     border: 2px dashed var(--text-green-secondary);
@@ -2767,7 +2761,7 @@ body:has(.faculty-grid) .tab-content.active {
     opacity: 0.8;
 }
 
-/* PROGRAM PAGE OVERLAY SYSTEMS */
+
 .course-card-content {
     position: relative;
     overflow: hidden;
@@ -2968,7 +2962,7 @@ body:has(.faculty-grid) .tab-content.active {
     overflow-y: auto;
 }
 
-/* SCHEDULE DISPLAY STYLES */
+
 .schedule-preview {
     padding: 0;
     margin: 0;
@@ -3030,7 +3024,7 @@ body:has(.faculty-grid) .tab-content.active {
     color: #333;
 }
 
-/* HOME PAGE CONTENT */
+
 .home-content-wrapper {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 12px;
@@ -3042,7 +3036,7 @@ body:has(.faculty-grid) .tab-content.active {
     box-sizing: border-box;
 }
 
-/* EMPTY STATES */
+
 .empty-state {
     text-align: center;
     color: white;

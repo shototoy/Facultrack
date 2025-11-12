@@ -258,7 +258,7 @@ function generateScheduleView(facultyId, viewType = 'schedule') {
     
     if (viewType === 'courseload') {
         title.textContent = `${facultyName} - Course Load Assignment`;
-        populateScheduleContent(schedules, generateCourseLoadForm(facultyId), true);
+        populateCourseLoadModalContent(schedules, generateCourseLoadForm(facultyId));
         loadCourseAndClassData();
     } else {
         title.textContent = `${facultyName} - Schedule`;
@@ -271,51 +271,576 @@ function generateScheduleView(facultyId, viewType = 'schedule') {
             `;
             return;
         }
-        populateScheduleContent(schedules, generateScheduleSummary(schedules, facultyId), false);
+        populateScheduleModalContent(schedules, generateScheduleSummary(schedules, facultyId));
     }
 }
 
-function populateScheduleContent(schedules, rightContent, isClickable = false) {
-    // Get all containers
+function populateScheduleModalContent(schedules, rightContent) {
     const mwfContainer = document.getElementById('mwfTableContainer');
     const tthContainer = document.getElementById('tthTableContainer');
     const mobileSummaryPanel = document.getElementById('mobileSummaryPanel');
-    const desktopContent = document.querySelector('.desktop-grid-content');
+    const desktopContent = document.querySelector('#facultyScheduleModal .desktop-grid-content');
     
-    // COMPLETELY SEPARATE CONTENT FOR EACH MOBILE PAGE
-    
-    // PAGE 1: MWF Schedule ONLY
+    // MOBILE: PAGE 1 - MWF Schedule + Summary
     if (mwfContainer) {
-        mwfContainer.innerHTML = generateMWFPageContent(schedules, isClickable);
+        mwfContainer.innerHTML = generateScheduleMWFPageContent(schedules);
     }
     
-    // PAGE 2: TTH Schedule ONLY  
+    // MOBILE: PAGE 2 - TTH Schedule + Summary
     if (tthContainer) {
-        tthContainer.innerHTML = generateTTHPageContent(schedules, isClickable);
+        tthContainer.innerHTML = generateScheduleTTHPageContent(schedules);
     }
     
-    // PAGE 3: Complete Summary ONLY
+    // MOBILE: PAGE 3 - Complete Summary
     if (mobileSummaryPanel) {
         mobileSummaryPanel.innerHTML = rightContent;
-    }
+        }
     
     // DESKTOP/TABLET: Normal grid layout
     if (desktopContent) {
         desktopContent.innerHTML = `
             <div class="modal-grid-container">
                 <div class="schedule-tables">
-                    ${generateScheduleTables(schedules, isClickable)}
+                    ${generateScheduleTables(schedules, false)}
                 </div>
                 <div class="right-panel">
                     ${rightContent}
                 </div>
             </div>
         `;
-    }
+        }
 }
 
-// DEDICATED PAGE CONTENT GENERATORS
-function generateMWFPageContent(schedules, isClickable = false) {
+// DEDICATED COURSE LOAD MODAL CONTENT POPULATION (2 pages + assignment)
+function populateCourseLoadModalContent(schedules, rightContent) {
+    // Get course load modal containers
+    const courseLoadMwfContainer = document.getElementById('courseLoadMwfTableContainer');
+    const courseLoadTthContainer = document.getElementById('courseLoadTthTableContainer');
+    const desktopContent = document.querySelector('#facultyCourseLoadModal .desktop-grid-content');
+    
+    // MOBILE: PAGE 1 - MWF Interactive Table
+    if (courseLoadMwfContainer) {
+        courseLoadMwfContainer.innerHTML = generateCourseLoadMWFPageContent(schedules);
+        }
+    
+    // MOBILE: PAGE 2 - TTH Interactive Table
+    if (courseLoadTthContainer) {
+        courseLoadTthContainer.innerHTML = generateCourseLoadTTHPageContent(schedules);
+        }
+    
+    // DESKTOP/TABLET: Interactive grid layout
+    if (desktopContent) {
+        desktopContent.innerHTML = `
+            <div class="modal-grid-container">
+                <div class="schedule-tables">
+                    ${generateScheduleTables(schedules, true)}
+                </div>
+                <div class="right-panel">
+                    ${rightContent}
+                </div>
+            </div>
+        `;
+        }
+}
+
+// COURSE LOAD PAGE GENERATORS (with clickable cells)
+function generateCourseLoadMWFPageContent(schedules) {
+    return `
+        <div class="schedule-table-wrapper">
+            ${generateMWFScheduleTable(schedules, 'clickable-cell', 'onclick="handleCourseLoadTimeSlotClick(this)"')}
+        </div>
+        <div class="page-summary">
+            <div class="summary-header">
+                Click any time slot to assign courses
+            </div>
+        </div>
+    `;
+}
+
+function generateCourseLoadTTHPageContent(schedules) {
+    return `
+        <div class="schedule-table-wrapper">
+            ${generateTTHScheduleTable(schedules, 'clickable-cell', 'onclick="handleCourseLoadTimeSlotClick(this)"')}
+        </div>
+        <div class="page-summary">
+            <div class="summary-header">
+                Click any time slot to assign courses
+            </div>
+        </div>
+    `;
+}
+
+// COURSE LOAD PAGE NAVIGATION
+function showCourseLoadPage(pageNumber) {
+    // Update pagination buttons
+    document.querySelectorAll('#facultyCourseLoadModal .pagination-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (parseInt(btn.dataset.page) === pageNumber) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Update page content
+    document.querySelectorAll('#facultyCourseLoadModal .mobile-page').forEach(page => {
+        page.classList.remove('active');
+    });
+    
+    const targetPage = document.querySelector(`#facultyCourseLoadModal .page-${pageNumber}`);
+    if (targetPage) {
+        targetPage.classList.add('active');
+        } else {
+        }
+}
+
+// HANDLE TIME SLOT CLICKS FOR COURSE ASSIGNMENT
+function handleCourseLoadTimeSlotClick(cell) {
+    const timeSlot = cell.closest('tr').querySelector('.time-cell').textContent;
+    const dayColumn = cell.cellIndex - 1; // Subtract 1 for time column
+    
+    // Determine day based on table type
+    let day = '';
+    const table = cell.closest('table');
+    const headers = table.querySelectorAll('th');
+    if (headers.length > dayColumn + 1) {
+        const dayHeader = headers[dayColumn + 1].textContent.trim();
+        if (dayHeader === 'M') day = 'Monday';
+        else if (dayHeader === 'W') day = 'Wednesday';
+        else if (dayHeader === 'F') day = 'Friday';
+        else if (dayHeader === 'T') day = 'Tuesday';
+        else if (dayHeader === 'TH') day = 'Thursday';
+        else if (dayHeader === 'S') day = 'Saturday';
+    }
+    
+    // Check if cell has existing course content
+    const existingCourse = findExistingCourse(cell, day, timeSlot);
+    // Show the course assignment page with edit mode if course exists
+    showCourseAssignmentPage(day, timeSlot, cell, existingCourse);
+}
+
+function findExistingCourse(cell, day, timeSlot) {
+    // Check if cell has course content in it
+    const courseCodeDiv = cell.querySelector('.course-code');
+    : 'null');
+    
+    if (courseCodeDiv && courseCodeDiv.textContent.trim()) {
+        // This cell has existing course content - EDIT MODE
+        const courseCode = courseCodeDiv.textContent.trim();
+        // Find the full schedule data for this course from faculty schedules
+        const schedules = facultySchedules[currentFacultyId] || [];
+        const timeValue = convertTimeSlotToValue(timeSlot);
+        const existingSchedule = schedules.find(schedule => {
+            return schedule.course_code === courseCode && schedule.time_start === timeValue;
+        });
+        
+        if (existingSchedule) {
+            return existingSchedule;
+        } else {
+            // Try to find by course code only
+            const courseMatch = schedules.find(schedule => schedule.course_code === courseCode);
+            if (courseMatch) {
+                :', courseMatch);
+                return courseMatch;
+            }
+        }
+    } else {
+        // Empty cell - check if this time slot is occupied in faculty schedule data
+        const schedules = facultySchedules[currentFacultyId] || [];
+        const timeValue = convertTimeSlotToValue(timeSlot);
+        
+        // Map day names to values
+        const dayMap = {
+            'Monday': 'M',
+            'Tuesday': 'T',
+            'Wednesday': 'W',
+            'Thursday': 'TH',
+            'Friday': 'F',
+            'Saturday': 'S'
+        };
+        const dayValue = dayMap[day];
+        
+        // Check if any schedule occupies this time slot and day
+        const occupyingSchedule = schedules.find(schedule => {
+            const scheduleDays = schedule.days.toUpperCase();
+            const scheduleStart = schedule.time_start;
+            const scheduleEnd = schedule.time_end;
+            
+            // Check if this day is in the schedule days and time overlaps
+            return scheduleDays.includes(dayValue) && 
+                   timeValue >= scheduleStart && 
+                   timeValue < scheduleEnd;
+        });
+        
+        if (occupyingSchedule) {
+            return occupyingSchedule;
+        }
+    }
+    
+    return null;
+}
+
+function showAssignmentPanel(day, timeSlot, cell) {
+    const panel = document.getElementById('assignmentPanel');
+    const header = document.getElementById('selectedTimeSlot');
+    const content = document.getElementById('assignmentContent');
+    
+    header.textContent = `${day} ${timeSlot}`;
+    content.innerHTML = `
+        <div class="assignment-form">
+            <div class="form-group">
+                <label>Course:</label>
+                <select id="courseSelect" class="form-control">
+                    <option value="">Select a course...</option>
+                    <!-- Course options will be loaded here -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Class:</label>
+                <select id="classSelect" class="form-control">
+                    <option value="">Select a class...</option>
+                    <!-- Class options will be loaded here -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Room:</label>
+                <input type="text" id="roomInput" class="form-control" placeholder="Enter room number">
+            </div>
+            <div class="form-actions">
+                <button onclick="assignCourse()" class="btn-primary">Assign Course</button>
+                <button onclick="removeAssignment()" class="btn-secondary">Remove Assignment</button>
+            </div>
+        </div>
+    `;
+    
+    panel.style.display = 'block';
+    loadCourseAndClassData(); // Load available courses and classes
+}
+
+function closeAssignmentPanel() {
+    document.getElementById('assignmentPanel').style.display = 'none';
+}
+
+// NEW FUNCTION: Show dedicated course assignment page (MOBILE ONLY)
+function showCourseAssignmentPage(day, timeSlot, cell, existingCourse = null) {
+    const isEditMode = existingCourse !== null;
+    ' : '(NEW)');
+    
+    // Only show assignment page on mobile (768px or smaller)
+    if (window.innerWidth > 768) {
+        // For desktop, use the existing assignment panel
+        showAssignmentPanel(day, timeSlot, cell);
+        return;
+    }
+    
+    // Hide pagination navigation (mobile only)
+    const paginationNav = document.querySelector('#facultyCourseLoadModal .mobile-pagination-nav');
+    if (paginationNav) {
+        paginationNav.style.display = 'none';
+    }
+    
+    // Hide mobile page content and desktop grid
+    const mobilePageContent = document.querySelector('#facultyCourseLoadModal .mobile-page-content');
+    const desktopContent = document.querySelector('#facultyCourseLoadModal .desktop-grid-content');
+    
+    if (mobilePageContent) {
+        mobilePageContent.style.display = 'none';
+    }
+    if (desktopContent) {
+        desktopContent.style.display = 'none';
+    }
+    
+    // Show the assignment page
+    const courseLoadContent = document.getElementById('courseLoadContent');
+    const assignmentPage = document.getElementById('courseAssignmentPage');
+    
+    if (!assignmentPage) {
+        // Create the assignment page if it doesn't exist
+        const newAssignmentPage = document.createElement('div');
+        newAssignmentPage.id = 'courseAssignmentPage';
+        newAssignmentPage.className = 'course-assignment-page';
+        newAssignmentPage.style.display = 'none';
+        courseLoadContent.appendChild(newAssignmentPage);
+    }
+    
+    // Populate the assignment page content with existing data if in edit mode
+    populateCourseAssignmentPage(day, timeSlot, cell, existingCourse);
+    
+    // Show the assignment page
+    document.getElementById('courseAssignmentPage').style.display = 'block';
+}
+
+function populateCourseAssignmentPage(day, timeSlot, cell, existingCourse = null) {
+    const assignmentPage = document.getElementById('courseAssignmentPage');
+    const isEditMode = existingCourse !== null;
+    
+    // Convert time slot to proper format for processing
+    const timeValue = convertTimeSlotToValue(timeSlot);
+    
+    // Determine which table was clicked to restrict day options
+    const tableType = getTableTypeFromDay(day);
+    
+    // Create action buttons based on mode
+    const actionButtons = `
+        <button type="button" class="btn-secondary" onclick="closeCourseAssignmentPage()">Cancel</button>
+        <button type="submit" class="btn-primary">${isEditMode ? 'Update Course' : 'Assign Course'}</button>
+    `;
+    
+    assignmentPage.innerHTML = `
+        <div class="assignment-page-header">
+            <button class="back-btn" onclick="closeCourseAssignmentPage()">
+                ← Back to Schedule
+            </button>
+            <h3>${isEditMode ? 'Edit' : 'Course'} Assignment</h3>
+            <div class="selected-slot-info">
+                <span class="day-indicator">${day}</span>
+                <span class="time-indicator">${timeSlot}</span>
+                ${isEditMode ? '<span class="edit-indicator">EDIT</span>' : ''}
+            </div>
+        </div>
+        
+        <div class="assignment-page-content">
+            <form id="courseAssignmentForm" onsubmit="event.preventDefault(); submitCourseAssignmentFromPage(this, ${isEditMode});" class="assignment-form-full">
+                <div class="form-section-main">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Course *</label>
+                            <select name="course_code" class="form-select" required id="courseSelectPage" onchange="validateAndCheckConflicts()">
+                                <option value="">Choose a course...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Class *</label>
+                            <select name="class_id" class="form-select" required id="classSelectPage" onchange="validateAndCheckConflicts()">
+                                <option value="">Choose a class...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Course info removed for cleaner edit mode -->
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Days * (${tableType} schedule only)</label>
+                            <div class="days-checkbox-group">
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="M"> M
+                                </label>
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="T"> T
+                                </label>
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="W"> W
+                                </label>
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="TH"> TH
+                                </label>
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="F"> F
+                                </label>
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="days[]" value="S"> S
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Room</label>
+                            <select name="room" class="form-select" id="roomSelectPage">
+                                <option value="">Select room...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Start Time ${isEditMode ? '*' : '(Fixed)'}</label>
+                            ${isEditMode ? 
+                                `<select name="time_start" class="form-select" required id="timeStartSelectPage" onchange="validateAndCheckConflicts()">
+                                     <option value="">Select start time...</option>
+                                 </select>` :
+                                `<input type="text" id="displayTimeStartPage" class="form-input" value="${timeSlot}" readonly>
+                                 <input type="hidden" name="time_start" id="hiddenTimeStartPage" value="${timeValue}">`
+                            }
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Time *</label>
+                            <select name="time_end" class="form-select" required id="timeEndSelectPage" onchange="validateAndCheckConflicts()">
+                                <option value="">Select end time...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" name="faculty_id" value="${currentFacultyId}">
+                    <input type="hidden" name="table_type" value="${tableType}">
+                    <input type="hidden" name="is_edit_mode" value="${isEditMode}">
+                    ${isEditMode ? `<input type="hidden" name="original_course_code" value="${existingCourse.course_code}">` : ''}
+                    ${isEditMode ? `<input type="hidden" name="original_time_start" value="${existingCourse.time_start}">` : ''}
+                    ${isEditMode ? `<input type="hidden" name="original_days" value="${existingCourse.days}">` : ''}
+                    
+                    <div class="form-actions-page">
+                        ${actionButtons}
+                        ${isEditMode ? `<button type="button" class="btn-delete-orange" onclick="deleteCourseAssignment()">Delete Course Assignment</button>` : ''}
+                    </div>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    // Initialize the form with the selected day and table restrictions
+    initializeAssignmentPageForm(day, timeValue, tableType, existingCourse);
+    
+    // Load course and class data
+    loadCourseAndClassDataPage(existingCourse);
+}
+
+function convertTimeSlotToValue(timeSlot) {
+    // Convert display time like "8:00 AM" to "08:00:00" format
+    const timeParts = timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (timeParts) {
+        let hours = parseInt(timeParts[1]);
+        const minutes = timeParts[2];
+        const period = timeParts[3].toLowerCase();
+        
+        if (period === 'pm' && hours !== 12) {
+            hours += 12;
+        } else if (period === 'am' && hours === 12) {
+            hours = 0;
+        }
+        
+        return `${String(hours).padStart(2, '0')}:${minutes}:00`;
+    }
+    return timeSlot;
+}
+
+function getTableTypeFromDay(day) {
+    const mwfDays = ['Monday', 'Wednesday', 'Friday'];
+    const tthDays = ['Tuesday', 'Thursday', 'Saturday'];
+    
+    if (mwfDays.includes(day)) {
+        return 'MWF';
+    } else if (tthDays.includes(day)) {
+        return 'TTH';
+    }
+    return 'UNKNOWN';
+}
+
+function initializeAssignmentPageForm(day, timeValue, tableType, existingCourse = null) {
+    // Pre-select the appropriate day checkbox
+    const dayMap = {
+        'Monday': 'M',
+        'Tuesday': 'T', 
+        'Wednesday': 'W',
+        'Thursday': 'TH',
+        'Friday': 'F',
+        'Saturday': 'S'
+    };
+    
+    // Disable checkboxes based on table type to prevent conflicts
+    const allCheckboxes = document.querySelectorAll('#courseAssignmentPage input[name="days[]"]');
+    
+    if (tableType === 'MWF') {
+        // For MWF table, disable TTH+S checkboxes
+        allCheckboxes.forEach(checkbox => {
+            if (['T', 'TH', 'S'].includes(checkbox.value)) {
+                checkbox.disabled = true;
+                checkbox.parentElement.classList.add('disabled');
+                checkbox.parentElement.style.opacity = '0.5';
+                checkbox.parentElement.title = 'Not available for MWF schedule times';
+            }
+        });
+    } else if (tableType === 'TTH') {
+        // For TTH table, disable MWF checkboxes
+        allCheckboxes.forEach(checkbox => {
+            if (['M', 'W', 'F'].includes(checkbox.value)) {
+                checkbox.disabled = true;
+                checkbox.parentElement.classList.add('disabled');
+                checkbox.parentElement.style.opacity = '0.5';
+                checkbox.parentElement.title = 'Not available for TTH schedule times';
+            }
+        });
+    }
+    
+    // If editing existing course, pre-select all its days
+    if (existingCourse && existingCourse.days) {
+        const existingDays = existingCourse.days.toUpperCase();
+        allCheckboxes.forEach(checkbox => {
+            if (existingDays.includes(checkbox.value)) {
+                checkbox.checked = true;
+                checkbox.disabled = false;
+                checkbox.parentElement.style.opacity = '1';
+            }
+        });
+    } else {
+        // For new assignments, pre-select the clicked day
+        const dayValue = dayMap[day];
+        if (dayValue) {
+            const checkbox = document.querySelector(`#courseAssignmentPage input[name="days[]"][value="${dayValue}"]`);
+            if (checkbox) {
+                checkbox.checked = true;
+                checkbox.disabled = false;
+                checkbox.parentElement.style.opacity = '1';
+                checkbox.dataset.required = 'true';
+            }
+        }
+    }
+    
+    // Set up time constraints based on table type
+    updateEndTimeOptionsPage(tableType, timeValue, existingCourse);
+}
+
+function closeCourseAssignmentPage() {
+    // Hide the assignment page
+    const assignmentPage = document.getElementById('courseAssignmentPage');
+    if (assignmentPage) {
+        assignmentPage.style.display = 'none';
+    }
+    
+    // Only show mobile elements on mobile, desktop elements on desktop
+    if (window.innerWidth <= 768) {
+        // MOBILE: Show pagination and mobile page content only
+        const paginationNav = document.querySelector('#facultyCourseLoadModal .mobile-pagination-nav');
+        const mobilePageContent = document.querySelector('#facultyCourseLoadModal .mobile-page-content');
+        
+        if (paginationNav) {
+            paginationNav.style.display = 'flex';
+        }
+        if (mobilePageContent) {
+            mobilePageContent.style.display = 'flex';
+        }
+        
+        // ENSURE DESKTOP CONTENT STAYS HIDDEN ON MOBILE
+        const desktopContent = document.querySelector('#facultyCourseLoadModal .desktop-grid-content');
+        if (desktopContent) {
+            desktopContent.style.display = 'none';
+        }
+        
+        // Hide any right panel that might have been generated
+        const rightPanels = document.querySelectorAll('#facultyCourseLoadModal .right-panel');
+        rightPanels.forEach(panel => {
+            panel.style.display = 'none';
+        });
+        
+    } else {
+        // DESKTOP: Show desktop grid content only
+        const desktopContent = document.querySelector('#facultyCourseLoadModal .desktop-grid-content');
+        if (desktopContent) {
+            desktopContent.style.display = 'block';
+        }
+        
+        // Hide mobile elements on desktop
+        const paginationNav = document.querySelector('#facultyCourseLoadModal .mobile-pagination-nav');
+        const mobilePageContent = document.querySelector('#facultyCourseLoadModal .mobile-page-content');
+        
+        if (paginationNav) {
+            paginationNav.style.display = 'none';
+        }
+        if (mobilePageContent) {
+            mobilePageContent.style.display = 'none';
+        }
+    }
+    
+    }
+
+// DEDICATED SCHEDULE MODAL PAGE GENERATORS
+function generateScheduleMWFPageContent(schedules) {
     const mwfSchedules = schedules.filter(s => {
         const days = s.days.toUpperCase();
         return days.includes('M') || days.includes('W') || days.includes('F');
@@ -325,7 +850,7 @@ function generateMWFPageContent(schedules, isClickable = false) {
     
     return `
         <div class="schedule-table-wrapper">
-            ${generateMWFScheduleTable(schedules, isClickable ? 'clickable-cell' : '', isClickable ? 'onclick="handleTimeSlotClick(this)"' : '')}
+            ${generateMWFScheduleTable(schedules, '', '')}
         </div>
         <div class="page-summary">
             <div class="summary-header">
@@ -343,7 +868,7 @@ function generateMWFPageContent(schedules, isClickable = false) {
     `;
 }
 
-function generateTTHPageContent(schedules, isClickable = false) {
+function generateScheduleTTHPageContent(schedules) {
     const tthSchedules = schedules.filter(s => {
         const days = s.days.toUpperCase();
         return days.includes('T') || days.includes('TH') || days.includes('S');
@@ -353,7 +878,7 @@ function generateTTHPageContent(schedules, isClickable = false) {
     
     return `
         <div class="schedule-table-wrapper">
-            ${generateTTHScheduleTable(schedules, isClickable ? 'clickable-cell' : '', isClickable ? 'onclick="handleTimeSlotClick(this)"' : '')}
+            ${generateTTHScheduleTable(schedules, '', '')}
         </div>
         <div class="page-summary">
             <div class="summary-header">
@@ -424,7 +949,7 @@ function generateMWFScheduleTable(schedules, clickableClass, clickHandler) {
             
             if (schedule) {
                 if (clickableClass) {
-                    row.push(`<td>
+                    row.push(`<td class="${clickableClass}" ${clickHandler}>
                         <div class="course-code">${schedule.course_code}</div>
                         <div class="room-info">${schedule.room || 'TBA'}</div>
                     </td>`);
@@ -490,7 +1015,7 @@ function generateMWFScheduleTable(schedules, clickableClass, clickHandler) {
 }
 
 function generateTTHScheduleTable(schedules, clickableClass, clickHandler) {
-    const times = ['07:30:00', '09:00:00', '10:30:00', '13:00:00', '14:30:00', '16:00:00'];
+    const times = ['07:30:00', '09:00:00', '10:30:00', '12:00:00', '13:00:00', '14:30:00', '16:00:00'];
     
     let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>T</th><th>TH</th><th>S</th></tr></thead><tbody>`;
     
@@ -526,7 +1051,7 @@ function generateTTHScheduleTable(schedules, clickableClass, clickHandler) {
             
             if (schedule) {
                 if (clickableClass) {
-                    row.push(`<td>
+                    row.push(`<td class="${clickableClass}" ${clickHandler}>
                         <div class="course-code">${schedule.course_code}</div>
                         <div class="room-info">${schedule.room || 'TBA'}</div>
                     </td>`);
@@ -1079,7 +1604,6 @@ function loadCurriculumAssignmentForm(courseCode) {
         }
     })
     .catch(error => {
-        console.error('Error loading curriculum data:', error);
         document.getElementById('curriculumAssignContent').innerHTML = 
             '<div class="error">Failed to load curriculum data. Please try again.</div>';
     });
@@ -1151,7 +1675,6 @@ function submitCurriculumAssignment(form, courseCode) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showNotification('An error occurred while assigning the course to curriculum', 'error');
     });
 }
@@ -1179,7 +1702,6 @@ function removeCurriculumAssignment(courseCode, curriculumId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showNotification('An error occurred while removing the course', 'error');
     });
 }
@@ -1207,7 +1729,6 @@ function deleteCourse(courseCode) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showNotification('An error occurred while deleting the course', 'error');
     });
 }
@@ -1252,7 +1773,6 @@ function loadCourseAssignments(courseCode, overlay) {
         }
     })
     .catch(error => {
-        console.error('Error loading assignments:', error);
         assignmentsContainer.innerHTML = '<div style="color: #dc3545; text-align: center;">Error loading assignments</div>';
     });
 }
@@ -1277,6 +1797,674 @@ document.addEventListener('click', function(event) {
         });
     }
 });
+
+// Supporting functions for the assignment page
+function loadCourseAndClassDataPage(existingCourse = null) {
+    // Get current form values for validation context
+    const currentFaculty = currentFacultyId;
+    const currentTimeStart = existingCourse?.time_start || '';
+    const currentTimeEnd = existingCourse?.time_end || '';
+    const currentDays = existingCourse?.days || '';
+    const isEditMode = existingCourse !== null;
+    
+    // Fetch validated options for all fields
+    fetch('program.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `action=get_validated_options&faculty_id=${currentFaculty}&time_start=${currentTimeStart}&time_end=${currentTimeEnd}&days=${currentDays}&is_edit=${isEditMode}&original_course=${existingCourse?.course_code || ''}&original_time_start=${existingCourse?.time_start || ''}&original_days=${existingCourse?.days || ''}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const courseSelect = document.getElementById('courseSelectPage');
+            const classSelect = document.getElementById('classSelectPage');
+            const roomSelect = document.getElementById('roomSelectPage');
+            
+            // Populate COURSE options (all validated courses)
+            if (courseSelect) {
+                courseSelect.innerHTML = '<option value="">Choose a course...</option>';
+                data.courses.forEach(course => {
+                    const isSelected = existingCourse && existingCourse.course_code === course.course_code ? 'selected' : '';
+                    courseSelect.innerHTML += `<option value="${course.course_code}" ${isSelected}>${course.course_code} - ${course.course_description}</option>`;
+                });
+                
+                courseSelect.addEventListener('change', function() {
+                    reloadValidatedOptionsForCourse(this.value);
+                });
+            }
+            
+            // Populate CLASS options (all validated classes)
+            if (classSelect) {
+                classSelect.innerHTML = '<option value="">Choose a class...</option>';
+                data.classes.forEach(cls => {
+                    const isSelected = existingCourse && existingCourse.class_id == cls.class_id ? 'selected' : '';
+                    classSelect.innerHTML += `<option value="${cls.class_id}" ${isSelected}>${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
+                });
+                
+                classSelect.addEventListener('change', validateAndCheckConflicts);
+            }
+            
+            // Populate ROOM options (all validated rooms)
+            if (roomSelect) {
+                roomSelect.innerHTML = '<option value="">Select room...</option>';
+                data.rooms.forEach(room => {
+                    const isSelected = existingCourse && existingCourse.room === room ? 'selected' : '';
+                    roomSelect.innerHTML += `<option value="${room}" ${isSelected}>${room}</option>`;
+                });
+                
+                roomSelect.addEventListener('change', validateAndCheckConflicts);
+            }
+            
+            // Load start time options for edit mode
+            if (existingCourse) {
+                const timeStartSelect = document.getElementById('timeStartSelectPage');
+                if (timeStartSelect) {
+                    populateAllStartTimeOptions(timeStartSelect, existingCourse);
+                }
+                
+                // Trigger initial validation
+                setTimeout(() => validateAndCheckConflicts(), 100);
+            }
+        } else {
+            }
+    })
+    .catch(error => {
+        });
+}
+
+// Reload options when course changes (for dynamic class filtering)
+function reloadValidatedOptionsForCourse(selectedCourse) {
+    if (!selectedCourse) return;
+    
+    const currentFaculty = currentFacultyId;
+    const existingCourse = document.querySelector('input[name="original_course_code"]')?.value;
+    const isEditMode = !!existingCourse;
+    
+    fetch('program.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `action=get_validated_options&faculty_id=${currentFaculty}&selected_course=${selectedCourse}&is_edit=${isEditMode}&original_course=${existingCourse || ''}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const classSelect = document.getElementById('classSelectPage');
+            
+            // Update class options based on selected course
+            if (classSelect) {
+                classSelect.innerHTML = '<option value="">Choose a class...</option>';
+                data.classes.forEach(cls => {
+                    classSelect.innerHTML += `<option value="${cls.class_id}">${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
+                });
+            }
+            
+            validateAndCheckConflicts();
+        }
+    })
+    .catch(error => {
+        });
+}
+
+// Filter classes based on course curriculum (year level matching)
+function filterClassesForCourse(courseCode, existingCourse = null) {
+    const classSelect = document.getElementById('classSelectPage');
+    if (!classSelect || !courseCode || !window.classData) return;
+    
+    // Get course curriculum data to find which year levels this course is for
+    fetch('program.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `action=get_course_curriculum&course_code=${encodeURIComponent(courseCode)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.curriculum) {
+            const validYearLevels = data.curriculum.map(curr => curr.year_level);
+            // Filter classes to only show those for the valid year levels
+            classSelect.innerHTML = '<option value="">Choose a class...</option>';
+            window.classData.forEach(cls => {
+                if (validYearLevels.includes(parseInt(cls.year_level))) {
+                    const isSelected = existingCourse && existingCourse.class_id == cls.class_id ? 'selected' : '';
+                    classSelect.innerHTML += `<option value="${cls.class_id}" ${isSelected}>${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
+                }
+            });
+        } else {
+            // If no curriculum data, show all classes
+            classSelect.innerHTML = '<option value="">Choose a class...</option>';
+            window.classData.forEach(cls => {
+                const isSelected = existingCourse && existingCourse.class_id == cls.class_id ? 'selected' : '';
+                classSelect.innerHTML += `<option value="${cls.class_id}" ${isSelected}>${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
+            });
+        }
+    })
+    .catch(error => {
+        // Fallback: show all classes
+        classSelect.innerHTML = '<option value="">Choose a class...</option>';
+        window.classData.forEach(cls => {
+            const isSelected = existingCourse && existingCourse.class_id == cls.class_id ? 'selected' : '';
+            classSelect.innerHTML += `<option value="${cls.class_id}" ${isSelected}>${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
+        });
+    });
+}
+
+// Load room options similar to faculty page
+function loadRoomOptions(roomSelect, existingCourse) {
+    // Get room options from existing schedules + predefined rooms
+    fetch('program.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'action=get_room_options'
+    })
+    .then(response => response.json())
+    .then(data => {
+        const rooms = data.success ? data.rooms : [
+            'Room 101', 'Room 102', 'Room 103', 'Room 104', 'Room 105',
+            'Room 201', 'Room 202', 'Room 203', 'Room 204', 'Room 205',
+            'Room 301', 'Room 302', 'Room 303', 'Room 304', 'Room 305',
+            'Computer Lab 1', 'Computer Lab 2', 'Physics Lab', 'Chemistry Lab',
+            'Library', 'Auditorium', 'Conference Room', 'TBA'
+        ];
+        
+        roomSelect.innerHTML = '<option value="">Select room...</option>';
+        rooms.forEach(room => {
+            const isSelected = existingCourse && existingCourse.room === room ? 'selected' : '';
+            roomSelect.innerHTML += `<option value="${room}" ${isSelected}>${room}</option>`;
+        });
+    })
+    .catch(error => {
+        // Fallback to default rooms
+        const defaultRooms = [
+            'Room 101', 'Room 102', 'Room 103', 'Room 104', 'Room 105',
+            'Room 201', 'Room 202', 'Room 203', 'Room 204', 'Room 205',
+            'Room 301', 'Room 302', 'Room 303', 'Room 304', 'Room 305',
+            'Computer Lab 1', 'Computer Lab 2', 'Physics Lab', 'Chemistry Lab',
+            'Library', 'Auditorium', 'Conference Room', 'TBA'
+        ];
+        
+        roomSelect.innerHTML = '<option value="">Select room...</option>';
+        defaultRooms.forEach(room => {
+            const isSelected = existingCourse && existingCourse.room === room ? 'selected' : '';
+            roomSelect.innerHTML += `<option value="${room}" ${isSelected}>${room}</option>`;
+        });
+    });
+}
+
+// Comprehensive validation function
+function validateAndCheckConflicts() {
+    const classSelect = document.getElementById('classSelectPage');
+    const courseSelect = document.getElementById('courseSelectPage');
+    const endTimeSelect = document.getElementById('timeEndSelectPage');
+    const roomSelect = document.getElementById('roomSelectPage');
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const isEditMode = document.querySelector('input[name="is_edit_mode"]').value === 'true';
+    
+    // Reset button state
+    if (submitBtn) {
+        submitBtn.style.backgroundColor = '';
+    }
+    
+    // Validate required fields
+    if (!courseSelect.value || !classSelect.value || !endTimeSelect.value) {
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Please complete all required fields';
+            submitBtn.style.backgroundColor = '#6c757d';
+        }
+        return;
+    }
+    
+    // Get selected days
+    const selectedDays = Array.from(document.querySelectorAll('input[name="days[]"]:checked')).map(cb => cb.value).join('');
+    
+    if (!selectedDays) {
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Please select at least one day';
+            submitBtn.style.backgroundColor = '#6c757d';
+        }
+        return;
+    }
+    
+    const timeStart = document.querySelector('input[name="time_start"]').value;
+    const timeEnd = endTimeSelect.value;
+    
+    // BACKEND VALIDATION
+    validateWithBackend(courseSelect.value, classSelect.value, roomSelect.value, timeStart, timeEnd, selectedDays, isEditMode, submitBtn);
+}
+
+// Populate ALL start time options for edit mode (regardless of AM/PM)
+function populateAllStartTimeOptions(timeStartSelect, existingCourse) {
+    const tableType = getTableTypeFromDay(
+        ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].find(day => 
+            existingCourse.days.includes(['M', 'T', 'W', 'TH', 'F', 'S'][['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day)])
+        )
+    );
+    
+    let timeOptions = [];
+    
+    if (tableType === 'MWF') {
+        // All MWF time options regardless of AM/PM
+        timeOptions = [
+            { value: '08:00:00', label: '8:00 AM' },
+            { value: '09:00:00', label: '9:00 AM' },
+            { value: '10:00:00', label: '10:00 AM' },
+            { value: '11:00:00', label: '11:00 AM' },
+            { value: '12:00:00', label: '12:00 PM' },
+            { value: '13:00:00', label: '1:00 PM' },
+            { value: '14:00:00', label: '2:00 PM' },
+            { value: '15:00:00', label: '3:00 PM' },
+            { value: '16:00:00', label: '4:00 PM' }
+        ];
+    } else {
+        // All TTH time options regardless of AM/PM
+        timeOptions = [
+            { value: '07:30:00', label: '7:30 AM' },
+            { value: '09:00:00', label: '9:00 AM' },
+            { value: '10:30:00', label: '10:30 AM' },
+            { value: '12:00:00', label: '12:00 PM' },
+            { value: '13:00:00', label: '1:00 PM' },
+            { value: '14:30:00', label: '2:30 PM' },
+            { value: '16:00:00', label: '4:00 PM' }
+        ];
+    }
+    
+    timeStartSelect.innerHTML = '<option value="">Select start time...</option>';
+    timeOptions.forEach(option => {
+        const isSelected = existingCourse && existingCourse.time_start === option.value ? 'selected' : '';
+        timeStartSelect.innerHTML += `<option value="${option.value}" ${isSelected}>${option.label}</option>`;
+    });
+    
+    // Add change event listener to update end time options
+    timeStartSelect.addEventListener('change', function() {
+        updateValidatedEndTimeOptions(this.value, tableType);
+        validateAndCheckConflicts();
+    });
+}
+
+// Update end time options based on selected start time (with validation)
+function updateValidatedEndTimeOptions(startTime, tableType) {
+    const endTimeSelect = document.getElementById('timeEndSelectPage');
+    if (!endTimeSelect || !startTime) return;
+    
+    let allEndTimes = [];
+    
+    if (tableType === 'MWF') {
+        allEndTimes = [
+            { value: '09:00:00', label: '9:00 AM' },
+            { value: '10:00:00', label: '10:00 AM' },
+            { value: '11:00:00', label: '11:00 AM' },
+            { value: '12:00:00', label: '12:00 PM' },
+            { value: '14:00:00', label: '2:00 PM' },
+            { value: '15:00:00', label: '3:00 PM' },
+            { value: '16:00:00', label: '4:00 PM' },
+            { value: '17:00:00', label: '5:00 PM' }
+        ];
+    } else {
+        allEndTimes = [
+            { value: '09:00:00', label: '9:00 AM' },
+            { value: '10:30:00', label: '10:30 AM' },
+            { value: '12:00:00', label: '12:00 PM' },
+            { value: '14:30:00', label: '2:30 PM' },
+            { value: '16:00:00', label: '4:00 PM' },
+            { value: '17:30:00', label: '5:30 PM' }
+        ];
+    }
+    
+    const startHour = parseInt(startTime.split(':')[0]);
+    const startMinutes = parseInt(startTime.split(':')[1]);
+    const startTimeMinutes = startHour * 60 + startMinutes;
+    
+    // Filter end times to only show valid options (after start time)
+    const validEndTimes = allEndTimes.filter(endTime => {
+        const endHour = parseInt(endTime.value.split(':')[0]);
+        const endMin = parseInt(endTime.value.split(':')[1]);
+        const endTimeMinutes = endHour * 60 + endMin;
+        
+        return endTimeMinutes > startTimeMinutes;
+    });
+    
+    // Populate dropdown with validated options only
+    endTimeSelect.innerHTML = '<option value="">Select end time...</option>';
+    validEndTimes.forEach(option => {
+        endTimeSelect.innerHTML += `<option value="${option.value}">${option.label}</option>`;
+    });
+    
+    );
+}
+
+function validateWithBackend(courseCode, classId, room, timeStart, timeEnd, selectedDays, isEditMode, submitBtn) {
+    // Show loading state
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Validating...';
+        submitBtn.style.backgroundColor = '#ffc107';
+    }
+    
+    // For edit mode with no time_start (dropdown), get from select
+    if (isEditMode && !timeStart) {
+        const timeStartSelect = document.getElementById('timeStartSelectPage');
+        if (timeStartSelect) {
+            timeStart = timeStartSelect.value;
+        }
+    }
+    
+    // Skip validation if required fields are missing
+    if (!courseCode || !classId || !timeStart || !timeEnd || !selectedDays) {
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Please complete all required fields';
+            submitBtn.style.backgroundColor = '#6c757d';
+        }
+        return;
+    }
+    
+    // Prepare validation data
+    const validationData = new FormData();
+    validationData.append('action', 'validate_schedule');
+    validationData.append('faculty_id', currentFacultyId);
+    validationData.append('course_code', courseCode);
+    validationData.append('class_id', classId);
+    validationData.append('time_start', timeStart);
+    validationData.append('time_end', timeEnd);
+    validationData.append('days', selectedDays);
+    validationData.append('room', room);
+    validationData.append('is_edit', isEditMode.toString());
+    
+    if (isEditMode) {
+        const originalCourse = document.querySelector('input[name="original_course_code"]')?.value || '';
+        const originalTimeStart = document.querySelector('input[name="original_time_start"]')?.value || '';
+        const originalDays = document.querySelector('input[name="original_days"]')?.value || '';
+        
+        validationData.append('original_course', originalCourse);
+        validationData.append('original_time_start', originalTimeStart);
+        validationData.append('original_days', originalDays);
+    }
+    
+    // Call backend validation
+    fetch('program.php', {
+        method: 'POST',
+        body: validationData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && !data.has_conflicts) {
+            // No conflicts, enable submit
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = isEditMode ? 'Update Course' : 'Assign Course';
+                submitBtn.style.backgroundColor = '#2e7d32';
+            }
+            showNotification('No conflicts detected. Ready to proceed.', 'success');
+        } else {
+            // Has conflicts, disable submit
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Schedule Conflicts Detected';
+                submitBtn.style.backgroundColor = '#dc3545';
+            }
+            
+            // Show detailed conflict information
+            if (data.conflicts && data.conflicts.length > 0) {
+                const conflictList = data.conflicts.map((conflict, index) => `${index + 1}. ${conflict}`).join('\n');
+                showNotification(`Schedule conflicts detected:\n${conflictList}\n\nPlease choose different time, class, or room.`, 'error');
+            } else {
+                showNotification(data.message || 'Schedule conflicts detected. Please adjust your selection.', 'error');
+            }
+        }
+    })
+    .catch(error => {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = isEditMode ? 'Update Course (Validation Failed)' : 'Assign Course (Validation Failed)';
+            submitBtn.style.backgroundColor = '#6c757d';
+        }
+        showNotification('Validation failed. Please try again.', 'error');
+    });
+}
+
+// Delete course assignment
+function deleteCourseAssignment() {
+    if (!confirm('Are you sure you want to delete this course assignment? This action cannot be undone.')) {
+        return;
+    }
+    
+    const originalCourseCode = document.querySelector('input[name="original_course_code"]').value;
+    const originalTimeStart = document.querySelector('input[name="original_time_start"]').value;
+    const originalDays = document.querySelector('input[name="original_days"]').value;
+    
+    const formData = new FormData();
+    formData.append('action', 'delete_schedule');
+    formData.append('faculty_id', currentFacultyId);
+    formData.append('course_code', originalCourseCode);
+    formData.append('time_start', originalTimeStart);
+    formData.append('days', originalDays);
+    
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Course assignment deleted successfully!', 'success');
+            closeCourseAssignmentPage();
+            regenerateCourseLoadModal();
+        } else {
+            showNotification(data.message || 'Failed to delete course assignment', 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('An error occurred while deleting the course assignment', 'error');
+    });
+}
+
+function updateCourseInfoPage() {
+    const courseSelect = document.getElementById('courseSelectPage');
+    const selectedOption = courseSelect.options[courseSelect.selectedIndex];
+    
+    if (selectedOption.value) {
+        const description = selectedOption.dataset.description;
+        const units = selectedOption.dataset.units;
+        
+        document.getElementById('courseDescriptionPage').textContent = description;
+        document.getElementById('courseUnitsPage').textContent = units;
+        document.getElementById('courseInfoPageDiv').style.display = 'block';
+    } else {
+        document.getElementById('courseInfoPageDiv').style.display = 'none';
+    }
+}
+
+function updateEndTimeOptionsPage(group, startTime, existingCourse = null) {
+    const endTimeSelect = document.getElementById('timeEndSelectPage');
+    if (!endTimeSelect) return;
+    
+    let endTimeOptions = [];
+    const startHour = parseInt(startTime.split(':')[0]);
+    const startMinutes = timeToMinutes(startTime);
+    
+    // Determine if start time is AM (before 12) or PM (12 and after)
+    const isAMStart = startHour < 12;
+    
+    if (group === 'MWF') {
+        const mwfTimes = [
+            { value: '09:00:00', label: '9:00 AM', isAM: true },
+            { value: '10:00:00', label: '10:00 AM', isAM: true },
+            { value: '11:00:00', label: '11:00 AM', isAM: true },
+            { value: '12:00:00', label: '12:00 PM', isAM: false },
+            { value: '14:00:00', label: '2:00 PM', isAM: false },
+            { value: '15:00:00', label: '3:00 PM', isAM: false },
+            { value: '16:00:00', label: '4:00 PM', isAM: false },
+            { value: '17:00:00', label: '5:00 PM', isAM: false }
+        ];
+        
+        endTimeOptions = mwfTimes.filter(time => {
+            const endHour = parseInt(time.value.split(':')[0]);
+            const isLater = endHour > startHour;
+            
+            // If start is AM, only allow end times until 12:00 PM (inclusive)
+            if (isAMStart) {
+                return isLater && endHour <= 12;
+            }
+            // If start is PM, only allow PM end times
+            else {
+                return isLater && endHour >= 12;
+            }
+        });
+    } else { // TTH schedule
+        const tthTimes = [
+            { value: '09:00:00', label: '9:00 AM', isAM: true },
+            { value: '10:30:00', label: '10:30 AM', isAM: true },
+            { value: '12:00:00', label: '12:00 PM', isAM: false },
+            { value: '14:30:00', label: '2:30 PM', isAM: false },
+            { value: '16:00:00', label: '4:00 PM', isAM: false },
+            { value: '17:30:00', label: '5:30 PM', isAM: false }
+        ];
+        
+        endTimeOptions = tthTimes.filter(time => {
+            const endMinutes = timeToMinutes(time.value);
+            const endHour = parseInt(time.value.split(':')[0]);
+            const isLater = endMinutes > startMinutes;
+            
+            // If start is AM (7:30, 9:00, 10:30), only allow end times until 12:00 PM
+            if (isAMStart) {
+                return isLater && endHour <= 12;
+            }
+            // If start is PM (1:00, 2:30, 4:00), only allow PM end times
+            else {
+                return isLater && endHour >= 12;
+            }
+        });
+    }
+    
+    endTimeSelect.innerHTML = '<option value="">Select end time...</option>';
+    endTimeOptions.forEach(option => {
+        const isSelected = existingCourse && existingCourse.time_end === option.value ? 'selected' : '';
+        endTimeSelect.innerHTML += `<option value="${option.value}" ${isSelected}>${option.label}</option>`;
+    });
+}
+
+// Remove course assignment function
+function removeCourseAssignment() {
+    if (!confirm('Are you sure you want to remove this course assignment? This action cannot be undone.')) {
+        return;
+    }
+    
+    const form = document.getElementById('courseAssignmentForm');
+    const formData = new FormData(form);
+    formData.append('action', 'remove_course_assignment');
+    
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Course assignment removed successfully!', 'success');
+            closeCourseAssignmentPage();
+            
+            // Regenerate modal with fresh data
+            regenerateCourseLoadModal();
+        } else {
+            showNotification(data.message || 'Failed to remove course assignment', 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('An error occurred while removing the course assignment', 'error');
+    });
+}
+
+// Helper function to regenerate the modal
+function regenerateCourseLoadModal() {
+    // Force refresh faculty schedules data from server
+    fetch('program.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'action=get_faculty_schedules'
+    })
+    .then(response => response.json())
+    .then(freshData => {
+        if (freshData.success) {
+            // Update global faculty schedules with fresh data
+            facultySchedules = freshData.faculty_schedules;
+            // Regenerate the modal content with fresh data
+            generateScheduleView(currentFacultyId, 'courseload');
+        } else {
+            // Fallback: still regenerate with existing data
+            generateScheduleView(currentFacultyId, 'courseload');
+        }
+    })
+    .catch(error => {
+        // Fallback: still regenerate with existing data
+        generateScheduleView(currentFacultyId, 'courseload');
+    });
+}
+
+function submitCourseAssignmentFromPage(form, isEditMode = false) {
+    const formData = new FormData(form);
+    
+    // For both edit and new, use assign_course_load (it will handle conflicts)
+    formData.append('action', 'assign_course_load');
+    
+    // Add edit mode flag
+    formData.append('is_edit_mode', isEditMode.toString());
+    
+    // If editing, add original values for proper conflict detection
+    if (isEditMode) {
+        const originalCourse = document.querySelector('input[name="original_course_code"]')?.value || '';
+        const originalTimeStart = document.querySelector('input[name="original_time_start"]')?.value || '';
+        const originalDays = document.querySelector('input[name="original_days"]')?.value || '';
+        
+        formData.append('original_course_code', originalCourse);
+        formData.append('original_time_start', originalTimeStart);
+        formData.append('original_days', originalDays);
+    }
+    
+    // Get selected days
+    const dayCheckboxes = form.querySelectorAll('input[name="days[]"]:checked');
+    const days = Array.from(dayCheckboxes).map(cb => cb.value).join('');
+    formData.delete('days[]');
+    formData.append('days', days);
+    
+    // Validate that at least one day is selected
+    if (days.length === 0) {
+        showNotification('Please select at least one day', 'error');
+        return;
+    }
+    
+    const successMessage = isEditMode ? 'Course assignment updated successfully!' : 'Course assigned successfully!';
+    
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(successMessage, 'success');
+            closeCourseAssignmentPage();
+            
+            // Regenerate modal with fresh data
+            regenerateCourseLoadModal();
+            
+        } else {
+            showNotification(data.message || `Failed to ${isEditMode ? 'update' : 'assign'} course`, 'error');
+        }
+    })
+    .catch(error => {
+        showNotification(`An error occurred while ${isEditMode ? 'updating' : 'assigning'} the course`, 'error');
+    });
+}
 
 function loadCourseAndClassData() {
     const formData = new FormData();
@@ -1320,7 +2508,6 @@ function loadCourseAndClassData() {
         }
     })
     .catch(error => {
-        console.error('Error loading data:', error);
         showNotification('Failed to load courses and classes', 'error');
     });
     
@@ -1384,7 +2571,6 @@ function updateClassDropdownBasedOnCourse(courseCode, allClasses) {
         }
     })
     .catch(error => {
-        console.error('Error loading classes for course:', error);
         classSelect.innerHTML = '<option value="" disabled>Error loading classes</option>';
     });
 }
@@ -1405,6 +2591,9 @@ function submitCourseAssignment(form, facultyId) {
     formData.append('action', 'assign_course_load');
     formData.append('faculty_id', facultyId);
     
+    // Add edit mode flag (false for new assignments)
+    formData.append('is_edit_mode', 'false');
+    
     fetch('program.php', {
         method: 'POST',
         body: formData
@@ -1420,7 +2609,6 @@ function submitCourseAssignment(form, facultyId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showNotification('An error occurred while assigning the course', 'error');
     });
 }
@@ -1602,8 +2790,6 @@ document.addEventListener('click', function(e) {
 });
 // Course and Class overlay toggle functions
 function toggleCourseDetailsOverlay(button, courseCode) {
-    console.log('toggleCourseDetailsOverlay called for:', courseCode);
-    
     const courseCard = button.closest('.course-card');
     const overlay = courseCard.querySelector('.course-details-overlay');
     const isCurrentlyVisible = overlay.classList.contains('overlay-visible');
@@ -1624,8 +2810,6 @@ function toggleCourseDetailsOverlay(button, courseCode) {
 }
 
 function toggleClassDetailsOverlay(button) {
-    console.log('toggleClassDetailsOverlay called');
-    
     const classCard = button.closest('.class-card');
     const overlay = classCard.querySelector('.class-details-overlay');
     const isCurrentlyVisible = overlay.classList.contains('overlay-visible');
@@ -1701,7 +2885,18 @@ function loadCourseAssignments(courseCode, overlay) {
         }
     })
     .catch(error => {
-        console.error('Error loading assignments:', error);
         assignmentsDiv.innerHTML = '<div style="text-align: center; color: #d32f2f; padding: 20px;">Error loading assignments</div>';
     });
+}
+
+// Notification utility function
+function showNotification(message, type = 'info') {
+    // Check if a notification function already exists
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
+    } else {
+        // Simple fallback notification
+        }: ${message}`);
+        alert(message);
+    }
 }

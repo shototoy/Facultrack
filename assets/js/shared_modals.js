@@ -154,27 +154,20 @@ document.addEventListener('click', function(e) {
 });
 
 function toggleSearch() {
-    console.log('toggleSearch called');
     const container = document.getElementById('searchContainer');
     const searchInput = document.getElementById('searchInput');
     
-    console.log('Container:', container);
-    console.log('Input:', searchInput);
-    
     if (!container || !searchInput) {
-        console.log('Search elements not found');
         return;
     }
     
     if (container.classList.contains('collapsed')) {
-        console.log('Expanding search');
         container.classList.remove('collapsed');
         container.classList.add('expanded');
         setTimeout(() => {
             searchInput.focus();
         }, 400);
     } else {
-        console.log('Collapsing search');
         container.classList.remove('expanded');
         container.classList.add('collapsed');
         searchInput.blur();

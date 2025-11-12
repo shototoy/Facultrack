@@ -387,14 +387,11 @@ function getProgramChairs($pdo) {
         
         // Ensure toggleSearch is available immediately
         if (typeof window.toggleSearch !== 'function') {
-            console.log('toggleSearch not found, defining fallback');
             window.toggleSearch = function() {
-                console.log('Fallback toggleSearch called');
                 const container = document.getElementById('searchContainer');
                 const searchInput = document.getElementById('searchInput');
                 
                 if (!container || !searchInput) {
-                    console.log('Search elements not found in fallback');
                     return;
                 }
                 

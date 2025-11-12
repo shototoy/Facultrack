@@ -107,8 +107,7 @@ async function updateFacultyLocations() {
             }
         }
     } catch (error) {
-        console.error('Error updating faculty locations:', error);
-    }
+        }
 }
 
 function updateFacultyCards(facultyData) {

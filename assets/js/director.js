@@ -141,7 +141,6 @@ async function deleteEntity(action, id) {
             throw new Error(result.message || `Failed to delete ${label}`);
         }
     } catch (error) {
-        console.error(`Error deleting ${label}:`, error);
         showNotification(`Error deleting ${label}: ${error.message}`, 'error');
         button.disabled = false;
         button.textContent = 'Delete';
@@ -157,7 +156,6 @@ function updateStatistics() {
             updateDashboardStats(data);
         })
         .catch(error => {
-            console.error('Error updating statistics:', error);
             updateStatisticsFromTables();
         });
 }
@@ -254,7 +252,6 @@ async function handleFormSubmission(form, type) {
             throw new Error(result.message);
         }
     } catch (error) {
-        console.error(`Error adding ${type}:`, error);
         showNotification(`Error: ${error.message}`, 'error');
     } finally {
         submitButton.disabled = false;
@@ -264,7 +261,6 @@ async function handleFormSubmission(form, type) {
 
 function addNewRowToTable(type, data) {
     if (!data) {
-        console.error('No data provided to addNewRowToTable');
         return;
     }
     
@@ -277,7 +273,6 @@ function addNewRowToTable(type, data) {
     
     const tableBody = document.querySelector(`#${type}-content .data-table tbody`);
     if (!tableBody) {
-        console.error('Table body not found for type:', type);
         return;
     }
     
@@ -330,7 +325,6 @@ function addNewRowToTable(type, data) {
     
     const template = rowTemplates[type];
     if (!template) {
-        console.error('Unknown type for addNewRowToTable:', type);
         return;
     }
     

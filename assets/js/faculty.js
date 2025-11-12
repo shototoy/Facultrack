@@ -46,7 +46,6 @@ async function viewLocationHistory() {
             historyList.innerHTML = '<div class="no-history"><p>Failed to load history</p></div>';
         }
     } catch (error) {
-        console.error('Error:', error);
         historyList.innerHTML = '<div class="no-history"><p>Error loading history</p></div>';
     }
 }
@@ -90,7 +89,6 @@ async function updateLocation() {
             alert('Error updating location: ' + result.message);
         }
     } catch (error) {
-        console.error('Error:', error);
         alert('An error occurred while updating location. Please try again.');
     }
 }
@@ -122,7 +120,6 @@ async function markAttendance(scheduleId) {
             showNotification('Error: ' + result.message, 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
         showNotification('An error occurred while marking attendance', 'error');
     }
 }
@@ -177,8 +174,7 @@ async function switchScheduleTab(days, tabElement) {
             `;
         }
     } catch (error) {
-        console.error('Error loading schedule:', error);
-    }
+        }
 }
 
 async function updateLocationStatus() {
@@ -193,13 +189,10 @@ async function updateLocationStatus() {
             }
         }
     } catch (error) {
-        console.error('Error updating location status:', error);
-    }
+        }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Faculty dashboard loaded');
-    
     const locationSelect = document.getElementById('locationSelect');
     const customLocationInput = document.getElementById('customLocation');
 
@@ -284,8 +277,6 @@ function initializeContentPosition() {
             
             // Set initial content position below header
             contentWrapper.style.marginTop = `${headerHeight + baseMargin}px`;
-            console.log('Initial content position set to:', headerHeight + baseMargin + 'px');
-            
             // Set quick actions initial state (hidden)
             const actionsSection = document.querySelector('.actions-section');
             if (actionsSection) {
@@ -363,11 +354,6 @@ function requestTick() {
 
 // Initialize scroll handler
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Faculty scroll test script loaded');
-    console.log('Body classes:', document.body.className);
-    console.log('Window width:', window.innerWidth);
-    console.log('Scroll listeners added');
-    
     // Initialize content position on load and resize
     initializeContentPosition();
     window.addEventListener('resize', initializeContentPosition);

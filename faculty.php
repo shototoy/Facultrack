@@ -3,13 +3,9 @@ require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
 
-$DEBUG_MODE = true;
-$DEBUG_TIME = '10:30:00';
-$DEBUG_DATE = '2025-01-29';
-
-$current_time = $DEBUG_MODE ? $DEBUG_TIME : date('H:i:s');
-$current_date = $DEBUG_MODE ? $DEBUG_DATE : date('Y-m-d');
-$current_day = $DEBUG_MODE ? date('w', strtotime($DEBUG_DATE)) : date('w');
+$current_time = date('H:i:s');
+$current_date = date('Y-m-d');
+$current_day = date('w');
 
 function getFacultyInfo($pdo, $user_id) {
     $faculty_query = "SELECT f.*, u.full_name FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.user_id = ? AND f.is_active = TRUE";
@@ -19,12 +15,10 @@ function getFacultyInfo($pdo, $user_id) {
 }
 
 function getTodaySchedule($pdo, $faculty_id) {
-    global $DEBUG_MODE, $current_day, $current_time;
-    
+    global $current_day, $current_time;
     $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
     $today_code = $day_mapping[$current_day];
-    
-    $time_condition = $DEBUG_MODE ? "TIME('$current_time')" : "TIME(NOW())";
+    $time_condition = "TIME(NOW())";
     
     $schedule_query = "
         SELECT s.*, c.course_description, cl.class_name, cl.class_code,
@@ -383,7 +377,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        /* Faculty-specific styles that aren't in main CSS */
+        
         .schedule-section::before {
             content: '';
             position: absolute;
@@ -400,15 +394,13 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             50% { opacity: 1; }
         }
 
-        /* Faculty page specific layout styles */
+        
         .schedule-card {
             height: 100%;
             display: flex;
             flex-direction: column;
         }
 
-
-        /* PC LAYOUT (1025px+) - 3 GRID STRUCTURE */
         @media (min-width: 1025px) {
             
             .dashboard-grid {
@@ -420,7 +412,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 overflow: hidden !important;
             }
             
-            /* Schedule - Left column, spans both rows */
+            
             .schedule-section {
                 grid-column: 1 !important;
                 grid-row: 1 / 3 !important;
@@ -431,7 +423,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 box-sizing: border-box !important;
             }
             
-            /* Current Location - Upper right */
+            
             .location-section {
                 grid-column: 2 !important;
                 grid-row: 1 !important;
@@ -443,7 +435,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 box-sizing: border-box !important;
             }
             
-            /* Quick Actions - Lower right */
+            
             .actions-section {
                 grid-column: 2 !important;
                 grid-row: 2 !important;
@@ -464,7 +456,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             }
         }
 
-        /* TABLET RESPONSIVE (769px - 1024px) - FACULTY SPECIFIC */
+        
         @media (max-width: 1024px) and (min-width: 769px) {
             body {
                 padding-bottom: 140px !important;
@@ -480,7 +472,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 overflow: hidden !important;
             }
             
-            /* Current Location - Top row */
+            
             .location-section {
                 grid-row: 1 !important;
                 grid-column: 1 !important;
@@ -492,7 +484,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 overflow: hidden !important;
             }
             
-            /* Schedule - Bottom row */
+            
             .schedule-section {
                 grid-row: 2 !important;
                 grid-column: 1 !important;
@@ -503,7 +495,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 border: none !important;
             }
             
-            /* Quick Actions - Fixed at bottom */
+            
             .actions-section {
                 position: fixed !important;
                 bottom: 0 !important;
@@ -533,7 +525,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 margin-bottom: 4px !important;
             }
             
-            /* Fix tablet quick actions layout */
+            
             .quick-actions {
                 height: 100% !important;
                 display: flex !important;
@@ -554,7 +546,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             }
         }
 
-        /* PHONE RESPONSIVE (≤768px) - FACULTY SPECIFIC */
+        
         @media (max-width: 768px) {
             body .page-header {
                 position: fixed !important;
@@ -588,7 +580,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 gap: 12px !important;
             }
             
-            /* Current Location - Top row */
+            
             .location-section {
                 grid-row: 1 !important;
                 grid-column: 1 !important;
@@ -599,7 +591,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 max-height: 120px !important;
             }
             
-            /* Schedule - Bottom row */
+            
             .schedule-section {
                 grid-row: 2 !important;
                 grid-column: 1 !important;
@@ -610,14 +602,14 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 border: none !important;
             }
             
-            /* Schedule overflow mode when fully scrolled */
+            
             .schedule-section.scroll-mode-active {
                 max-height: calc(100vh - 220px) !important;
                 overflow-y: auto !important;
                 padding-bottom: 20px !important;
             }
             
-            /* Quick Actions - Fixed at bottom with scroll animation */
+            
             .actions-section {
                 position: fixed !important;
                 bottom: 0 !important;
@@ -659,7 +651,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 font-size: 0.7rem !important;
             }
             
-            /* Fix phone quick actions layout */
+            
             .quick-actions {
                 height: 100% !important;
                 display: flex !important;
@@ -1065,9 +1057,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         inset 0 1px 0 rgba(255, 255, 255, 1);
             transform: translateY(-2px);
         }
-
-
-        /* Faculty page specific responsive adjustments - only unique styles not in main CSS */
 
         .location-history-list {
             max-height: 400px;

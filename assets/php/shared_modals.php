@@ -275,8 +275,43 @@ $role = $_SESSION['role'] ?? '';
         </div>
 
         <div class="modal-body">
+            <!-- Mobile pagination navigation - 2 pages for course load -->
+            <div class="mobile-pagination-nav">
+                <button class="pagination-btn active" onclick="showCourseLoadPage(1)" data-page="1">MWF Schedule</button>
+                <button class="pagination-btn" onclick="showCourseLoadPage(2)" data-page="2">TTH Schedule</button>
+            </div>
+            
+            <!-- Content area -->
             <div id="courseLoadContent">
-                <div class="loading">Loading...</div>
+                <!-- Mobile paginated content -->
+                <div class="mobile-page-content">
+                    <div class="mobile-page page-1 active">
+                        <div class="schedule-table-container" id="courseLoadMwfTableContainer">
+                            <div class="loading">Loading MWF schedule...</div>
+                        </div>
+                    </div>
+                    <div class="mobile-page page-2">
+                        <div class="schedule-table-container" id="courseLoadTthTableContainer">
+                            <div class="loading">Loading TTH schedule...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Desktop/tablet grid content -->
+                <div class="desktop-grid-content">
+                    <div class="loading">Loading course load...</div>
+                </div>
+                
+                <!-- Assignment panel at bottom -->
+                <div id="assignmentPanel" class="assignment-panel" style="display: none;">
+                    <div class="assignment-header">
+                        <span id="selectedTimeSlot">Select a time slot to assign courses</span>
+                        <button onclick="closeAssignmentPanel()" class="close-btn">×</button>
+                    </div>
+                    <div id="assignmentContent" class="assignment-content">
+                        <!-- Assignment form will be loaded here -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>

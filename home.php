@@ -64,8 +64,6 @@ function getClassFaculty($pdo, $class_id) {
 }
 
 function getFacultyCourses($pdo, $faculty_id, $class_id) {
-    $debug_time = '13:30:00';
-    $debug_day = 'F';
     
     $courses_query = "
         SELECT s.course_code, c.course_description, s.days, s.time_start, s.time_end, s.room,
