@@ -152,3 +152,68 @@ document.addEventListener('click', function(e) {
         openModal(modalId);
     }
 });
+
+function toggleSearch() {
+    console.log('toggleSearch called');
+    const container = document.getElementById('searchContainer');
+    const searchInput = document.getElementById('searchInput');
+    
+    console.log('Container:', container);
+    console.log('Input:', searchInput);
+    
+    if (!container || !searchInput) {
+        console.log('Search elements not found');
+        return;
+    }
+    
+    if (container.classList.contains('collapsed')) {
+        console.log('Expanding search');
+        container.classList.remove('collapsed');
+        container.classList.add('expanded');
+        setTimeout(() => {
+            searchInput.focus();
+        }, 400);
+    } else {
+        console.log('Collapsing search');
+        container.classList.remove('expanded');
+        container.classList.add('collapsed');
+        searchInput.blur();
+        if (searchInput.value.trim() === '') {
+            searchInput.value = '';
+        }
+    }
+}
+
+window.toggleSearch = toggleSearch;
+
+function setupSearchFunctionality() {
+    const searchInput = document.getElementById('searchInput');
+    const searchContainer = document.getElementById('searchContainer');
+    const searchBar = document.querySelector('.search-bar');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            if (typeof searchContent === 'function') {
+                searchContent();
+            }
+        });
+    }
+    
+    if (searchContainer && searchBar) {
+        document.addEventListener('click', function(event) {
+            if (!searchBar.contains(event.target) && 
+                !event.target.closest('.search-toggle') && 
+                searchContainer.classList.contains('expanded')) {
+                if (searchInput.value.trim() === '') {
+                    toggleSearch();
+                }
+            }
+        });
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupSearchFunctionality);
+} else {
+    setupSearchFunctionality();
+}

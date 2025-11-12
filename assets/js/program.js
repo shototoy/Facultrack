@@ -930,7 +930,6 @@ function assignCourseToYearLevel(courseCode) {
     const content = document.getElementById('curriculumAssignContent');
     content.innerHTML = '<div class="loading">Loading curriculum options...</div>';
     
-    // Load curriculum assignment form
     loadCurriculumAssignmentForm(courseCode);
 }
 
@@ -1047,7 +1046,7 @@ function removeCurriculumAssignment(courseCode, curriculumId) {
     .then(data => {
         if (data.success) {
             showNotification('Course removed from curriculum successfully!', 'success');
-            loadCurriculumAssignmentForm(courseCode); // Reload the form
+            loadCurriculumAssignmentForm(courseCode);
         } else {
             showNotification(data.message || 'Failed to remove course from curriculum', 'error');
         }
@@ -1086,100 +1085,6 @@ function deleteCourse(courseCode) {
     });
 }
 
-function toggleClassDetailsOverlay(button) {
-    // Prevent event bubbling
-    event.stopPropagation();
-    
-    console.log('Toggle function called'); // Debug log
-    
-    // Find the overlay within this card
-    const card = button.closest('.class-card');
-    const overlay = card.querySelector('.class-details-overlay');
-    
-    if (!overlay) {
-        console.error('Overlay not found'); // Debug log
-        return;
-    }
-    
-    const isShown = overlay.classList.contains('show');
-    console.log('Is shown before toggle:', isShown); // Debug log
-    console.log('Button text before:', button.innerHTML); // Debug log
-    
-    // Close all other open overlays first (but not this one)
-    document.querySelectorAll('.class-details-overlay.show').forEach(otherOverlay => {
-        if (otherOverlay !== overlay) {
-            otherOverlay.classList.remove('show');
-            const otherCard = otherOverlay.closest('.class-card');
-            const otherButton = otherCard.querySelector('.class-details-toggle');
-            if (otherButton) {
-                otherButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
-            }
-        }
-    });
-    
-    if (isShown) {
-        // Close this overlay
-        overlay.classList.remove('show');
-        button.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
-        console.log('Overlay closed'); // Debug log
-    } else {
-        // Open this overlay
-        overlay.classList.add('show');
-        button.innerHTML = 'Back to Class Info <span class="arrow">▲</span>';
-        console.log('Overlay opened'); // Debug log
-    }
-    
-    console.log('Is shown after toggle:', overlay.classList.contains('show')); // Debug log
-    console.log('Button text after:', button.innerHTML); // Debug log
-}
-
-function toggleCourseDetailsOverlay(button, courseCode) {
-    // Prevent event bubbling
-    event.stopPropagation();
-    
-    console.log('Course toggle function called for:', courseCode); // Debug log
-    
-    // Find the overlay within this card
-    const card = button.closest('.course-card');
-    const overlay = card.querySelector('.course-details-overlay');
-    
-    if (!overlay) {
-        console.error('Course overlay not found'); // Debug log
-        return;
-    }
-    
-    const isShown = overlay.classList.contains('show');
-    console.log('Course overlay is shown before toggle:', isShown); // Debug log
-    
-    // Close all other open overlays first (both class and course)
-    document.querySelectorAll('.course-details-overlay.show, .class-details-overlay.show').forEach(otherOverlay => {
-        if (otherOverlay !== overlay) {
-            otherOverlay.classList.remove('show');
-            const otherCard = otherOverlay.closest('.course-card, .class-card');
-            const otherButton = otherCard.querySelector('.course-details-toggle, .class-details-toggle');
-            if (otherButton) {
-                if (otherButton.classList.contains('course-details-toggle')) {
-                    otherButton.innerHTML = 'View Assignments <span class="arrow">▼</span>';
-                } else {
-                    otherButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
-                }
-            }
-        }
-    });
-    
-    if (isShown) {
-        // Close this overlay
-        overlay.classList.remove('show');
-        button.innerHTML = 'View Assignments <span class="arrow">▼</span>';
-        console.log('Course overlay closed'); // Debug log
-    } else {
-        // Open this overlay and load assignments
-        overlay.classList.add('show');
-        button.innerHTML = 'Back to Course Info <span class="arrow">▲</span>';
-        loadCourseAssignments(courseCode, overlay);
-        console.log('Course overlay opened'); // Debug log
-    }
-}
 
 function loadCourseAssignments(courseCode, overlay) {
     const assignmentsContainer = overlay.querySelector('.assignments-preview');
@@ -1225,9 +1130,7 @@ function loadCourseAssignments(courseCode, overlay) {
     });
 }
 
-// Close overlay when clicking outside
 document.addEventListener('click', function(event) {
-    // Don't close if clicking on any toggle button (let the toggle function handle it)
     if (event.target.closest('.class-details-toggle, .course-details-toggle')) {
         return;
     }

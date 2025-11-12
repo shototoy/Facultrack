@@ -14,7 +14,6 @@ function switchTab(tabName) {
     document.getElementById(tabName + '-content').classList.add('active');
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
     
-    // Clear search and reset visibility when switching tabs
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.value = '';
@@ -381,7 +380,6 @@ function setupFormHandlers() {
     });
 }
 
-// Search functionality
 function resetAllTabsVisibility() {
     const rows = document.querySelectorAll('.data-table tbody tr');
     rows.forEach(row => row.style.display = '');
@@ -532,7 +530,6 @@ function updateEmptyState(containerSelector, visibleCount, searchTerm, title, me
     }
 }
 
-// Add event listener for Enter key on search input
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
@@ -540,7 +537,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (event.key === 'Enter') {
                 searchContent();
             } else {
-                // Live search as user types
                 searchContent();
             }
         });

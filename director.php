@@ -128,152 +128,9 @@ function getProgramChairs($pdo) {
     <title>FaculTrack - Campus Director Dashboard</title>
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        .table-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(46, 125, 50, 0.3), transparent);
-            animation: shimmer 3s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-
-        .table-title::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #2E7D32, #4CAF50);
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .table-container:hover .table-title::after {
-            width: 100%;
-        }
-
-        .data-table th::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(46, 125, 50, 0.05), transparent);
-            transition: left 0.6s;
-        }
-
-        .data-table th:hover::before {
-            left: 100%;
-        }
-
-        .data-table tr::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 0;
-            background: linear-gradient(90deg, rgba(46, 125, 50, 0.1), rgba(76, 175, 80, 0.05));
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .data-table tr:hover::before {
-            width: 4px;
-        }
-
-        .data-table tr:hover td {
-            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
-        }
-
-        .data-table .item-checkbox {
-            margin-right: 8px;
-            transform: scale(1.1);
-            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1));
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .data-table .item-checkbox:hover {
-            transform: scale(1.2);
-            filter: drop-shadow(0 2px 6px rgba(46, 125, 50, 0.3));
-        }
-
-        .bulk-actions {
-            display: none;
-            background: linear-gradient(135deg, rgba(227, 242, 253, 0.9), rgba(187, 222, 251, 0.9));
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-            border: 1px solid rgba(25, 118, 210, 0.2);
-            backdrop-filter: blur(10px);
-            animation: slideIn 0.4s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .bulk-actions button {
-            background: var(--btn-blue-bg);
-            color: var(--text-white);
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            margin-right: 8px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .bulk-actions button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .bulk-actions button:hover::before {
-            left: 100%;
-        }
-
-        .bulk-actions button:hover {
-            background: var(--btn-blue-hover);
-            box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px) scale(1.05);
-        }
-
-        .bulk-actions button:active {
-            transform: translateY(-1px) scale(1.02);
-            box-shadow: 0 3px 12px rgba(25, 118, 210, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        }
-    </style>
 </head>
 <body>
+    <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
         <?php 
         $online_faculty = count(array_filter($faculty_data, function($faculty) {
@@ -313,8 +170,12 @@ function getProgramChairs($pdo) {
                 Manage Announcements
             </button>
             <div class="search-bar">
-                <input type="text" class="search-input" placeholder="Search..." id="searchInput">
-                <button class="search-btn" onclick="searchContent()">🔍</button>
+                <div class="search-container collapsed" id="searchContainer">
+                    <input type="text" class="search-input" placeholder="Search..." id="searchInput">
+                    <button class="search-toggle" onclick="toggleSearch()">
+                        <svg class="feather"><use href="#search"></use></svg>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -323,8 +184,12 @@ function getProgramChairs($pdo) {
                 <div class="table-header">
                     <h3 class="table-title">Faculty Members</h3>
                     <div class="table-actions">
-                        <button class="export-btn" onclick="exportData('faculty')" title="Export Faculty Data">📊 Export</button>
-                        <button class="add-btn" data-modal="addFacultyModal">➕ Add Faculty Member</button>
+                        <button class="export-btn" onclick="exportData('faculty')" title="Export Faculty Data">
+                            <svg class="feather feather-sm"><use href="#download"></use></svg> Export
+                        </button>
+                        <button class="add-btn" data-modal="addFacultyModal">
+                            <svg class="feather feather-sm"><use href="#plus"></use></svg> Add Faculty Member
+                        </button>
                     </div>
                 </div>
                 <table class="data-table">
@@ -367,8 +232,12 @@ function getProgramChairs($pdo) {
                 <div class="table-header">
                     <h3 class="table-title">Classes</h3>
                     <div class="table-actions">
-                        <button class="export-btn" onclick="exportData('classes')" title="Export Classes Data">📊 Export</button>
-                        <button class="add-btn" data-modal="addClassModal">➕ Add Class</button>
+                        <button class="export-btn" onclick="exportData('classes')" title="Export Classes Data">
+                            <svg class="feather feather-sm"><use href="#download"></use></svg> Export
+                        </button>
+                        <button class="add-btn" data-modal="addClassModal">
+                            <svg class="feather feather-sm"><use href="#plus"></use></svg> Add Class
+                        </button>
                     </div>
                 </div>
                 <table class="data-table">
@@ -409,8 +278,12 @@ function getProgramChairs($pdo) {
                 <div class="table-header">
                     <h3 class="table-title">Courses</h3>
                     <div class="table-actions">
-                        <button class="export-btn" onclick="exportData('courses')" title="Export Courses Data">📊 Export</button>
-                        <button class="add-btn" data-modal="addCourseModal">➕ Add Course</button>
+                        <button class="export-btn" onclick="exportData('courses')" title="Export Courses Data">
+                            <svg class="feather feather-sm"><use href="#download"></use></svg> Export
+                        </button>
+                        <button class="add-btn" data-modal="addCourseModal">
+                            <svg class="feather feather-sm"><use href="#plus"></use></svg> Add Course
+                        </button>
                     </div>
                 </div>
                 <table class="data-table">
@@ -445,8 +318,12 @@ function getProgramChairs($pdo) {
                 <div class="table-header">
                     <h3 class="table-title">Announcements</h3>
                     <div class="table-actions">
-                        <button class="export-btn" onclick="exportData('announcements')" title="Export Announcements Data">📊 Export</button>
-                        <button class="add-btn" data-modal="addAnnouncementModal">➕ Add Announcement</button>
+                        <button class="export-btn" onclick="exportData('announcements')" title="Export Announcements Data">
+                            <svg class="feather feather-sm"><use href="#download"></use></svg> Export
+                        </button>
+                        <button class="add-btn" data-modal="addAnnouncementModal">
+                            <svg class="feather feather-sm"><use href="#plus"></use></svg> Add Announcement
+                        </button>
                     </div>
                 </div>
                 <table class="data-table">
@@ -507,6 +384,31 @@ function getProgramChairs($pdo) {
                 });
             }
         });
+        
+        // Ensure toggleSearch is available immediately
+        if (typeof window.toggleSearch !== 'function') {
+            console.log('toggleSearch not found, defining fallback');
+            window.toggleSearch = function() {
+                console.log('Fallback toggleSearch called');
+                const container = document.getElementById('searchContainer');
+                const searchInput = document.getElementById('searchInput');
+                
+                if (!container || !searchInput) {
+                    console.log('Search elements not found in fallback');
+                    return;
+                }
+                
+                if (container.classList.contains('collapsed')) {
+                    container.classList.remove('collapsed');
+                    container.classList.add('expanded');
+                    setTimeout(() => searchInput.focus(), 400);
+                } else {
+                    container.classList.remove('expanded');
+                    container.classList.add('collapsed');
+                    searchInput.blur();
+                }
+            };
+        }
     </script>
 </body>
 </html>

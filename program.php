@@ -176,12 +176,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
     exit;
 }
 
-// Get curriculum assignment data
 if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_data') {
     try {
         $course_code = $_POST['course_code'];
-        
-        // Get existing curriculum assignments for this course
         $curriculum_query = "
             SELECT curriculum_id, year_level, semester, academic_year
             FROM curriculum 
@@ -201,12 +198,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
     exit;
 }
 
-// Get curriculum assignment data with class names
 if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_data_with_classes') {
     try {
         $course_code = $_POST['course_code'];
-        
-        // Get existing curriculum assignments for this course with matching class names
         $curriculum_query = "
             SELECT cur.curriculum_id, cur.year_level, cur.semester, cur.academic_year,
                    GROUP_CONCAT(DISTINCT c.class_code SEPARATOR ', ') as class_names
@@ -232,15 +226,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
     exit;
 }
 
-// Assign course to curriculum
 if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum') {
     try {
         $course_code = $_POST['course_code'];
         $year_level = $_POST['year_level'];
         $semester = $_POST['semester'];
         $academic_year = $_POST['academic_year'];
-        
-        // Check if this assignment already exists
         $check_query = "SELECT COUNT(*) as count FROM curriculum 
                        WHERE course_code = ? AND year_level = ? AND semester = ? AND academic_year = ? AND is_active = TRUE";
         $check_stmt = $pdo->prepare($check_query);
@@ -267,7 +258,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum
     exit;
 }
 
-// Remove curriculum assignment
 if (isset($_POST['action']) && $_POST['action'] === 'remove_curriculum_assignment') {
     try {
         $curriculum_id = $_POST['curriculum_id'];
@@ -306,12 +296,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_courses_and_classes') {
     exit;
 }
 
-// Get classes that have a specific course in their curriculum
 if (isset($_POST['action']) && $_POST['action'] === 'get_classes_for_course') {
     try {
         $course_code = $_POST['course_code'];
-        
-        // Get classes that have this course in their curriculum
         $classes_query = "
             SELECT DISTINCT c.class_id, c.class_code, c.class_name, c.year_level, c.semester
             FROM classes c
@@ -335,15 +322,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_classes_for_course') {
     exit;
 }
 
-// Delete course
 if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
     try {
         $course_code = $_POST['course_code'];
         
-        // Begin transaction to ensure data consistency
         $pdo->beginTransaction();
-        
-        // Check if course is currently being used in schedules
         $schedule_check = "SELECT COUNT(*) as count FROM schedules WHERE course_code = ? AND is_active = TRUE";
         $stmt = $pdo->prepare($schedule_check);
         $stmt->execute([$course_code]);
@@ -355,12 +338,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
             exit;
         }
         
-        // Deactivate curriculum assignments
         $curriculum_update = "UPDATE curriculum SET is_active = FALSE WHERE course_code = ?";
         $stmt = $pdo->prepare($curriculum_update);
         $stmt->execute([$course_code]);
-        
-        // Deactivate the course
         $course_update = "UPDATE courses SET is_active = FALSE WHERE course_code = ?";
         $stmt = $pdo->prepare($course_update);
         $stmt->execute([$course_code]);
@@ -385,572 +365,14 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/scheduling.css">
-    <style>
-        /* Program-specific class and course layouts */
-        .classes-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-        }
 
-        .class-card {
-            background: white;
-            border-radius: 12px;
-            padding: 0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border-left: 4px solid var(--text-green-secondary);
-            transition: transform 0.3s ease;
-            position: relative;
-        }
-
-        .class-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-        }
-
-        .class-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
-        }
-
-        .class-info {
-            flex: 1;
-        }
-
-        .class-name {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--text-primary);
-            margin-bottom: 5px;
-        }
-
-        .class-code {
-            color: var(--text-green-secondary);
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-
-        .class-meta {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        .class-stats {
-            display: flex;
-            gap: 15px;
-            margin: 15px 0;
-        }
-
-        .class-stat {
-            text-align: center;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            flex: 1;
-        }
-
-        .class-stat-number {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--text-green-secondary);
-        }
-
-        .class-stat-label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        .courses-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 16px;
-        }
-
-        .course-card {
-            background: var(--faculty-card-bg);
-            border: 1px solid var(--border-dark);
-            border-left: 4px solid var(--text-green-secondary);
-            padding: 0;
-            border-radius: 10px;
-            box-shadow: var(--faculty-card-shadow);
-            transition: all 0.3s ease;
-            position: relative;
-            min-height: 160px;
-        }
-
-        .course-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--faculty-card-hover-shadow);
-            border-color: rgba(46, 125, 50, 0.3);
-        }
-
-        .course-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
-        }
-
-        .course-code {
-            color: var(--text-primary);
-            font-size: 1.3rem;
-            font-weight: 700;
-            line-height: 1.2;
-        }
-
-        .course-units {
-            color: var(--text-green-secondary);
-            font-size: 0.8rem;
-            font-weight: 600;
-            background: rgba(46, 125, 50, 0.1);
-            padding: 3px 6px;
-            border-radius: 10px;
-            white-space: nowrap;
-        }
-
-        .course-description {
-            font-size: 1rem;
-            color: var(--text-primary);
-            line-height: 1.4;
-            margin-bottom: 10px;
-        }
-
-        .course-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: auto;
-        }
-
-        .course-actions .action-btn {
-            padding: 6px 12px;
-            font-size: 0.8rem;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-        }
-
-        .course-actions .action-btn.primary {
-            background: var(--text-green-secondary);
-            color: white;
-            border: none;
-        }
-
-        .course-actions .action-btn.primary:hover {
-            background: var(--text-green-primary);
-            transform: translateY(-1px);
-        }
-
-        .course-actions .action-btn.danger {
-            background: transparent;
-            color: #dc3545;
-            border: 1px solid #dc3545;
-        }
-
-        .course-actions .action-btn.danger:hover {
-            background: #dc3545;
-            color: white;
-            transform: translateY(-1px);
-        }
-
-        .course-card-content {
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: calc(100% - 40px);
-        }
-
-        .course-card-default-content {
-            margin: 16px 20px 60px 20px;
-        }
-
-        .course-details-toggle {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 0 0 10px 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            z-index: 200;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            height: 40px;
-        }
-
-        .course-details-toggle:hover {
-            background: #f8f9fa;
-            border-color: var(--text-green-secondary);
-            color: var(--text-green-secondary);
-        }
-
-        .course-details-toggle .arrow {
-            margin-left: 8px;
-        }
-
-        .course-details-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: white;
-            border-radius: 10px 10px 0 0;
-            z-index: 100;
-            transform: translateY(-100%);
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border-left: 4px solid var(--text-green-secondary);
-            border-right: 1px solid #e0e0e0;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            flex-direction: column;
-            margin: 0;
-            box-sizing: border-box;
-        }
-
-        .course-details-overlay.show {
-            transform: translateY(0);
-        }
-
-        .course-details-overlay .overlay-header {
-            padding: 8px 12px;
-            border-bottom: 1px solid #e0e0e0;
-            background: var(--faculty-card-bg);
-            border-radius: 10px 10px 0 0;
-            flex-shrink: 0;
-        }
-
-        .course-details-overlay .overlay-header h4 {
-            margin: 0;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .course-details-overlay .overlay-body {
-            flex: 1;
-            padding: 0;
-            margin: 0;
-            overflow-y: auto;
-        }
-
-        .assignment-item .btn-danger {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 4px 8px;
-            font-size: 0.7rem;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .assignment-item .btn-danger:hover {
-            background: #c82333;
-            transform: scale(1.05);
-        }
-
-        .assignment-item {
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .assignment-item:last-child {
-            border-bottom: none;
-        }
-
-        .schedule-preview {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        .schedule-preview {
-            padding: 0;
-            margin: 0;
-        }
-
-        .schedule-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 8px 12px;
-            font-size: 0.85rem;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .schedule-item:last-child {
-            border-bottom: none;
-        }
-
-        .schedule-course {
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .schedule-time {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            text-align: right;
-            min-width: 140px;
-            flex-shrink: 0;
-            line-height: 1.3;
-        }
-
-        .schedule-course-info {
-            flex: 1;
-            margin-right: 15px;
-        }
-
-        .add-card {
-            background: linear-gradient(135deg, #E8F5E8 0%, #F1F8E9 100%);
-            border: 2px dashed var(--text-green-secondary);
-            border-radius: 12px;
-            padding: 40px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 200px;
-        }
-
-        .add-card-course {
-            border-radius: 12px;
-            padding: 20px;
-            min-height: 100px;
-        }
-
-        .add-card:hover {
-            background: linear-gradient(135deg, #C8E6C9 0%, #E8F5E8 100%);
-            border-color: var(--text-green-primary);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.15);
-        }
-
-        .add-card-icon {
-            font-size: 3rem;
-            color: var(--text-green-secondary);
-            margin-bottom: 15px;
-            transition: all 0.3s ease;
-        }
-
-        .add-card-course-icon {
-            font-size: 1.5rem;
-            margin-bottom: 0px;
-        }
-
-        .add-card:hover .add-card-icon {
-            color: var(--text-green-primary);
-            transform: scale(1.1);
-        }
-
-        .add-card-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--text-green-primary);
-        }
-
-        .add-card-subtitle {
-            font-size: 0.9rem;
-            color: var(--text-green-secondary);
-            opacity: 0.8;
-        }
-
-        .class-details-toggle {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 0 0 12px 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            z-index: 200;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            height: 40px;
-        }
-
-        .class-details-toggle:hover {
-            background: #f8f9fa;
-            border-color: var(--text-green-secondary);
-            color: var(--text-green-secondary);
-        }
-
-        .class-details-toggle .arrow {
-            margin-left: 8px;
-        }
-
-        .class-card-content {
-            position: relative;
-            overflow: hidden;
-            height: calc(100% - 40px);
-        }
-
-        .class-card-default-content {
-            margin: 20px 20px 60px 20px;
-        }
-
-        .class-details-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: white;
-            border-radius: 12px 12px 0 0;
-            z-index: 100;
-            transform: translateY(-100%);
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border-left: 4px solid var(--text-green-secondary);
-            border-right: 1px solid #e0e0e0;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            flex-direction: column;
-            margin: 0;
-            box-sizing: border-box;
-        }
-
-        .class-details-overlay.show {
-            transform: translateY(0);
-        }
-
-        .class-details-overlay .overlay-header {
-            padding: 8px 12px;
-            border-bottom: 1px solid #e0e0e0;
-            background: var(--faculty-card-bg);
-            border-radius: 12px 12px 0 0;
-            flex-shrink: 0;
-        }
-
-        .class-details-overlay .overlay-header h4 {
-            margin: 0;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .class-details-overlay .overlay-body {
-            flex: 1;
-            padding: 0;
-            margin: 0;
-            overflow-y: auto;
-        }
-
-        .sched-course-code {
-            color: #2c3e50;
-        }
-
-        .schedule-table td {
-            text-align: center;
-            vertical-align: middle;
-            padding: 8px 4px;
-            font-size: 0.8rem;
-        }
-
-        .course-info {
-            background: linear-gradient(135deg, rgba(240, 244, 255, 0.9), rgba(227, 242, 253, 0.9));
-            border-radius: 8px;
-            padding: 8px;
-            margin-bottom: 8px;
-            font-size: 0.85rem;
-            border-left: 3px solid #2196F3;
-            clear: both;
-            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.8);
-            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
-        }
-
-        .course-info:last-child {
-            margin-bottom: 0;
-        }
-
-        .location-info {
-            background: linear-gradient(135deg, rgba(232, 245, 232, 0.9), rgba(241, 248, 233, 0.9));
-            border-radius: 8px;
-            padding: 8px;
-            margin-bottom: 8px;
-            clear: both;
-            border-left: 3px solid #FFC107;
-            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.8);
-        }
-
-        .location-status {
-            display: flex;
-            align-items: center;
-            margin-bottom: 4px;
-        }
-
-        .location-text {
-            font-weight: bold;
-            color: #333;
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-        }
-
-        .time-info {
-            color: #666;
-            font-size: 0.75rem;
-            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
-        }
-
-        .contact-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid rgba(238, 238, 238, 0.8);
-        }
-
-        .office-hours {
-            font-size: 0.7rem;
-            color: #666;
-            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
-        }
-
-        .faculty-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .room-info {
-            font-size: 0.7rem;
-            color: #666;
-            margin-top: 2px;
-            font-style: italic;
-        }
-
-        .time-cell {
-            font-weight: 500;
-            background: #f8f9fa;
-            color: #333;
-        }
-    </style>
 </head>
 <body>
+    <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
 
         <div class="content-wrapper" id="contentWrapper">
             <?php 
-            // Configure header for program chair page
             $online_count = array_reduce($faculty_data, function($count, $faculty) {
                 return $count + ($faculty['status'] === 'available' ? 1 : 0);
             }, 0);
@@ -986,12 +408,23 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
                     Classes
                 </button>
                 <div class="search-bar">
-                    <input type="text" class="search-input" placeholder="Search..." id="searchInput">
-                    <button class="search-btn" onclick="searchContent()">🔍</button>
+                    <div class="search-container collapsed" id="searchContainer">
+                        <input type="text" class="search-input" placeholder="Search..." id="searchInput">
+                        <button class="search-toggle" onclick="toggleSearch()">
+                            <svg class="feather"><use href="#search"></use></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="tab-content active" id="faculty-content">
                 <div class="faculty-grid" id="facultyGrid">
+                    <div class="add-card add-card-first" data-modal="addFacultyModal">
+                        <div class="add-card-icon">
+                            <svg class="feather"><use href="#user-plus"></use></svg>
+                        </div>
+                        <div class="add-card-title">Add Faculty Member</div>
+                        <div class="add-card-subtitle">Register a new faculty member</div>
+                    </div>
                     <?php if (empty($faculty_data)): ?>
                     <div class="empty-state">
                         <h3>No faculty members found</h3>
@@ -1050,11 +483,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
                     </div>
                     <?php endforeach; ?>
                     <?php endif; ?>
-                    <div class="add-card" data-modal="addFacultyModal">
-                        <div class="add-card-icon">👨‍🏫</div>
-                        <div class="add-card-title">Add Faculty Member</div>
-                        <div class="add-card-subtitle">Register a new faculty member</div>
-                    </div>
                 </div>
             </div>
 
@@ -1066,6 +494,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
                     </div>
                 <?php else: ?>
                     <div class="courses-grid">
+                        <div class="add-card add-card-course add-card-first" data-modal="addCourseModal">
+                            <div class="add-card-icon add-card-course-icon">
+                                <svg class="feather"><use href="#book-open"></use></svg>
+                            </div>
+                            <div class="add-card-title">Add Course</div>
+                            <div class="add-card-subtitle">Create a new course entry</div>
+                        </div>
                         <?php foreach ($courses_data as $course): ?>
                             <div class="course-card" data-course="<?php echo htmlspecialchars($course['course_code']); ?>">
                                 <div class="course-card-content">
@@ -1106,11 +541,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
                                 </button>
                             </div>
                         <?php endforeach; ?>
-                        <div class="add-card add-card-course" data-modal="addCourseModal">
-                        <div class="add-card-icon add-card-course-icon">📘</div>
-                        <div class="add-card-title">Add Course</div>
-                        <div class="add-card-subtitle">Create a new course entry</div>
-                </div>
                     </div>
                 <?php endif; ?>
                 
@@ -1118,6 +548,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
 
             <div class="tab-content" id="classes-content">
                 <div class="classes-grid" id="classesGrid">
+                    <div class="add-card add-card-first" data-modal="addClassModal">
+                        <div class="add-card-icon">
+                            <svg class="feather"><use href="#users"></use></svg>
+                        </div>
+                        <div class="add-card-title">Add Class</div>
+                        <div class="add-card-subtitle">Assign a new class group</div>
+                    </div>
                     <?php if (empty($classes_data)): ?>
                         <div class="no-data">
                             <h3>No classes assigned</h3>
@@ -1177,7 +614,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
                                                 </div>
                                             <?php else: ?>
                                                 <div class="no-data" style="padding: 20px; text-align: center;">
-                                                    <div style="font-size: 2rem; margin-bottom: 10px;">📅</div>
+                                                    <div style="font-size: 2rem; margin-bottom: 10px;">
+                                                        <svg class="feather feather-xl"><use href="#calendar"></use></svg>
+                                                    </div>
                                                     <p style="color: #666; margin: 0;">No schedules assigned yet</p>
                                                 </div>
                                             <?php endif; ?>
@@ -1192,12 +631,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                    <div class="add-card" data-modal="addClassModal">
-                        <div class="add-card-icon">🏫</div>
-                        <div class="add-card-title">Add Class</div>
-                        <div class="add-card-subtitle">Assign a new class group</div>
-                    </div>
-
                 </div>
             </div>
         </div>
@@ -1208,6 +641,31 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
     <script>
         const facultySchedules = <?php echo json_encode($faculty_schedules); ?>;
         const facultyNames = <?php echo json_encode(array_column($faculty_data, 'faculty_name', 'faculty_id')); ?>;
+        
+        // Ensure toggleSearch is available immediately
+        if (typeof window.toggleSearch !== 'function') {
+            console.log('toggleSearch not found, defining fallback');
+            window.toggleSearch = function() {
+                console.log('Fallback toggleSearch called');
+                const container = document.getElementById('searchContainer');
+                const searchInput = document.getElementById('searchInput');
+                
+                if (!container || !searchInput) {
+                    console.log('Search elements not found in fallback');
+                    return;
+                }
+                
+                if (container.classList.contains('collapsed')) {
+                    container.classList.remove('collapsed');
+                    container.classList.add('expanded');
+                    setTimeout(() => searchInput.focus(), 400);
+                } else {
+                    container.classList.remove('expanded');
+                    container.classList.add('collapsed');
+                    searchInput.blur();
+                }
+            };
+        }
     </script>
 </body>
 </html>

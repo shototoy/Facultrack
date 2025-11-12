@@ -64,8 +64,8 @@ function getClassFaculty($pdo, $class_id) {
 }
 
 function getFacultyCourses($pdo, $faculty_id, $class_id) {
-    $debug_time = '13:30:00'; // Debug time
-    $debug_day = 'F'; // Debug day: M, T, W, TH, F, S
+    $debug_time = '13:30:00';
+    $debug_day = 'F';
     
     $courses_query = "
         SELECT s.course_code, c.course_description, s.days, s.time_start, s.time_end, s.room,
@@ -141,163 +141,9 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
     <title>FaculTrack - Faculty Locator</title>
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        .course-info {
-            position: relative;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px;
-            margin-bottom: 8px;
-            border-radius: 4px;
-            transition: all 0.3s ease;
-            color: black;
-        }
-
-        .course-content {
-            flex: 1;
-            padding-right: 10px;
-        }
-
-        .course-status-label {
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.3);
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-        }
-
-        .course-info.course-finished {
-            opacity: 0.85;
-            background-color: #f5f5f5;
-            border-left: 4px solid #9e9e9e;
-        }
-
-        .course-status-label.status-finished {
-            background: linear-gradient(135deg, #9E9E9E 0%, #BDBDBD 100%);
-            color: white;
-        }
-
-        .course-info.course-current {
-            background-color: #c8e6c9;
-            border-left: 4px solid #4caf50;
-            padding-left: 8px;
-        }
-
-        .course-status-label.status-current {
-            background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
-            color: white;
-            animation: pulse-current 2s infinite;
-        }
-
-        @keyframes pulse-current {
-            0%, 100% {
-                box-shadow: 0 2px 6px rgba(76, 175, 80, 0.4),
-                            inset 0 1px 0 rgba(255, 255, 255, 0.3);
-            }
-            50% {
-                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.6),
-                            inset 0 1px 0 rgba(255, 255, 255, 0.4);
-            }
-        }
-
-        .course-info.course-upcoming {
-            background-color: #bbdefb;
-            border-left: 4px solid #2196f3;
-            padding-left: 8px;
-        }
-
-        .course-status-label.status-upcoming {
-            background: linear-gradient(135deg, #2196F3 0%, #42A5F5 100%);
-            color: white;
-        }
-
-        .course-info.course-not-today {
-            background-color: #fff8e1;
-            border-left: 4px solid #ffc107;
-            color: #999;
-            padding-left: 8px;
-            margin-top: 12px;
-        }
-
-        .course-status-label.status-not-today {
-            background: linear-gradient(135deg, #FFC107 0%, #FFD54F 100%);
-            color: #333;
-        }
-
-        .course-info.course-not-today:first-of-type {
-            margin-top: 16px;
-        }
-
-        @media (max-width: 768px) {
-            .course-info {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-            
-            .course-status-label {
-                align-self: flex-end;
-            }
-        }
-
-        .location-info {
-            background: linear-gradient(135deg, rgba(232, 245, 232, 0.9), rgba(241, 248, 233, 0.9));
-            border-radius: 8px;
-            padding: 8px;
-            margin-bottom: 8px;
-            clear: both;
-            border-left: 3px solid #FFC107;
-            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.8);
-        }
-
-        .location-status {
-            display: flex;
-            align-items: center;
-            margin-bottom: 4px;
-        }
-
-        .location-text {
-            font-weight: bold;
-            color: #333;
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-        }
-
-        .time-info {
-            color: #666;
-            font-size: 0.75rem;
-            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
-        }
-
-        .contact-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid rgba(238, 238, 238, 0.8);
-        }
-
-        .office-hours {
-            font-size: 0.7rem;
-            color: #666;
-            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
-        }
-
-        .faculty-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-    </style>
 </head>
 <body>
+    <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
         <div class="content-wrapper" id="contentWrapper">
             <?php 
@@ -324,7 +170,9 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
 
             <div class="search-bar">
                 <input type="text" class="search-input" placeholder="Search faculty by name or department..." id="searchInput">
-                <button class="search-btn" onclick="searchFaculty()">🔍</button>
+                <button class="search-btn" onclick="searchFaculty()">
+                    <svg class="feather"><use href="#search"></use></svg>
+                </button>
             </div>
 
             <div class="home-content-wrapper">

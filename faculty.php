@@ -382,30 +382,8 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
     <title>FaculTrack - Faculty Dashboard</title>
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <style>            
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            grid-template-rows: auto auto;
-            gap: 2px;
-            flex: 1;
-            background: linear-gradient(135deg, #e0e0e0 0%, #d6d6d6 100%);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: var(--shadow-modal);
-        }
-
-        .schedule-section {
-            grid-row: 1 / 3;
-            grid-column: 1;
-            background: var(--bg-glass);
-            padding: 2rem;
-            overflow-y: auto;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--shadow-medium);
-            backdrop-filter: blur(10px);
-            position: relative;
-        }
-
+    <style>
+        /* Faculty-specific styles that aren't in main CSS */
         .schedule-section::before {
             content: '';
             position: absolute;
@@ -416,37 +394,290 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             background: linear-gradient(90deg, transparent, rgba(46, 125, 50, 0.3), transparent);
             animation: shimmer 4s infinite;
         }
-
+        
         @keyframes shimmer {
             0%, 100% { opacity: 0; }
             50% { opacity: 1; }
         }
 
-        .location-section {
-            grid-row: 1;
-            grid-column: 2;
-            background: var(--bg-glass);
-            padding: 25px;
-            border-left: 1px solid var(--border-medium);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--shadow-medium);
-            backdrop-filter: blur(10px);
-        }
-
-        .actions-section {
-            grid-row: 2;
-            grid-column: 2;
-            background: var(--bg-glass);
-            padding: 25px;
-            border-left: 1px solid var(--border-medium);
-            border-top: 1px solid var(--border-medium);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--shadow-medium);
-            backdrop-filter: blur(10px);
-        }
-
+        /* Faculty page specific layout styles */
         .schedule-card {
             height: 100%;
             display: flex;
             flex-direction: column;
+        }
+
+
+        /* PC LAYOUT (1025px+) - 3 GRID STRUCTURE */
+        @media (min-width: 1025px) {
+            
+            .dashboard-grid {
+                display: grid !important;
+                grid-template-columns: 2fr 1fr !important;
+                grid-template-rows: 1fr 1fr !important;
+                gap: 0 !important;
+                height: calc(100vh - var(--header-height, 160px) - 40px) !important;
+                overflow: hidden !important;
+            }
+            
+            /* Schedule - Left column, spans both rows */
+            .schedule-section {
+                grid-column: 1 !important;
+                grid-row: 1 / 3 !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                border-right: 1px solid rgba(224, 224, 224, 0.3) !important;
+                padding: 20px !important;
+                box-sizing: border-box !important;
+            }
+            
+            /* Current Location - Upper right */
+            .location-section {
+                grid-column: 2 !important;
+                grid-row: 1 !important;
+                border-bottom: 1px solid rgba(224, 224, 224, 0.3) !important;
+                padding: 20px !important;
+                overflow: hidden !important;
+                background: white !important;
+                min-height: 100% !important;
+                box-sizing: border-box !important;
+            }
+            
+            /* Quick Actions - Lower right */
+            .actions-section {
+                grid-column: 2 !important;
+                grid-row: 2 !important;
+                position: relative !important;
+                bottom: auto !important;
+                left: auto !important;
+                right: auto !important;
+                z-index: auto !important;
+                background: white !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                backdrop-filter: none !important;
+                min-height: 100% !important;
+                transition: none !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+            }
+        }
+
+        /* TABLET RESPONSIVE (769px - 1024px) - FACULTY SPECIFIC */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            body {
+                padding-bottom: 140px !important;
+                overflow: hidden !important;
+            }
+            
+            .dashboard-grid {
+                display: grid !important;
+                grid-template-columns: 1fr !important;
+                grid-template-rows: auto 1fr !important;
+                height: calc(100vh - var(--header-height, 160px) - 140px) !important;
+                gap: 16px !important;
+                overflow: hidden !important;
+            }
+            
+            /* Current Location - Top row */
+            .location-section {
+                grid-row: 1 !important;
+                grid-column: 1 !important;
+                order: 1 !important;
+                padding: 16px !important;
+                border-bottom: 1px solid rgba(224, 224, 224, 0.3) !important;
+                min-height: auto !important;
+                max-height: 140px !important;
+                overflow: hidden !important;
+            }
+            
+            /* Schedule - Bottom row */
+            .schedule-section {
+                grid-row: 2 !important;
+                grid-column: 1 !important;
+                order: 2 !important;
+                padding: 16px !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                border: none !important;
+            }
+            
+            /* Quick Actions - Fixed at bottom */
+            .actions-section {
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                z-index: 1000 !important;
+                background: rgba(255, 255, 255, 0.98) !important;
+                padding: 16px !important;
+                border-top: 1px solid rgba(46, 125, 50, 0.2) !important;
+                box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.15) !important;
+                backdrop-filter: blur(10px) !important;
+                height: 140px !important;
+                order: 3 !important;
+            }
+            
+            .quick-actions h3 {
+                display: none !important;
+            }
+            
+            .action-card {
+                padding: 12px !important;
+                margin: 4px !important;
+            }
+            
+            .action-icon {
+                font-size: 1.8rem !important;
+                margin-bottom: 4px !important;
+            }
+            
+            /* Fix tablet quick actions layout */
+            .quick-actions {
+                height: 100% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .actions-grid {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 12px !important;
+                width: 100% !important;
+                max-width: none !important;
+                flex: 0 !important;
+            }
+        }
+
+        /* PHONE RESPONSIVE (≤768px) - FACULTY SPECIFIC */
+        @media (max-width: 768px) {
+            body .page-header {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                z-index: 1001 !important;
+                background: var(--primary-green) !important;
+                backdrop-filter: none !important;
+                transform: translateY(0) !important;
+                opacity: 1 !important;
+                transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease !important;
+            }
+            
+            .page-header.scroll-hidden {
+                transform: translateY(-100%) !important;
+                opacity: 0 !important;
+            }
+            
+            body {
+                overflow-y: auto !important;
+                padding-bottom: 100px !important;
+            }
+            
+            .dashboard-grid {
+                display: grid !important;
+                grid-template-columns: 1fr !important;
+                grid-template-rows: auto 1fr !important;
+                height: calc(100vh - 100px - 24px) !important;
+                min-height: calc(100vh - 100px - 24px) !important;
+                gap: 12px !important;
+            }
+            
+            /* Current Location - Top row */
+            .location-section {
+                grid-row: 1 !important;
+                grid-column: 1 !important;
+                order: 1 !important;
+                padding: 12px !important;
+                border-bottom: 1px solid rgba(224, 224, 224, 0.3) !important;
+                min-height: auto !important;
+                max-height: 120px !important;
+            }
+            
+            /* Schedule - Bottom row */
+            .schedule-section {
+                grid-row: 2 !important;
+                grid-column: 1 !important;
+                order: 2 !important;
+                padding: 12px !important;
+                padding-bottom: 100px !important;
+                overflow-y: auto !important;
+                border: none !important;
+            }
+            
+            /* Schedule overflow mode when fully scrolled */
+            .schedule-section.scroll-mode-active {
+                max-height: calc(100vh - 220px) !important;
+                overflow-y: auto !important;
+                padding-bottom: 20px !important;
+            }
+            
+            /* Quick Actions - Fixed at bottom with scroll animation */
+            .actions-section {
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                z-index: 1000 !important;
+                background: rgba(255, 255, 255, 0.98) !important;
+                padding: 12px !important;
+                border-top: 1px solid rgba(46, 125, 50, 0.2) !important;
+                box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.15) !important;
+                backdrop-filter: blur(10px) !important;
+                height: 100px !important;
+                order: 3 !important;
+                transform: translateY(100%) !important;
+                opacity: 0 !important;
+                transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease !important;
+            }
+            
+            .actions-section.scroll-visible {
+                transform: translateY(0) !important;
+                opacity: 1 !important;
+            }
+            
+            .quick-actions h3 {
+                display: none !important;
+            }
+            
+            .action-card {
+                padding: 8px !important;
+                margin: 2px !important;
+            }
+            
+            .action-icon {
+                font-size: 1.4rem !important;
+                margin-bottom: 2px !important;
+            }
+            
+            .action-title {
+                font-size: 0.7rem !important;
+            }
+            
+            /* Fix phone quick actions layout */
+            .quick-actions {
+                height: 100% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .actions-grid {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+                width: 100% !important;
+                max-width: none !important;
+                flex: 0 !important;
+            }
         }
 
         .schedule-header {
@@ -454,12 +685,11 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid rgba(240, 240, 240, 0.8);
+            padding: 15px;
             background: linear-gradient(90deg, transparent, rgba(46, 125, 50, 0.05), transparent);
             border-radius: 8px;
-            padding: 15px;
             margin: -10px -10px 20px -10px;
+            border-bottom: 2px solid rgba(240, 240, 240, 0.8);
         }
 
         .schedule-header h3 {
@@ -542,10 +772,22 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         inset 0 1px 0 rgba(255, 255, 255, 0.9);
         }
 
-        .location-update-card {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+        .location-section .location-update-card {
+            height: auto !important;
+            display: block !important;
+            background: transparent !important;
+            position: relative !important;
+            top: 0 !important;
+        }
+        
+        .location-section .location-current {
+            height: auto !important;
+            display: block !important;
+        }
+        
+        .location-section .location-display {
+            height: auto !important;
+            display: block !important;
         }
 
         .location-header {
@@ -580,16 +822,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
         }
 
-        .location-display {
-            background: var(--bg-glass-semi);
-            padding: 12px;
-            border-radius: 10px;
-            border-left: 3px solid var(--warning-color);
-            margin-bottom: 15px;
-            flex: 1;
-            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-        }
 
         .location-updated {
             font-size: 0.8rem;
@@ -626,10 +858,13 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             transform: translateY(-2px);
         }
 
-        .quick-actions {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+        .actions-section .quick-actions {
+            height: auto !important;
+            display: block !important;
+            position: absolute !important;
+            bottom: 20px !important;
+            left: 20px !important;
+            right: 20px !important;
         }
 
         .quick-actions h3 {
@@ -644,11 +879,11 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             margin: -10px -10px 15px -10px;
         }
 
-        .actions-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            flex: 1;
+        .actions-section .actions-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 12px !important;
+            height: 120px !important;
         }
 
         .action-card {
@@ -831,328 +1066,8 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             transform: translateY(-2px);
         }
 
-        /* IMPROVED RESPONSIVE DESIGN */
-        @media (max-width: 1023px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr !important;
-                grid-template-rows: auto auto !important;
-                gap: 2px;
-            }
-            
-            .schedule-section {
-                grid-row: 1 !important;
-                grid-column: 1 !important;
-                padding: 20px;
-                border-left: none;
-            }
-            
-            .location-section {
-                grid-row: 2 !important;
-                grid-column: 1 !important;
-                padding: 20px;
-                border-left: none;
-                border-top: 1px solid rgba(224, 224, 224, 0.5);
-            }
-            
-            .actions-section {
-                grid-row: unset !important;
-                grid-column: unset !important;
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                z-index: 1000;
-                background: rgba(255, 255, 255, 0.98);
-                padding: 15px;
-                border-radius: 0;
-                border: none;
-                border-top: 1px solid rgba(46, 125, 50, 0.2);
-                box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.15),
-                            inset 0 1px 0 rgba(255, 255, 255, 0.9);
-                margin: 0;
-            }
-            
-            .quick-actions h3 {
-                display: none;
-            }
-            
-            .actions-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 12px;
-            }
-            
-            .action-card {
-                background: linear-gradient(145deg, #ffffff, #f8f9fa);
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08),
-                            inset 0 1px 0 rgba(255, 255, 255, 0.9);
-                border: 1px solid rgba(46, 125, 50, 0.15);
-                padding: 12px;
-            }
 
-            .action-card:hover {
-                background: linear-gradient(145deg, #f8f9fa, #e9ecef);
-                transform: translateY(-2px) scale(1.02);
-                box-shadow: 0 6px 20px rgba(46, 125, 50, 0.15),
-                            inset 0 2px 0 rgba(255, 255, 255, 1);
-            }
-            
-            .schedule-item {
-                padding: 6px 10px;
-                min-height: auto;
-                display: grid;
-                grid-template-columns: 55px 1fr auto;
-                grid-template-rows: auto;
-                gap: 0 8px;
-                align-items: center;
-            }
-            
-            .schedule-time {
-                grid-column: 1;
-                margin: 0;
-                min-width: auto;
-                align-self: center;
-            }
-            
-            .schedule-details {
-                grid-column: 2;
-                margin: 0;
-                line-height: 1.1;
-            }
-            
-                .schedule-info span {
-                display: inline-block;
-            }
-            .schedule-details h4 {
-                margin: 0;
-                font-size: 0.85rem;
-                line-height: 1.1;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 4px;
-                align-items: baseline;
-            }
-            
-            .course-code {
-                font-weight: bold;
-            }
-            
-            .course-name {
-                font-weight: 500;
-                opacity: 0.9;
-            }
-            
-            .schedule-info {
-
-                gap: 6px;
-                margin: 1px 0 0 0;
-                font-size: 0.7rem;
-                color: #666;
-            }
-            
-            .schedule-status {
-                grid-column: 3;
-                align-items: center;
-                justify-content: center;
-                margin: 0;
-                gap: 4px;
-            }
-            
-            .schedule-tabs {
-                display: flex;
-                gap: 4px;
-                margin-bottom: 15px;
-                flex-wrap: wrap;
-                overflow-x: auto;
-                padding-bottom: 2px;
-            }
-            
-            .schedule-tab {
-                padding: 6px 12px;
-                font-size: 0.8rem;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-            
-            body {
-                padding-bottom: 100px !important;
-            }
-        }
-
-        /* TABLET-SPECIFIC ADJUSTMENTS (481px - 1023px) */
-        @media (min-width: 481px) and (max-width: 1023px) {
-            .schedule-section,
-            .location-section {
-                padding: 25px;
-            }
-            
-            .location-header{
-                margin: 0px;
-                padding: 0px;
-            }
-
-            .location-display{
-                margin: 4px
-            }
-            .location-section {
-                padding: 12px 20px
-
-            }
-            
-
-            .actions-section {
-                padding: 0px !important;
-            }
-            
-            .actions-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 0px;
-            }
-
-            .action-card {
-                padding: 8;
-            }
-
-            .action-icon {
-                font-size: 1.8rem;
-            }
-
-            .action-title {
-                font-size: 1rem;
-            }
-
-            .action-subtitle {
-                font-size: 0.75rem;
-            }
-
-            .schedule-item {
-                min-height: auto;
-                display: grid;
-                grid-template-columns: 60px 1fr auto;
-                grid-template-rows: auto;
-                align-items: center;
-            }
-            
-            .schedule-details h4 {
-                font-size: 0.95rem;
-                line-height: 1.1;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 6px;
-                align-items: baseline;
-            }
-
-            .schedule-info {
-                font-size: 0.8rem;
-            }
-
-            body {
-                padding-bottom: 120px !important;
-            }
-        }
-
-        /* MOBILE-SPECIFIC ADJUSTMENTS (<= 480px) */
-        @media (max-width: 480px) {  
-            .schedule-section,
-            .location-section {
-                padding: 12px;
-            }
-            
-            .actions-section {
-                padding: 10px !important;
-            }
-            
-            .actions-grid {
-                gap: 8px;
-            }
-
-            .action-card {
-                padding: 8px;
-            }
-
-            .action-icon {
-                font-size: 1.4rem;
-                margin-bottom: 2px;
-            }
-
-            .action-title {
-                font-size: 0.8rem;
-                margin-bottom: 1px;
-            }
-
-            .action-subtitle {
-                font-size: 0.65rem;
-            }
-
-            .schedule-item {
-                padding: 6px 10px;
-                grid-template-columns: 50px 1fr auto;
-                gap: 0 6px;
-            }
-
-            .schedule-details h4 {
-                font-size: 0.85rem;
-                line-height: 1.1;
-            }
-
-            .schedule-info {
-                font-size: 0.7rem;
-                gap: 6px;
-                margin-top: 1px;
-            }
-
-            .time-display {
-                font-size: 0.9rem;
-            }
-
-            .time-duration {
-                font-size: 0.65rem;
-            }
-
-            .schedule-tab {
-                padding: 4px 8px;
-                font-size: 0.75rem;
-            }
-
-            .schedule-header h3 {
-                font-size: 1.2rem;
-            }
-
-            .schedule-date {
-                font-size: 0.8rem;
-            }
-
-            .location-actions {
-                flex-direction: column;
-                gap: 6px;
-            }
-
-            .location-actions button {
-                padding: 6px 10px;
-                font-size: 0.75rem;
-            }
-
-            .location-header h3 {
-                font-size: 1rem;
-            }
-
-            .location-status {
-                font-size: 0.75rem;
-                padding: 2px 6px;
-            }
-
-            .location-display {
-                padding: 8px;
-                font-size: 0.85rem;
-            }
-
-            .location-updated {
-                font-size: 0.7rem;
-            }
-
-            body {
-                padding-bottom: 80px !important;
-            }
-        }
+        /* Faculty page specific responsive adjustments - only unique styles not in main CSS */
 
         .location-history-list {
             max-height: 400px;
@@ -1221,25 +1136,10 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             font-size: 0.95rem;
         }
 
-        @media (max-width: 480px) {
-            .history-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 4px;
-            }
-            
-            .history-timestamp {
-                margin-left: 0;
-                font-size: 0.8rem;
-            }
-            
-            .history-location-name {
-                font-size: 0.9rem;
-            }
-        }
 </style>
 </head>
-<body>
+<body class="faculty-page">
+    <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
 
         <div class="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -1273,7 +1173,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
         <div class="content-wrapper" id="contentWrapper">
             <?php 
-            // Configure header for faculty page
             $ongoing_classes = count(array_filter($today_schedule, function($schedule) {
                 return $schedule['status'] === 'ongoing';
             }));
@@ -1329,7 +1228,9 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                                 <?php $first_tab_schedule = getScheduleForDays($pdo, $faculty_info['faculty_id'], $schedule_tabs[0]); ?>
                                 <?php if (empty($first_tab_schedule)): ?>
                                 <div class="no-schedule">
-                                    <div class="no-schedule-icon">📅</div>
+                                    <div class="no-schedule-icon">
+                                        <svg class="feather feather-xl"><use href="#calendar"></use></svg>
+                                    </div>
                                     <div class="no-schedule-text">No classes scheduled</div>
                                     <div class="no-schedule-subtitle">for <?php echo $schedule_tabs[0]; ?></div>
                                 </div>
@@ -1375,7 +1276,9 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                                 <?php endif; ?>
                             <?php else: ?>
                             <div class="no-schedule">
-                                <div class="no-schedule-icon">📅</div>
+                                <div class="no-schedule-icon">
+                                    <svg class="feather feather-xl"><use href="#calendar"></use></svg>
+                                </div>
                                 <div class="no-schedule-text">No schedules found</div>
                                 <div class="no-schedule-subtitle">No classes assigned</div>
                             </div>
@@ -1395,8 +1298,14 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                                 </div>
                             </div>
                             <div class="location-display">
-                                <div class="location-text" id="currentLocation">
-                                    <?php echo htmlspecialchars($faculty_info['current_location'] ?: 'Location not set'); ?>
+                                <div class="location-row">
+                                    <div class="location-text" id="currentLocation">
+                                        <?php echo htmlspecialchars($faculty_info['current_location'] ?: 'Location not set'); ?>
+                                    </div>
+                                    <div class="location-status location-status-mobile">
+                                        <span class="status-dot"></span>
+                                        <span>Available</span>
+                                    </div>
                                 </div>
                                 <div class="location-updated">
                                     Last updated: <?php 
@@ -1424,12 +1333,16 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         <h3>Quick Actions</h3>
                         <div class="actions-grid">
                             <button class="action-card btn-primary" onclick="openLocationModal()">
-                                <div class="action-icon">📍</div>
+                                <div class="action-icon">
+                                    <svg class="feather"><use href="#map-pin"></use></svg>
+                                </div>
                                 <div class="action-title">Update Location</div>
                             </button>
                             
                             <button class="action-card" onclick="viewLocationHistory()">
-                                <div class="action-icon">📋</div>
+                                <div class="action-icon">
+                                    <svg class="feather"><use href="#clipboard"></use></svg>
+                                </div>
                                 <div class="action-title">Location History</div>
                             </button>
                         </div>
@@ -1516,5 +1429,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
         </div>
 
     <script src="assets/js/faculty.js"></script>
-    </body>
+    
+</body>
 </html>

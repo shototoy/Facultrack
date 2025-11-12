@@ -267,3 +267,111 @@ setInterval(function() {
         updateLocationStatus();
     }
 }, 300000);
+
+// FACULTY PHONE ANIMATION HANDLER
+let lastScrollTop = 0;
+let ticking = false;
+
+// Initialize content positioning for phone view
+function initializeContentPosition() {
+    if (window.innerWidth <= 768) {
+        const header = document.querySelector('.page-header');
+        const contentWrapper = document.querySelector('.content-wrapper');
+        
+        if (header && contentWrapper) {
+            const headerHeight = header.offsetHeight;
+            const baseMargin = 20;
+            
+            // Set initial content position below header
+            contentWrapper.style.marginTop = `${headerHeight + baseMargin}px`;
+            console.log('Initial content position set to:', headerHeight + baseMargin + 'px');
+            
+            // Set quick actions initial state (hidden)
+            const actionsSection = document.querySelector('.actions-section');
+            if (actionsSection) {
+                actionsSection.classList.remove('scroll-visible');
+            }
+        }
+    } else {
+        // Reset for non-phone views
+        const contentWrapper = document.querySelector('.content-wrapper');
+        if (contentWrapper) {
+            contentWrapper.style.removeProperty('margin-top');
+        }
+    }
+}
+
+function facultyScrollHandler() {
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    
+    if (window.innerWidth <= 768) {
+        const header = document.querySelector('.page-header');
+        const dashboardGrid = document.querySelector('.dashboard-grid');
+        const actionsSection = document.querySelector('.actions-section');
+        const locationSection = document.querySelector('.location-section');
+        const body = document.body;
+        
+        // Check if dashboard grid has reached the top
+        const dashboardRect = dashboardGrid.getBoundingClientRect();
+        const headerHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height') || '160');
+        
+        // Dashboard reaches top when its top position is at or above header height
+        const dashboardReachedTop = dashboardRect.top <= 0;
+        
+        // Toggle body padding and class based on dashboard position
+        if (dashboardReachedTop) {
+            body.classList.add('dashboard-reached-top');
+        } else {
+            body.classList.remove('dashboard-reached-top');
+        }
+        
+        // Simple scroll-based animation
+        if (header && actionsSection) {
+            const scheduleSection = document.querySelector('.schedule-section');
+            
+            // Trigger animation when scrolled down more (slower trigger)
+            if (scrollTop > 200) {
+                header.classList.add('scroll-hidden');
+                actionsSection.classList.add('scroll-visible');
+                
+                // Activate schedule overflow when fully scrolled
+                if (scheduleSection) {
+                    scheduleSection.classList.add('scroll-mode-active');
+                }
+            } else {
+                header.classList.remove('scroll-hidden');
+                actionsSection.classList.remove('scroll-visible');
+                
+                // Deactivate schedule overflow when not fully scrolled
+                if (scheduleSection) {
+                    scheduleSection.classList.remove('scroll-mode-active');
+                }
+            }
+        }
+    }
+    
+    lastScrollTop = scrollTop;
+    ticking = false;
+}
+
+function requestTick() {
+    if (!ticking) {
+        requestAnimationFrame(facultyScrollHandler);
+        ticking = true;
+    }
+}
+
+// Initialize scroll handler
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Faculty scroll test script loaded');
+    console.log('Body classes:', document.body.className);
+    console.log('Window width:', window.innerWidth);
+    console.log('Scroll listeners added');
+    
+    // Initialize content position on load and resize
+    initializeContentPosition();
+    window.addEventListener('resize', initializeContentPosition);
+    
+    // Add scroll listener
+    window.addEventListener('scroll', requestTick, { passive: true });
+});
