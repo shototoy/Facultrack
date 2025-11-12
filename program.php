@@ -365,6 +365,195 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/scheduling.css">
+    <style>
+        /* Program page overlay animations and styling */
+        .course-card,
+        .class-card {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .course-details-overlay,
+        .class-details-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(248, 249, 250, 0.98);
+            border-radius: 12px;
+            z-index: 10;
+            opacity: 0;
+            transform: translateY(-100%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+        
+        .course-details-overlay.overlay-visible,
+        .class-details-overlay.overlay-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .overlay-header {
+            padding: 12px 16px 8px 16px;
+            border-bottom: 1px solid rgba(224, 224, 224, 0.3);
+            background: rgba(46, 125, 50, 0.05);
+        }
+        
+        .overlay-header h4 {
+            margin: 0;
+            color: var(--primary-green);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .overlay-body {
+            padding: 0;
+        }
+        
+        .assignments-preview {
+            padding: 12px;
+        }
+        
+        .assignment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border: 1px solid rgba(224, 224, 224, 0.5);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .assignment-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-green-light);
+        }
+        
+        .assignment-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .assignment-info {
+            flex: 1;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        
+        .remove-assignment-btn {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-left: 12px;
+        }
+        
+        .remove-assignment-btn:hover {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+        
+        .schedule-preview {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        
+        .schedule-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(224, 224, 224, 0.3);
+            background: white;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .schedule-item:hover {
+            background: rgba(46, 125, 50, 0.05);
+        }
+        
+        .schedule-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .schedule-course-info {
+            flex: 1;
+        }
+        
+        .schedule-course {
+            font-weight: 600;
+            color: var(--primary-green);
+            font-size: 0.85rem;
+            margin-bottom: 2px;
+        }
+        
+        .schedule-time {
+            text-align: right;
+            font-size: 0.8rem;
+            color: #666;
+            line-height: 1.3;
+        }
+        
+        .course-details-toggle,
+        .class-details-toggle {
+            width: 100%;
+            background: rgba(46, 125, 50, 0.1);
+            color: var(--primary-green);
+            border: 1px solid rgba(46, 125, 50, 0.2);
+            padding: 10px 16px;
+            border-radius: 0 0 12px 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: auto;
+        }
+        
+        .course-details-toggle:hover,
+        .class-details-toggle:hover {
+            background: rgba(46, 125, 50, 0.15);
+            border-color: rgba(46, 125, 50, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .course-details-toggle .arrow,
+        .class-details-toggle .arrow {
+            font-size: 0.7rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .loading-assignments {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        
+        .no-data svg {
+            color: #ccc;
+        }
+    </style>
 
 </head>
 <body>

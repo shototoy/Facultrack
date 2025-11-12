@@ -1473,3 +1473,87 @@ document.addEventListener('click', function(e) {
         openModal(card.dataset.modal);
     }
 });
+// Course and Class overlay toggle functions
+function toggleCourseDetailsOverlay(button, courseCode) {
+    console.log('toggleCourseDetailsOverlay called for:', courseCode);
+    
+    const courseCard = button.closest('.course-card');
+    const overlay = courseCard.querySelector('.course-details-overlay');
+    const isCurrentlyVisible = overlay.classList.contains('overlay-visible');
+    
+    if (isCurrentlyVisible) {
+        // Hide overlay - slide up
+        overlay.classList.remove('overlay-visible');
+        button.innerHTML = 'View Assignments <span class="arrow">▼</span>';
+    } else {
+        // Show overlay - load assignments first, then slide down
+        loadCourseAssignments(courseCode, overlay);
+        // Use setTimeout to ensure the content is loaded before animation
+        setTimeout(() => {
+            overlay.classList.add('overlay-visible');
+        }, 10);
+        button.innerHTML = 'Hide Assignments <span class="arrow">▲</span>';
+    }
+}
+
+function toggleClassDetailsOverlay(button) {
+    console.log('toggleClassDetailsOverlay called');
+    
+    const classCard = button.closest('.class-card');
+    const overlay = classCard.querySelector('.class-details-overlay');
+    const isCurrentlyVisible = overlay.classList.contains('overlay-visible');
+    
+    if (isCurrentlyVisible) {
+        // Hide overlay - slide up
+        overlay.classList.remove('overlay-visible');
+        button.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+    } else {
+        // Show overlay - slide down
+        overlay.classList.add('overlay-visible');
+        button.innerHTML = 'Hide Schedule Details <span class="arrow">▲</span>';
+    }
+}
+
+// Load course assignments for the overlay
+function loadCourseAssignments(courseCode, overlay) {
+    const assignmentsDiv = overlay.querySelector('.assignments-preview');
+    
+    fetch('program.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `action=get_curriculum_assignment_data_with_classes&course_code=${encodeURIComponent(courseCode)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.existingAssignments.length > 0) {
+                let html = '';
+                data.existingAssignments.forEach(assignment => {
+                    html += `
+                        <div class="assignment-item">
+                            <div class="assignment-info">
+                                <strong>Year ${assignment.year_level} - ${assignment.semester} Semester</strong><br>
+                                <span style="color: #666;">Academic Year: ${assignment.academic_year}</span>
+                                ${assignment.class_names ? `<br><span style="color: #2e7d32;">Classes: ${assignment.class_names}</span>` : ''}
+                            </div>
+                            <button class="remove-assignment-btn" onclick="removeCurriculumAssignment(${assignment.curriculum_id}, '${courseCode}')">
+                                Remove
+                            </button>
+                        </div>
+                    `;
+                });
+                assignmentsDiv.innerHTML = html;
+            } else {
+                assignmentsDiv.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No curriculum assignments found</div>';
+            }
+        } else {
+            assignmentsDiv.innerHTML = '<div style="text-align: center; color: #d32f2f; padding: 20px;">Error loading assignments</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading assignments:', error);
+        assignmentsDiv.innerHTML = '<div style="text-align: center; color: #d32f2f; padding: 20px;">Error loading assignments</div>';
+    });
+}
