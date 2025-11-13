@@ -1,160 +1,131 @@
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.querySelector('.sidebar-overlay');
-    const contentWrapper = document.getElementById('contentWrapper');
-
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('show');
-    contentWrapper.classList.toggle('sidebar-open');
-}
-
-function closeSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.querySelector('.sidebar-overlay');
-    const contentWrapper = document.getElementById('contentWrapper');
-
-    sidebar.classList.remove('open');
-    overlay.classList.remove('show');
-    contentWrapper.classList.remove('sidebar-open');
-}
-
-function searchFaculty() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const facultyCards = document.querySelectorAll('.faculty-card');
-    let visibleCount = 0;
-
-    facultyCards.forEach(card => {
-        const name = card.getAttribute('data-name').toLowerCase();
-        const program = card.getAttribute('data-program').toLowerCase();
-        
-        if (name.includes(searchTerm) || program.includes(searchTerm)) {
-            card.style.display = 'block';
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-
-    const grid = document.getElementById('facultyGrid');
-    const existingEmptyState = grid.querySelector('.search-empty-state');
-    
-    if (existingEmptyState) {
-        existingEmptyState.remove();
-    }
-
-    if (visibleCount === 0 && searchTerm.trim() !== '') {
-        const emptyState = document.createElement('div');
-        emptyState.className = 'empty-state search-empty-state';
-        emptyState.innerHTML = `
-            <h3>No faculty found</h3>
-            <p>Try adjusting your search criteria</p>
-        `;
-        grid.appendChild(emptyState);
-    }
-}
+// Home/Class Dashboard JavaScript
 
 function contactFaculty(email) {
-    window.location.href = 'mailto:' + email;
-}
-
-document.getElementById('searchInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        searchFaculty();
-    }
-});
-
-document.getElementById('searchInput').addEventListener('input', searchFaculty);
-
-document.addEventListener('click', function(e) {
-    const sidebar = document.getElementById('sidebar');
-    const toggle = document.querySelector('.announcement-toggle');
-
-    if (window.innerWidth > 768 &&
-        !sidebar.contains(e.target) &&
-        !toggle.contains(e.target) &&
-        sidebar.classList.contains('open')) {
-        closeSidebar();
-    }
-});
-
-let locationPolling = null;
-
-function startLocationPolling() {
-    locationPolling = setInterval(updateFacultyLocations, 1000);
-}
-
-function stopLocationPolling() {
-    if (locationPolling) {
-        clearInterval(locationPolling);
-        locationPolling = null;
+    if (email) {
+        window.location.href = `mailto:${email}`;
+    } else {
+        showNotification('Contact information not available', 'info');
     }
 }
 
-async function updateFacultyLocations() {
-    try {
-        const response = await fetch('assets/php/get_location.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            }
-        });
+function showNotification(message, type = 'info') {
+    // Remove any existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => notification.remove());
 
-        if (response.ok) {
-            const result = await response.json();
-            
-            if (result.success && result.faculty) {
-                updateFacultyCards(result.faculty);
-            }
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span class="notification-message">${message}</span>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
         }
-    } catch (error) {
-        }
+    }, 5000);
 }
 
-function updateFacultyCards(facultyData) {
+// Update faculty cards with real-time data
+function updateFacultyCards(facultyData, facultyCourses) {
+    const facultyContainer = document.querySelector('.faculty-grid');
+    if (!facultyContainer) return;
+
     facultyData.forEach(faculty => {
-        const facultyCard = document.querySelector(`[data-faculty-id="${faculty.faculty_id}"]`);
+        const facultyCard = facultyContainer.querySelector(`[data-faculty-id="${faculty.faculty_id}"]`);
         if (facultyCard) {
-            const statusDot = facultyCard.querySelector('.status-dot');
-            if (statusDot) {
-                statusDot.className = `status-dot status-${faculty.status}`;
+            // Update status badge
+            const statusBadge = facultyCard.querySelector('.status-badge');
+            if (statusBadge) {
+                statusBadge.className = `status-badge status-${faculty.status.toLowerCase()}`;
+                statusBadge.textContent = faculty.status;
             }
 
-            const statusText = facultyCard.querySelector('.location-text');
-            if (statusText) {
-                let statusLabel = 'Unknown';
-                switch(faculty.status) {
-                    case 'available': statusLabel = 'Available'; break;
-                    case 'busy': statusLabel = 'In Meeting'; break;
-                    case 'offline': statusLabel = 'Offline'; break;
-                }
-                statusText.textContent = statusLabel;
+            // Update location
+            const locationElement = facultyCard.querySelector('.current-location');
+            if (locationElement) {
+                locationElement.textContent = faculty.current_location;
             }
 
-            const locationDiv = facultyCard.querySelector('.location-info > div:nth-child(2)');
-            if (locationDiv) {
-                locationDiv.textContent = faculty.current_location;
-            }
-
+            // Update time info
             const timeInfo = facultyCard.querySelector('.time-info');
             if (timeInfo) {
                 timeInfo.textContent = `Last updated: ${faculty.last_updated}`;
             }
+
+            // Update courses
+            const courses = facultyCourses[faculty.faculty_id] || [];
+            updateCourseItems(facultyCard, courses);
         }
     });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    startLocationPolling();
-});
+function updateCourseItems(facultyCard, courses) {
+    const coursesSection = facultyCard.querySelector('.courses-section');
+    if (!coursesSection) return;
 
-document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-        stopLocationPolling();
+    // Remove existing course items
+    const existingCourses = coursesSection.querySelectorAll('.course-item');
+    existingCourses.forEach(course => course.remove());
+
+    // Add updated course items
+    if (courses.length > 0) {
+        courses.forEach(course => {
+            const courseElement = document.createElement('div');
+            courseElement.className = `course-item course-${course.status}`;
+            
+            let statusText = '';
+            switch (course.status) {
+                case 'current': statusText = 'In Progress'; break;
+                case 'upcoming': statusText = 'Upcoming'; break;
+                case 'finished': statusText = 'Completed'; break;
+                default: statusText = 'Not Today';
+            }
+            
+            courseElement.innerHTML = `
+                <div class="course-code">${course.course_code}</div>
+                <div class="course-description">${course.course_description}</div>
+                <div class="course-time">${formatTime(course.time_start)} - ${formatTime(course.time_end)}</div>
+                <div class="course-room">Room: ${course.room || 'TBA'}</div>
+                <div class="course-status status-${course.status}">${statusText}</div>
+            `;
+            
+            coursesSection.appendChild(courseElement);
+        });
     } else {
-        startLocationPolling();
+        const noCourses = document.createElement('div');
+        noCourses.className = 'no-courses';
+        noCourses.textContent = 'No classes scheduled for today';
+        coursesSection.appendChild(noCourses);
     }
+}
+
+function formatTime(timeString) {
+    if (!timeString) return '';
+    
+    const [hours, minutes] = timeString.split(':');
+    const hour24 = parseInt(hours);
+    const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+    const ampm = hour24 >= 12 ? 'PM' : 'AM';
+    
+    return `${hour12}:${minutes} ${ampm}`;
+}
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Class Dashboard loaded');
 });
 
-window.addEventListener('beforeunload', function() {
-    stopLocationPolling();
+// Handle live polling updates specifically for class dashboard
+window.addEventListener('facultyUpdatesReceived', function(event) {
+    const data = event.detail;
+    if (data.success) {
+        updateFacultyCards(data.faculty_data, data.faculty_courses);
+    }
 });

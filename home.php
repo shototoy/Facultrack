@@ -20,6 +20,146 @@ foreach ($faculty_data as $faculty) {
 require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
+// Enhanced AJAX endpoint for real-time class dashboard updates
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_dashboard_data') {
+    validateUserSession('class');
+    
+    try {
+        $user_id = $_SESSION['user_id'];
+        $class_info = getClassInfo($pdo, $user_id);
+        
+        if (!$class_info) {
+            sendJsonResponse(['success' => false, 'message' => 'Class information not found']);
+        }
+        
+        $class_id = $class_info['class_id'];
+        $faculty_data = getClassFaculty($pdo, $class_id);
+        $faculty_courses = [];
+        
+        foreach ($faculty_data as $faculty) {
+            $faculty_courses[$faculty['faculty_id']] = getFacultyCourses($pdo, $faculty['faculty_id'], $class_id);
+        }
+        
+        $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
+        
+        sendJsonResponse([
+            'success' => true,
+            'class_info' => $class_info,
+            'faculty_data' => $faculty_data,
+            'faculty_courses' => $faculty_courses,
+            'announcements' => $announcements,
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+        
+    } catch (Exception $e) {
+        sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+}
+
+// AJAX endpoint for getting updated faculty locations and course statuses
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_faculty_updates') {
+    validateUserSession('class');
+    
+    try {
+        $user_id = $_SESSION['user_id'];
+        $class_info = getClassInfo($pdo, $user_id);
+        
+        if (!$class_info) {
+            sendJsonResponse(['success' => false, 'message' => 'Class information not found']);
+        }
+        
+        $class_id = $class_info['class_id'];
+        $faculty_data = getClassFaculty($pdo, $class_id);
+        $faculty_courses = [];
+        
+        foreach ($faculty_data as $faculty) {
+            $faculty_courses[$faculty['faculty_id']] = getFacultyCourses($pdo, $faculty['faculty_id'], $class_id);
+        }
+        
+        // Generate updated HTML for faculty cards
+        $faculty_html = '';
+        foreach ($faculty_data as $faculty) {
+            $courses = $faculty_courses[$faculty['faculty_id']] ?? [];
+            $faculty_html .= generateFacultyCardHTML($faculty, $courses);
+        }
+        
+        sendJsonResponse([
+            'success' => true,
+            'faculty_data' => $faculty_data,
+            'faculty_courses' => $faculty_courses,
+            'faculty_html' => $faculty_html,
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+        
+    } catch (Exception $e) {
+        sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+}
+
+function generateFacultyCardHTML($faculty, $courses) {
+    ob_start();
+    ?>
+    <div class="faculty-card" data-faculty-id="<?php echo $faculty['faculty_id']; ?>">
+        <div class="faculty-header">
+            <h3 class="faculty-name"><?php echo htmlspecialchars($faculty['faculty_name']); ?></h3>
+            <div class="status-badge status-<?php echo strtolower($faculty['status']); ?>">
+                <?php echo $faculty['status']; ?>
+            </div>
+        </div>
+        
+        <div class="courses-section">
+            <h4>Today's Classes</h4>
+            <?php if (!empty($courses)): ?>
+                <?php foreach ($courses as $course): ?>
+                    <div class="course-item course-<?php echo $course['status']; ?>">
+                        <div class="course-code"><?php echo htmlspecialchars($course['course_code']); ?></div>
+                        <div class="course-description"><?php echo htmlspecialchars($course['course_description']); ?></div>
+                        <div class="course-time"><?php echo formatTime($course['time_start']) . ' - ' . formatTime($course['time_end']); ?></div>
+                        <div class="course-room">Room: <?php echo htmlspecialchars($course['room'] ?? 'TBA'); ?></div>
+                        <div class="course-status status-<?php echo $course['status']; ?>">
+                            <?php 
+                            switch ($course['status']) {
+                                case 'current': echo 'In Progress';
+                                    break;
+                                case 'upcoming': echo 'Upcoming';
+                                    break;
+                                case 'finished': echo 'Completed';
+                                    break;
+                                default: echo 'Not Today';
+                            }
+                            ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="no-courses">No classes scheduled for today</div>
+            <?php endif; ?>
+        </div>
+
+        <div class="location-section">
+            <div class="location-info">
+                <div class="current-location">
+                    <?php echo htmlspecialchars($faculty['current_location']); ?>
+                </div>
+                <div class="time-info">Last updated: <?php echo $faculty['last_updated']; ?></div>
+            </div>
+
+            <div class="contact-info">
+                <div class="office-hours">
+                    Office Hours:<br><?php echo htmlspecialchars($faculty['office_hours'] ?? 'Not specified'); ?>
+                </div>
+                <?php if (!empty($faculty['contact_email'])): ?>
+                <button class="contact-btn" onclick="contactFaculty('<?php echo htmlspecialchars($faculty['contact_email']); ?>')">
+                    Contact
+                </button>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
 function getClassInfo($pdo, $user_id) {
     $class_query = "SELECT class_id, class_code, class_name FROM classes WHERE user_id = ? AND is_active = TRUE";
     $stmt = $pdo->prepare($class_query);

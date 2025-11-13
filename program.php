@@ -5,6 +5,15 @@ $pdo = initializeDatabase();
 validateUserSession('program_chair');
 $user_id = $_SESSION['user_id'];
 $program_chair_name = $_SESSION['full_name'];
+
+// Keep program chair online while on the page (heartbeat)
+try {
+    $set_online_query = "UPDATE faculty SET is_active = 1, last_location_update = NOW() WHERE user_id = ?";
+    $stmt = $pdo->prepare($set_online_query);
+    $stmt->execute([$user_id]);
+} catch (Exception $e) {
+    error_log("Failed to set program chair online status: " . $e->getMessage());
+}
 $chair_info = getProgramChairInfo($pdo, $user_id);
 $program = $chair_info ? $chair_info['program'] : 'Unknown Program';
 $classes_data = getProgramClasses($pdo, $user_id);
@@ -57,13 +66,12 @@ function getProgramClasses($pdo, $user_id) {
 function getAllFaculty($pdo) {
     $faculty_query = "
         SELECT f.faculty_id, u.full_name as faculty_name, f.employee_id, f.current_location, f.last_location_update,
-               f.office_hours, f.contact_email, f.contact_phone,
+               f.office_hours, f.contact_email, f.contact_phone, f.is_active,
                " . getFacultyStatusSQL() . ",
                " . getTimeAgoSQL() . "
         FROM faculty f
         JOIN users u ON f.user_id = u.user_id
-        WHERE f.is_active = TRUE 
-        ORDER BY u.full_name";
+        ORDER BY f.is_active DESC, u.full_name";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -293,8 +301,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'remove_curriculum_assignmen
     try {
         $curriculum_id = $_POST['curriculum_id'];
         
-        $update_query = "UPDATE curriculum SET is_active = FALSE WHERE curriculum_id = ?";
-        $stmt = $pdo->prepare($update_query);
+        $delete_query = "DELETE FROM curriculum WHERE curriculum_id = ?";
+        $stmt = $pdo->prepare($delete_query);
         
         if ($stmt->execute([$curriculum_id])) {
             echo json_encode(['success' => true, 'message' => 'Course removed from curriculum successfully']);
@@ -358,22 +366,19 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_course') {
         $course_code = $_POST['course_code'];
         
         $pdo->beginTransaction();
-        $schedule_check = "SELECT COUNT(*) as count FROM schedules WHERE course_code = ? AND is_active = TRUE";
-        $stmt = $pdo->prepare($schedule_check);
-        $stmt->execute([$course_code]);
-        $active_schedules = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
         
-        if ($active_schedules > 0) {
-            $pdo->rollBack();
-            echo json_encode(['success' => false, 'message' => 'Cannot delete course: It is currently assigned to faculty schedules. Please remove all schedule assignments first.']);
-            exit;
-        }
-        
-        $curriculum_update = "UPDATE curriculum SET is_active = FALSE WHERE course_code = ?";
-        $stmt = $pdo->prepare($curriculum_update);
+        // Delete all related records first (cascading delete)
+        $curriculum_delete = "DELETE FROM curriculum WHERE course_code = ?";
+        $stmt = $pdo->prepare($curriculum_delete);
         $stmt->execute([$course_code]);
-        $course_update = "UPDATE courses SET is_active = FALSE WHERE course_code = ?";
-        $stmt = $pdo->prepare($course_update);
+        
+        $schedules_delete = "DELETE FROM schedules WHERE course_code = ?";
+        $stmt = $pdo->prepare($schedules_delete);
+        $stmt->execute([$course_code]);
+        
+        // Delete the course itself
+        $course_delete = "DELETE FROM courses WHERE course_code = ?";
+        $stmt = $pdo->prepare($course_delete);
         $stmt->execute([$course_code]);
         
         $pdo->commit();

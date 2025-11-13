@@ -37,16 +37,21 @@ if ($_POST) {
                         $_SESSION['class_name'] = $class_info['class_name'];
                     }
                 } elseif ($user['role'] == 'faculty') {
-                    $faculty_stmt = $pdo->prepare("SELECT faculty_id, employee_id FROM faculty WHERE user_id = ? AND is_active = 1");
+                    $faculty_stmt = $pdo->prepare("SELECT faculty_id, employee_id FROM faculty WHERE user_id = ?");
                     $faculty_stmt->execute([$user['user_id']]);
                     $faculty_info = $faculty_stmt->fetch(PDO::FETCH_ASSOC);
 
                     if ($faculty_info) {
                         $_SESSION['faculty_id'] = $faculty_info['faculty_id'];
                         $_SESSION['employee_id'] = $faculty_info['employee_id'];
+                        
+                        // Set faculty as online when logging in
+                        $set_online_query = "UPDATE faculty SET is_active = 1 WHERE user_id = ?";
+                        $online_stmt = $pdo->prepare($set_online_query);
+                        $online_stmt->execute([$user['user_id']]);
                     }
                 } elseif ($user['role'] == 'program_chair') {
-                    $faculty_stmt = $pdo->prepare("SELECT faculty_id, employee_id, program FROM faculty WHERE user_id = ? AND is_active = 1");
+                    $faculty_stmt = $pdo->prepare("SELECT faculty_id, employee_id, program FROM faculty WHERE user_id = ?");
                     $faculty_stmt->execute([$user['user_id']]);
                     $faculty_info = $faculty_stmt->fetch(PDO::FETCH_ASSOC);
                     
@@ -54,6 +59,11 @@ if ($_POST) {
                         $_SESSION['faculty_id'] = $faculty_info['faculty_id'];
                         $_SESSION['employee_id'] = $faculty_info['employee_id'];
                         $_SESSION['program'] = $faculty_info['program'];
+                        
+                        // Set program chair as online when logging in
+                        $set_online_query = "UPDATE faculty SET is_active = 1 WHERE user_id = ?";
+                        $online_stmt = $pdo->prepare($set_online_query);
+                        $online_stmt->execute([$user['user_id']]);
                     }
                 }
                 

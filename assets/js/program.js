@@ -420,7 +420,6 @@ function handleCourseLoadTimeSlotClick(cell) {
 function findExistingCourse(cell, day, timeSlot) {
     // Check if cell has course content in it
     const courseCodeDiv = cell.querySelector('.course-code');
-    : 'null');
     
     if (courseCodeDiv && courseCodeDiv.textContent.trim()) {
         // This cell has existing course content - EDIT MODE
@@ -438,7 +437,7 @@ function findExistingCourse(cell, day, timeSlot) {
             // Try to find by course code only
             const courseMatch = schedules.find(schedule => schedule.course_code === courseCode);
             if (courseMatch) {
-                :', courseMatch);
+                console.log('Course match found:', courseMatch);
                 return courseMatch;
             }
         }
@@ -522,7 +521,7 @@ function closeAssignmentPanel() {
 // NEW FUNCTION: Show dedicated course assignment page (MOBILE ONLY)
 function showCourseAssignmentPage(day, timeSlot, cell, existingCourse = null) {
     const isEditMode = existingCourse !== null;
-    ' : '(NEW)');
+    console.log(isEditMode ? 'EDIT MODE' : 'NEW MODE');
     
     // Only show assignment page on mobile (768px or smaller)
     if (window.innerWidth > 768) {
@@ -2136,8 +2135,6 @@ function updateValidatedEndTimeOptions(startTime, tableType) {
     validEndTimes.forEach(option => {
         endTimeSelect.innerHTML += `<option value="${option.value}">${option.label}</option>`;
     });
-    
-    );
 }
 
 function validateWithBackend(courseCode, classId, room, timeStart, timeEnd, selectedDays, isEditMode, submitBtn) {
@@ -2889,6 +2886,24 @@ function loadCourseAssignments(courseCode, overlay) {
     });
 }
 
+// Add new card to grid (program page equivalent of addNewRowToTable)
+function addNewRowToTable(type, data) {
+    // For program page, we reload to refresh the cards since they're generated server-side
+    if (data) {
+        console.log(`New ${type} added:`, data);
+        // Just reload the page to refresh the cards - simpler than rebuilding card HTML
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }
+}
+
+// Placeholder for updateStatistics function that shared_modals.js expects
+function updateStatistics() {
+    // Program page relies on live polling for statistics updates
+    console.log('Statistics will be updated by live polling');
+}
+
 // Notification utility function
 function showNotification(message, type = 'info') {
     // Check if a notification function already exists
@@ -2896,7 +2911,7 @@ function showNotification(message, type = 'info') {
         window.showToast(message, type);
     } else {
         // Simple fallback notification
-        }: ${message}`);
+        console.log(`${type}: ${message}`);
         alert(message);
     }
 }

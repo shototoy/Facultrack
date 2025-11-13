@@ -184,65 +184,98 @@ function handleDelete($pdo, $data, $user_id, $user_role) {
     $id_field = $id_mappings[$action] ?? 'id';
     $id = $data[$id_field] ?? $data['id'] ?? null;
 
-    $config = [
-        'delete_faculty' => [
-            'table' => 'faculty',
-            'key' => 'faculty_id',
-            'soft_delete' => true,
-            'also_deactivate_user' => true
-        ],
-        'delete_course' => [
-            'table' => 'courses',
-            'key' => 'course_id',
-            'soft_delete' => true
-        ],
-        'delete_class' => [
-            'table' => 'classes',
-            'key' => 'class_id',
-            'soft_delete' => true,
-            'also_deactivate_user' => true
-        ],
-        'delete_announcement' => [
-            'table' => 'announcements',
-            'key' => 'announcement_id',
-            'soft_delete' => false
-        ]
-    ];
-
-    if (!isset($config[$action]) || !$id) {
+    if (!$action || !$id) {
         return ['success' => false, 'message' => 'Invalid delete request. Action: ' . $action . ', ID: ' . $id];
     }
-
-    $c = $config[$action];
-    $table = $c['table'];
-    $key = $c['key'];
 
     $pdo->beginTransaction();
 
     try {
-        $stmt = $pdo->prepare("SELECT 1 FROM $table WHERE $key = ?");
-        $stmt->execute([$id]);
-        if (!$stmt->fetch()) {
-            throw new Exception('Record not found');
-        }
+        switch ($action) {
+            case 'delete_faculty':
+                // Get user_id before deleting faculty
+                $stmt = $pdo->prepare("SELECT user_id FROM faculty WHERE faculty_id = ?");
+                $stmt->execute([$id]);
+                $user_id_to_delete = $stmt->fetchColumn();
+                
+                if (!$user_id_to_delete) {
+                    throw new Exception('Faculty record not found');
+                }
+                
+                // Delete related records first (cascading delete)
+                $stmt = $pdo->prepare("DELETE FROM schedules WHERE faculty_id = ?");
+                $stmt->execute([$id]);
+                
+                $stmt = $pdo->prepare("DELETE FROM location_history WHERE faculty_id = ?");
+                $stmt->execute([$id]);
+                
+                // Delete faculty record
+                $stmt = $pdo->prepare("DELETE FROM faculty WHERE faculty_id = ?");
+                $stmt->execute([$id]);
+                
+                // Delete user account
+                $stmt = $pdo->prepare("DELETE FROM users WHERE user_id = ?");
+                $stmt->execute([$user_id_to_delete]);
+                break;
 
-        if ($c['soft_delete']) {
-            $stmt = $pdo->prepare("UPDATE $table SET is_active = FALSE WHERE $key = ?");
-            $stmt->execute([$id]);
-        } else {
-            $stmt = $pdo->prepare("DELETE FROM $table WHERE $key = ?");
-            $stmt->execute([$id]);
-        }
+            case 'delete_class':
+                // Get user_id before deleting class
+                $stmt = $pdo->prepare("SELECT user_id FROM classes WHERE class_id = ?");
+                $stmt->execute([$id]);
+                $user_id_to_delete = $stmt->fetchColumn();
+                
+                if (!$user_id_to_delete) {
+                    throw new Exception('Class record not found');
+                }
+                
+                // Delete related records first (cascading delete)
+                $stmt = $pdo->prepare("DELETE FROM schedules WHERE class_id = ?");
+                $stmt->execute([$id]);
+                
+                // Delete class record
+                $stmt = $pdo->prepare("DELETE FROM classes WHERE class_id = ?");
+                $stmt->execute([$id]);
+                
+                // Delete user account
+                $stmt = $pdo->prepare("DELETE FROM users WHERE user_id = ?");
+                $stmt->execute([$user_id_to_delete]);
+                break;
 
-        if (!empty($c['also_deactivate_user'])) {
-            $stmt = $pdo->prepare("SELECT user_id FROM $table WHERE $key = ?");
-            $stmt->execute([$id]);
-            $linked_user_id = $stmt->fetchColumn();
+            case 'delete_course':
+                // Verify course exists
+                $stmt = $pdo->prepare("SELECT 1 FROM courses WHERE course_id = ?");
+                $stmt->execute([$id]);
+                if (!$stmt->fetch()) {
+                    throw new Exception('Course record not found');
+                }
+                
+                // Delete related records first (cascading delete)
+                $stmt = $pdo->prepare("DELETE FROM schedules WHERE course_code = (SELECT course_code FROM courses WHERE course_id = ?)");
+                $stmt->execute([$id]);
+                
+                $stmt = $pdo->prepare("DELETE FROM curriculum WHERE course_code = (SELECT course_code FROM courses WHERE course_id = ?)");
+                $stmt->execute([$id]);
+                
+                // Delete course record
+                $stmt = $pdo->prepare("DELETE FROM courses WHERE course_id = ?");
+                $stmt->execute([$id]);
+                break;
 
-            if ($linked_user_id) {
-                $stmt = $pdo->prepare("UPDATE users SET is_active = FALSE WHERE user_id = ?");
-                $stmt->execute([$linked_user_id]);
-            }
+            case 'delete_announcement':
+                // Verify announcement exists
+                $stmt = $pdo->prepare("SELECT 1 FROM announcements WHERE announcement_id = ?");
+                $stmt->execute([$id]);
+                if (!$stmt->fetch()) {
+                    throw new Exception('Announcement record not found');
+                }
+                
+                // Delete announcement record (no cascading needed)
+                $stmt = $pdo->prepare("DELETE FROM announcements WHERE announcement_id = ?");
+                $stmt->execute([$id]);
+                break;
+
+            default:
+                throw new Exception('Unknown delete action: ' . $action);
         }
 
         $pdo->commit();

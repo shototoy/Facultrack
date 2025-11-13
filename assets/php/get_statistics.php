@@ -53,7 +53,7 @@ try {
     } elseif ($user_role === 'program_chair') {
         $user_id = $_SESSION['user_id'];
         
-        $program_info_query = "SELECT program FROM program_chairs WHERE user_id = ? AND is_active = TRUE";
+        $program_info_query = "SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE";
         $stmt = $pdo->prepare($program_info_query);
         $stmt->execute([$user_id]);
         $program_info = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -74,22 +74,20 @@ try {
             $program_classes_query = "
                 SELECT COUNT(*) as program_classes 
                 FROM classes c
-                JOIN program_chairs pc ON c.program_chair_id = pc.program_chair_id
-                WHERE pc.program = ? AND c.is_active = TRUE
+                WHERE c.program_chair_id = ? AND c.is_active = TRUE
             ";
             $stmt = $pdo->prepare($program_classes_query);
-            $stmt->execute([$program]);
+            $stmt->execute([$user_id]);
             $stats['total_classes'] = $stmt->fetch(PDO::FETCH_ASSOC)['program_classes'];
             
             $scheduled_courses_query = "
                 SELECT COUNT(DISTINCT s.course_code) as scheduled_courses
                 FROM schedules s
                 JOIN classes c ON s.class_id = c.class_id
-                JOIN program_chairs pc ON c.program_chair_id = pc.program_chair_id
-                WHERE pc.program = ? AND s.is_active = TRUE
+                WHERE c.program_chair_id = ? AND s.is_active = TRUE
             ";
             $stmt = $pdo->prepare($scheduled_courses_query);
-            $stmt->execute([$program]);
+            $stmt->execute([$user_id]);
             $stats['total_courses'] = $stmt->fetch(PDO::FETCH_ASSOC)['scheduled_courses'];
             
             $program_announcements_query = "
@@ -101,6 +99,30 @@ try {
             $stmt = $pdo->prepare($program_announcements_query);
             $stmt->execute();
             $stats['active_announcements'] = $stmt->fetch(PDO::FETCH_ASSOC)['program_announcements'];
+            
+            // Add available faculty count for program chair
+            $available_faculty_query = "
+                SELECT COUNT(*) as available_faculty 
+                FROM faculty f
+                INNER JOIN users u ON f.user_id = u.user_id 
+                WHERE f.program = ? AND u.is_active = TRUE AND f.is_active = 1
+            ";
+            $stmt = $pdo->prepare($available_faculty_query);
+            $stmt->execute([$program]);
+            $stats['available_faculty'] = $stmt->fetch(PDO::FETCH_ASSOC)['available_faculty'];
+            
+            // Add total subjects (courses) count for program chair
+            $subjects_query = "
+                SELECT COUNT(DISTINCT curr.course_code) as total_subjects
+                FROM curriculum curr
+                JOIN classes c ON curr.year_level = c.year_level 
+                              AND curr.semester = c.semester 
+                              AND curr.academic_year = c.academic_year
+                WHERE c.program_chair_id = ? AND curr.is_active = TRUE AND c.is_active = TRUE
+            ";
+            $stmt = $pdo->prepare($subjects_query);
+            $stmt->execute([$user_id]);
+            $stats['total_subjects'] = $stmt->fetch(PDO::FETCH_ASSOC)['total_subjects'];
         }
     }
     
