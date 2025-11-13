@@ -19,7 +19,7 @@ try {
     $stmt = $pdo->prepare($update_user);
     $stmt->execute([$user_id]);
     
-    if ($role === 'faculty') {
+    if ($role === 'faculty' || $role === 'program_chair') {
         $update_faculty = "
             UPDATE faculty 
             SET is_active = 1, last_location_update = NOW()
@@ -34,6 +34,28 @@ try {
             WHERE last_location_update < DATE_SUB(NOW(), INTERVAL 5 MINUTE)
         ";
         $stmt = $pdo->prepare($offline_faculty);
+        $stmt->execute();
+    } elseif ($role === 'campus_director') {
+        // Create a virtual faculty record for director status tracking
+        $check_director_faculty = "
+            INSERT INTO faculty (user_id, employee_id, program, current_location, is_active, last_location_update)
+            SELECT ?, CONCAT('DIR-', user_id), 'Administration', 'Director Office', 1, NOW()
+            FROM users 
+            WHERE user_id = ? 
+            ON DUPLICATE KEY UPDATE is_active = 1, last_location_update = NOW()
+        ";
+        $stmt = $pdo->prepare($check_director_faculty);
+        $stmt->execute([$user_id, $user_id]);
+        
+        // Set other directors offline if inactive
+        $offline_directors = "
+            UPDATE faculty f
+            JOIN users u ON f.user_id = u.user_id
+            SET f.is_active = 0 
+            WHERE u.role = 'campus_director' 
+            AND f.last_location_update < DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+        ";
+        $stmt = $pdo->prepare($offline_directors);
         $stmt->execute();
     }
     

@@ -65,6 +65,25 @@ if ($_POST) {
                         $online_stmt = $pdo->prepare($set_online_query);
                         $online_stmt->execute([$user['user_id']]);
                     }
+                } elseif ($user['role'] == 'campus_director') {
+                    // Create/update virtual faculty record for director status tracking
+                    $director_faculty_stmt = $pdo->prepare("
+                        INSERT INTO faculty (user_id, employee_id, program, current_location, is_active, last_location_update)
+                        VALUES (?, CONCAT('DIR-', ?), 'Administration', 'Director Office', 1, NOW())
+                        ON DUPLICATE KEY UPDATE is_active = 1, last_location_update = NOW()
+                    ");
+                    $director_faculty_stmt->execute([$user['user_id'], $user['user_id']]);
+                    
+                    // Get the faculty_id for session
+                    $get_faculty_id = $pdo->prepare("SELECT faculty_id FROM faculty WHERE user_id = ?");
+                    $get_faculty_id->execute([$user['user_id']]);
+                    $faculty_info = $get_faculty_id->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($faculty_info) {
+                        $_SESSION['faculty_id'] = $faculty_info['faculty_id'];
+                        $_SESSION['employee_id'] = 'DIR-' . $user['user_id'];
+                        $_SESSION['program'] = 'Administration';
+                    }
                 }
                 
                 switch ($user['role']) {

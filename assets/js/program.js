@@ -1710,25 +1710,71 @@ function deleteCourse(courseCode) {
         return;
     }
     
-    const formData = new FormData();
-    formData.append('action', 'delete_course');
-    formData.append('course_code', courseCode);
+    // Find course_id from the course code
+    const courseCard = document.querySelector(`[data-course="${courseCode}"]`);
+    if (!courseCard) {
+        showNotification('Course not found', 'error');
+        console.error('Course card not found for code:', courseCode);
+        return;
+    }
     
-    fetch('program.php', {
+    // Get course_id from data attribute
+    let courseId = courseCard.dataset.courseId;
+    
+    console.log('Course card:', courseCard);
+    console.log('Available datasets:', courseCard.dataset);
+    console.log('Course ID from dataset:', courseId);
+    
+    if (!courseId) {
+        showNotification('Course ID not found', 'error');
+        console.error('Course card found but no course_id:', courseCard);
+        console.error('Card HTML:', courseCard.outerHTML);
+        return;
+    }
+    
+    // Use FormData exactly like the add functionality does
+    const formData = new FormData();
+    formData.set('admin_action', 'delete_course');
+    formData.set('course_id', courseId);
+    
+    console.log('Sending delete request:');
+    console.log('- Course Code:', courseCode);
+    console.log('- Course ID:', courseId);
+    console.log('- FormData entries:');
+    for (let pair of formData.entries()) {
+        console.log('  ', pair[0], '=', pair[1]);
+    }
+    
+    fetch('assets/php/polling_api.php', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('Course deleted successfully!', 'success');
-            // Removed reload - polling system handles updates
-        } else {
-            showNotification(data.message || 'Failed to delete course', 'error');
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers.get('content-type'));
+        return response.text();
+    })
+    .then(text => {
+        console.log('Raw response:', text);
+        try {
+            const data = JSON.parse(text);
+            console.log('Parsed response:', data);
+            if (data.success) {
+                showNotification('Course deleted successfully!', 'success');
+                // Dynamic frontend updates are handled by live polling
+            } else {
+                showNotification(data.message || 'Failed to delete course', 'error');
+                console.error('Delete failed:', data);
+            }
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            console.error('Response text was:', text);
+            showNotification('Invalid server response', 'error');
         }
     })
     .catch(error => {
-        showNotification('An error occurred while deleting the course', 'error');
+        console.error('Fetch error:', error);
+        showNotification('Network error occurred while deleting the course', 'error');
     });
 }
 

@@ -8,13 +8,14 @@ require_once 'common_utilities.php';
 initializeSession();
 header('Content-Type: application/json');
 
+
 $pdo = initializeDatabase();
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
+$action = $_GET['action'] ?? $_POST['action'] ?? $_POST['admin_action'] ?? '';
 
 // Debug: Log what we received
-error_log("Polling API called with action: " . $action);
-error_log("GET params: " . print_r($_GET, true));
-error_log("POST params: " . print_r($_POST, true));
+// error_log("Polling API called with action: " . $action);
+// error_log("GET params: " . print_r($_GET, true));
+// error_log("POST params: " . print_r($_POST, true));
 
 // Include required functions from other files
 function getAllFaculty($pdo) {
@@ -35,7 +36,6 @@ function getAllFaculty($pdo) {
             END as status
         FROM faculty f
         JOIN users u ON f.user_id = u.user_id
-        WHERE u.is_active = TRUE
         ORDER BY u.full_name
     ";
     $stmt = $pdo->prepare($faculty_query);
@@ -167,8 +167,8 @@ function generateScheduleHTML($schedule_data) {
         $status_info = getScheduleStatus($schedule['status']);
         $html .= '<div class="schedule-item ' . $schedule['status'] . '">';
         $html .= '<div class="schedule-time">';
-        $html .= '<div class="time-display">' . formatTime($schedule['time_start']) . '</div>';
-        $html .= '<div class="time-duration">' . formatTime($schedule['time_end']) . '</div>';
+        $html .= '<div class="time-display">' . date('g:i A', strtotime($schedule['time_start'])) . '</div>';
+        $html .= '<div class="time-duration">' . date('g:i A', strtotime($schedule['time_end'])) . '</div>';
         $html .= '</div>';
         $html .= '<div class="schedule-details">';
         $html .= '<h4>' . htmlspecialchars($schedule['course_code']) . '</h4>';
@@ -198,7 +198,7 @@ function getScheduleStatus($status) {
     }
 }
 
-// formatTime function already exists in common_utilities.php
+// formatTime function exists in common_utilities.php - removed duplicate
 
 function markFacultyAttendance($pdo, $user_id, $schedule_id) {
     try {
@@ -369,16 +369,218 @@ function getFacultyCoursesForClass($pdo, $user_id) {
 
 // Program action functions removed - they belong in program.php, not polling
 
+
 // CONSOLIDATED POLLING API - ALL polling endpoints in one place
 switch ($action) {
+    // ADMIN ACTIONS
+    case 'add_course':
+    case 'add_faculty':
+    case 'add_class':
+    case 'add_announcement':
+    case 'delete_course':
+    case 'delete_faculty':
+    case 'delete_class':
+    case 'delete_announcement':
+        $user_id = $_SESSION['user_id'];
+        $user_role = $_SESSION['role'];
+        
+        // Handle delete operations directly (bypassing handle_admin_actions.php complexity)
+        if ($action === 'delete_course') {
+            $course_id = $_POST['course_id'] ?? '';
+            
+            if (empty($course_id)) {
+                sendJsonResponse(['success' => false, 'message' => 'Course ID is required']);
+                break;
+            }
+            
+            try {
+                // Get course_code first for cascade deletes
+                $stmt = $pdo->prepare("SELECT course_code FROM courses WHERE course_id = ?");
+                $stmt->execute([$course_id]);
+                $course = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$course) {
+                    sendJsonResponse(['success' => false, 'message' => 'Course not found']);
+                    break;
+                }
+                
+                $course_code = $course['course_code'];
+                
+                $pdo->beginTransaction();
+                
+                // Delete related schedules
+                $stmt = $pdo->prepare("DELETE FROM schedules WHERE course_code = ?");
+                $stmt->execute([$course_code]);
+                
+                // Delete related curriculum
+                $stmt = $pdo->prepare("DELETE FROM curriculum WHERE course_code = ?");
+                $stmt->execute([$course_code]);
+                
+                // Delete course
+                $stmt = $pdo->prepare("DELETE FROM courses WHERE course_id = ?");
+                $stmt->execute([$course_id]);
+                
+                $pdo->commit();
+                
+                sendJsonResponse(['success' => true, 'message' => 'Course deleted successfully']);
+                
+            } catch (Exception $e) {
+                if (isset($pdo)) {
+                    $pdo->rollback();
+                }
+                sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+        } elseif ($action === 'delete_class') {
+            $class_id = $_POST['class_id'] ?? '';
+            
+            if (empty($class_id)) {
+                sendJsonResponse(['success' => false, 'message' => 'Class ID is required']);
+                break;
+            }
+            
+            try {
+                $pdo->beginTransaction();
+                
+                // Delete related schedules first
+                $stmt = $pdo->prepare("DELETE FROM schedules WHERE class_id = ?");
+                $stmt->execute([$class_id]);
+                
+                // Delete related curriculum assignments
+                $stmt = $pdo->prepare("DELETE FROM curriculum WHERE class_id = ?");
+                $stmt->execute([$class_id]);
+                
+                // Delete the class
+                $stmt = $pdo->prepare("DELETE FROM classes WHERE class_id = ?");
+                $stmt->execute([$class_id]);
+                
+                $pdo->commit();
+                
+                sendJsonResponse(['success' => true, 'message' => 'Class deleted successfully']);
+                
+            } catch (Exception $e) {
+                if (isset($pdo)) {
+                    $pdo->rollback();
+                }
+                sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+        } elseif ($action === 'delete_faculty') {
+            $faculty_id = $_POST['faculty_id'] ?? '';
+            
+            if (empty($faculty_id)) {
+                sendJsonResponse(['success' => false, 'message' => 'Faculty ID is required']);
+                break;
+            }
+            
+            try {
+                $pdo->beginTransaction();
+                
+                // Get user_id before deleting faculty record
+                $stmt = $pdo->prepare("SELECT user_id FROM faculty WHERE faculty_id = ?");
+                $stmt->execute([$faculty_id]);
+                $faculty_data = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$faculty_data) {
+                    sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
+                    break;
+                }
+                
+                // Delete related schedules
+                $stmt = $pdo->prepare("DELETE FROM schedules WHERE faculty_id = ?");
+                $stmt->execute([$faculty_id]);
+                
+                // Delete location history
+                $stmt = $pdo->prepare("DELETE FROM location_history WHERE faculty_id = ?");
+                $stmt->execute([$faculty_id]);
+                
+                // HARD DELETE: Delete faculty record
+                $stmt = $pdo->prepare("DELETE FROM faculty WHERE faculty_id = ?");
+                $stmt->execute([$faculty_id]);
+                
+                // HARD DELETE: Delete user account completely
+                $stmt = $pdo->prepare("DELETE FROM users WHERE user_id = ?");
+                $stmt->execute([$faculty_data['user_id']]);
+                
+                $pdo->commit();
+                
+                sendJsonResponse(['success' => true, 'message' => 'Faculty and user account deleted successfully']);
+                
+            } catch (Exception $e) {
+                if (isset($pdo)) {
+                    $pdo->rollback();
+                }
+                sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+        } elseif ($action === 'delete_announcement') {
+            $announcement_id = $_POST['announcement_id'] ?? '';
+            
+            if (empty($announcement_id)) {
+                sendJsonResponse(['success' => false, 'message' => 'Announcement ID is required']);
+                break;
+            }
+            
+            try {
+                // Simple delete for announcements (no cascading needed)
+                $stmt = $pdo->prepare("DELETE FROM announcements WHERE announcement_id = ?");
+                $stmt->execute([$announcement_id]);
+                
+                if ($stmt->rowCount() > 0) {
+                    sendJsonResponse(['success' => true, 'message' => 'Announcement deleted successfully']);
+                } else {
+                    sendJsonResponse(['success' => false, 'message' => 'Announcement not found']);
+                }
+                
+            } catch (Exception $e) {
+                sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+        } else {
+            // Handle add operations and other deletes via handle_admin_actions.php
+            require_once 'handle_admin_actions.php';
+            
+            try {
+                if (strpos($action, 'add_') === 0) {
+                    $result = handleAdd($pdo, $_POST, $user_id, $user_role);
+                } else {
+                    $result = handleDelete($pdo, $_POST, $user_id, $user_role);
+                }
+                sendJsonResponse($result);
+            } catch (Exception $e) {
+                sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);
+            }
+        }
+        break;
+        
     // TEST ENDPOINT
     case 'test':
         sendJsonResponse(['success' => true, 'message' => 'Polling API is working', 'timestamp' => date('Y-m-d H:i:s')]);
         break;
         
-    // STATISTICS ENDPOINTS
+    // STATISTICS ENDPOINTS - DEPRECATED: Use get_dashboard_data for consistency
     case 'get_statistics':
-        include 'get_statistics.php';
+        // Redirect to dashboard data for consistency
+        $response_data = [
+            'success' => true,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+        
+        if ($_SESSION['role'] === 'campus_director' || $_SESSION['role'] === 'program_chair') {
+            $response_data['faculty_data'] = getAllFaculty($pdo);
+            $response_data['classes_data'] = getAllClasses($pdo);
+            $response_data['courses_data'] = getAllCourses($pdo);
+            $response_data['announcements_data'] = getAllAnnouncements($pdo);
+            
+            // Calculate statistics from the same data
+            $response_data['data'] = [
+                'total_faculty' => count($response_data['faculty_data']),
+                'total_classes' => count($response_data['classes_data']),
+                'total_courses' => count($response_data['courses_data']),
+                'active_announcements' => count($response_data['announcements_data']),
+                'available_faculty' => count(array_filter($response_data['faculty_data'], function($f) {
+                    return $f['status'] === 'Available';
+                }))
+            ];
+        }
+        
+        sendJsonResponse($response_data);
         break;
         
     // LOCATION ENDPOINTS  
@@ -510,6 +712,12 @@ switch ($action) {
                 $response_data['faculty_courses'] = getFacultyCoursesForClass($pdo, $_SESSION['user_id']);
             }
             
+            // Add change tracking for NEW/DELETED entities only
+            $response_data['changes'] = detectDataChanges($pdo, $role, $tab);
+            
+            // Add current entity data for status updates
+            $response_data['current_entities'] = getAllCurrentEntities($pdo, $role, $tab);
+            
             sendJsonResponse($response_data);
             
         } catch (Exception $e) {
@@ -622,4 +830,92 @@ switch ($action) {
         sendJsonResponse(['success' => false, 'message' => 'Unknown action: ' . $action], 400);
         break;
 }
+
+// Dynamic change detection for indexed updates
+function detectDataChanges($pdo, $role, $tab = null) {
+    $changes = [];
+    
+    try {
+        if ($role === 'campus_director' || $role === 'program_chair') {
+            // Only detect ACTUAL new entities (created in last 3 seconds) or hard deletions
+            $time_threshold = date('Y-m-d H:i:s', strtotime('-3 seconds'));
+            
+            if (!$tab || $tab === 'faculty') {
+                $changes['faculty'] = checkNewOrDeletedEntities($pdo, 'faculty', 'faculty_id', $time_threshold);
+            }
+            
+            if (!$tab || $tab === 'classes') {
+                $changes['classes'] = checkNewOrDeletedEntities($pdo, 'classes', 'class_id', $time_threshold);
+            }
+            
+            if (!$tab || $tab === 'courses') {
+                $changes['courses'] = checkNewOrDeletedEntities($pdo, 'courses', 'course_id', $time_threshold);
+            }
+            
+            if (!$tab || $tab === 'announcements') {
+                $changes['announcements'] = checkNewOrDeletedEntities($pdo, 'announcements', 'announcement_id', $time_threshold);
+            }
+        }
+        
+        return array_filter($changes);
+        
+    } catch (Exception $e) {
+        error_log("Change detection error: " . $e->getMessage());
+        return [];
+    }
+}
+
+function checkNewOrDeletedEntities($pdo, $table, $id_field, $time_threshold) {
+    $changes = [];
+    
+    try {
+        // ONLY check for genuinely NEW entities (created recently)
+        $stmt = $pdo->prepare("SELECT * FROM {$table} WHERE created_at >= ? ORDER BY created_at DESC LIMIT 2");
+        $stmt->execute([$time_threshold]);
+        $newEntities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (!empty($newEntities)) {
+            $changes['added'] = $newEntities;
+            error_log("New {$table} entities added: " . count($newEntities));
+        }
+        
+        // For hard deletions, we can't detect them directly since records are gone
+        // But we can detect count mismatches in the frontend polling comparison
+        
+        return $changes;
+        
+    } catch (Exception $e) {
+        error_log("Entity check error for {$table}: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Return all current entity data for status updates
+function getAllCurrentEntities($pdo, $role, $tab = null) {
+    $entities = [];
+    
+    try {
+        if ($role === 'campus_director' || $role === 'program_chair') {
+            if (!$tab || $tab === 'faculty') {
+                $entities['faculty'] = getAllFaculty($pdo);
+            }
+            if (!$tab || $tab === 'classes') {
+                $entities['classes'] = getAllClasses($pdo);
+            }
+            if (!$tab || $tab === 'courses') {
+                $entities['courses'] = getAllCourses($pdo);
+            }
+            if (!$tab || $tab === 'announcements') {
+                $entities['announcements'] = getAllAnnouncements($pdo);
+            }
+        }
+        
+        return $entities;
+        
+    } catch (Exception $e) {
+        error_log("Get entities error: " . $e->getMessage());
+        return [];
+    }
+}
+
 ?>

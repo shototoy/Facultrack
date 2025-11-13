@@ -279,7 +279,14 @@ function handleDelete($pdo, $data, $user_id, $user_role) {
         }
 
         $pdo->commit();
-        return ['success' => true, 'message' => ucfirst(str_replace('delete_', '', $action)) . ' deleted successfully'];
+        return [
+            'success' => true, 
+            'message' => ucfirst(str_replace('delete_', '', $action)) . ' deleted successfully',
+            'action' => 'delete',
+            'entity_type' => str_replace('delete_', '', $action),
+            'entity_id' => $id,
+            'id_field' => $id_field
+        ];
         
     } catch (Exception $e) {
         $pdo->rollBack();
@@ -350,5 +357,12 @@ function fetchAddedRecord($pdo, $action, $id) {
         return ['success' => false, 'message' => 'Failed to fetch added record'];
     }
     
-    return ['success' => true, 'data' => $record, 'message' => ucfirst(str_replace('add_', '', $action)) . ' added successfully'];
+    return [
+        'success' => true, 
+        'data' => $record, 
+        'message' => ucfirst(str_replace('add_', '', $action)) . ' added successfully',
+        'action' => 'add',
+        'entity_type' => str_replace('add_', '', $action),
+        'entity_id' => $id
+    ];
 }

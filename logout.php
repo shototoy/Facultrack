@@ -6,7 +6,7 @@ $user_role = $_SESSION['role'] ?? null;
 $user_name = $_SESSION['full_name'] ?? null;
 $user_id = $_SESSION['user_id'] ?? null;
 
-if ($user_id && $user_role === 'faculty') {
+if ($user_id && ($user_role === 'faculty' || $user_role === 'program_chair' || $user_role === 'campus_director')) {
     require_once 'assets/php/common_utilities.php';
     try {
         $pdo = initializeDatabase();
@@ -14,7 +14,7 @@ if ($user_id && $user_role === 'faculty') {
         $stmt = $pdo->prepare($set_offline_query);
         $stmt->execute([$user_id]);
     } catch (Exception $e) {
-        error_log("Failed to set faculty offline status: " . $e->getMessage());
+        error_log("Failed to set user offline status: " . $e->getMessage());
     }
 }
 

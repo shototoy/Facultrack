@@ -132,27 +132,34 @@ async function deleteEntity(action, id) {
         button.disabled = true;
         button.textContent = 'Deleting...';
 
+        // Use FormData exactly like the add functionality does
         const formData = new FormData();
-        formData.append('action', action);
-        formData.append(idField, id);
+        formData.set('admin_action', action);
+        formData.set(idField, id);
 
-        const response = await fetch('assets/php/handle_admin_actions.php', {
+        console.log('Director delete request:');
+        console.log('- Action:', action);
+        console.log('- ID Field:', idField);
+        console.log('- ID:', id);
+        for (let pair of formData.entries()) {
+            console.log('- FormData:', pair[0], '=', pair[1]);
+        }
+
+        const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             body: formData
         });
 
-        const result = await response.json();
+        console.log('Director response status:', response.status);
+        const responseText = await response.text();
+        console.log('Director raw response:', responseText);
+
+        const result = JSON.parse(responseText);
+        console.log('Director parsed response:', result);
 
         if (result.success) {
-            // Remove both the main row and its expansion row (if it exists)
-            const expansionRow = row.nextElementSibling;
-            if (expansionRow && expansionRow.classList.contains('expansion-row')) {
-                expansionRow.remove();
-            }
-            row.remove();
-            
-            // No updateStatistics() call - let live polling handle it
             showNotification(`${capitalize(label)} deleted successfully`, 'success');
+            // Removed manual deletion - polling system handles this automatically
         } else {
             throw new Error(result.message || `Failed to delete ${label}`);
         }
@@ -245,9 +252,11 @@ async function handleFormSubmission(form, type) {
         submitButton.textContent = 'Adding...';
         
         const formData = new FormData(form);
-        formData.set('action', actionMap[type]);
+        formData.set('admin_action', actionMap[type]);
         
-        const response = await fetch('assets/php/handle_admin_actions.php', {
+        console.log('Sending add request:', actionMap[type]);
+        
+        const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             body: formData
         });
@@ -256,14 +265,10 @@ async function handleFormSubmission(form, type) {
         
         if (result.success) {
             switchTab(type);
-            setTimeout(() => {
-                addNewRowToTable(type, result.data);
-                updateStatistics();
-            }, 50);
-            
             closeModal();
             form.reset();
             showNotification(result.message, 'success');
+            // Removed manual row addition - polling system handles this automatically
         } else {
             throw new Error(result.message);
         }
@@ -292,18 +297,42 @@ function addNewRowToTable(type, data) {
         return;
     }
     
-    const newRow = document.createElement('tr');
-    newRow.style.display = 'none';
-    
     const rowTemplates = {
         faculty: (data) => `
-            <td>${escapeHtml(data.full_name || 'N/A')}</td>
-            <td>${escapeHtml(data.employee_id || 'N/A')}</td>
-            <td>${escapeHtml(data.program || 'N/A')}</td>
-            <td><span class="status-badge status-${data.status ? data.status.toLowerCase() : 'offline'}">${data.status || 'Offline'}</span></td>
-            <td>${escapeHtml(data.current_location || 'Not Available')}</td>
-            <td>${escapeHtml(data.contact_email || 'N/A')}</td>
-            <td><button class="delete-btn" onclick="deleteEntity('delete_faculty', ${data.faculty_id})">Delete</button></td>
+            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-faculty-id="${data.faculty_id}">
+                <td class="name-column">${escapeHtml(data.full_name || 'N/A')}</td>
+                <td class="status-column">
+                    <span class="status-badge status-${data.status ? data.status.toLowerCase() : 'offline'}">
+                        ${data.status || 'Offline'}
+                    </span>
+                </td>
+                <td class="location-column">${escapeHtml(data.current_location || 'Not Available')}</td>
+                <td class="actions-column">
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_faculty', ${data.faculty_id})">Delete</button>
+                </td>
+            </tr>
+            <tr class="expansion-row" id="faculty-expansion-${data.faculty_id}" style="display: none;">
+                <td colspan="4" class="expansion-content">
+                    <div class="expanded-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Employee ID:</span>
+                            <span class="detail-value">${escapeHtml(data.employee_id || 'N/A')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Program:</span>
+                            <span class="detail-value">${escapeHtml(data.program || 'N/A')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Contact Email:</span>
+                            <span class="detail-value">${escapeHtml(data.contact_email || 'N/A')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Phone:</span>
+                            <span class="detail-value">${escapeHtml(data.contact_phone || 'N/A')}</span>
+                        </div>
+                    </div>
+                </td>
+            </tr>
         `,
         classes: (data) => `
             <td>${escapeHtml(data.class_code || 'N/A')}</td>
@@ -316,11 +345,13 @@ function addNewRowToTable(type, data) {
             <td><button class="delete-btn" onclick="deleteEntity('delete_class', ${data.class_id})">Delete</button></td>
         `,
         courses: (data) => `
-            <td>${escapeHtml(data.course_code || 'N/A')}</td>
-            <td>${escapeHtml(data.course_description || 'N/A')}</td>
-            <td>${data.units || 0}</td>
-            <td>${data.times_scheduled || 0}</td>
-            <td><button class="delete-btn" onclick="deleteEntity('delete_course', ${data.course_id})">Delete</button></td>
+            <tr data-course-id="${data.course_id}" style="display: none;">
+                <td class="id-column">${escapeHtml(data.course_code || 'N/A')}</td>
+                <td class="description-column">${escapeHtml(data.course_description || 'N/A')}</td>
+                <td class="id-column">${data.units || 0}</td>
+                <td class="id-column">${data.times_scheduled || 0}</td>
+                <td class="actions-column"><button class="delete-btn" onclick="deleteEntity('delete_course', ${data.course_id})">Delete</button></td>
+            </tr>
         `,
         announcements: (data) => {
             const createdDate = data.created_at ? 
@@ -344,17 +375,30 @@ function addNewRowToTable(type, data) {
         return;
     }
     
-    newRow.innerHTML = template(data);
-    tableBody.insertBefore(newRow, tableBody.firstChild);
+    // Insert the HTML directly since templates now include <tr> elements
+    tableBody.insertAdjacentHTML('afterbegin', template(data));
     
-    newRow.style.display = '';
-    newRow.style.backgroundColor = '#d4edda';
-    newRow.style.transition = 'background-color 0.5s ease';
+    // Get the newly inserted row(s)
+    const newRows = [];
+    if (type === 'faculty') {
+        // Faculty has 2 rows (main + expansion)
+        newRows.push(tableBody.firstElementChild); // expansion row
+        newRows.push(tableBody.children[1]); // main row
+    } else {
+        // Other types have 1 row
+        newRows.push(tableBody.firstElementChild);
+    }
     
-    newRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Show and animate the main row
+    const mainRow = newRows[newRows.length - 1];
+    mainRow.style.display = '';
+    mainRow.style.backgroundColor = '#d4edda';
+    mainRow.style.transition = 'background-color 0.5s ease';
+    
+    mainRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     
     setTimeout(() => {
-        newRow.style.backgroundColor = '';
+        mainRow.style.backgroundColor = '';
     }, 3000);
 }
 
@@ -564,3 +608,166 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => setupFormHandlers(), 500);
     setTimeout(() => setupFormHandlers(), 2000);
 });
+
+// Dynamic UI removal functions for consolidated admin actions
+function removeEntityFromUI(entityType, entityId, idField) {
+    const currentPage = detectPageType();
+    
+    if (currentPage === 'director') {
+        // Remove from table view
+        removeFromTable(entityType, entityId, idField);
+    } else if (currentPage === 'program') {
+        // Remove from card view  
+        removeFromCards(entityType, entityId, idField);
+    }
+}
+
+function removeFromTable(entityType, entityId, idField) {
+    const row = document.querySelector(`tr[data-${idField.replace('_', '-')}="${entityId}"]`);
+    if (!row) {
+        // Try alternative selector patterns
+        const alternativeSelectors = [
+            `tr[data-faculty-id="${entityId}"]`,
+            `tr[data-class-id="${entityId}"]`, 
+            `tr[data-course-id="${entityId}"]`,
+            `tr[data-announcement-id="${entityId}"]`
+        ];
+        
+        for (const selector of alternativeSelectors) {
+            const foundRow = document.querySelector(selector);
+            if (foundRow) {
+                performTableRowRemoval(foundRow, entityType);
+                return;
+            }
+        }
+        
+        // Fallback: find row by checking delete button onclick
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        for (const btn of deleteButtons) {
+            const onclick = btn.getAttribute('onclick');
+            if (onclick && onclick.includes(entityId)) {
+                const row = btn.closest('tr');
+                if (row) {
+                    performTableRowRemoval(row, entityType);
+                    return;
+                }
+            }
+        }
+    } else {
+        performTableRowRemoval(row, entityType);
+    }
+}
+
+function performTableRowRemoval(row, entityType) {
+    // Remove expansion row if it exists
+    const nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('expansion-row')) {
+        nextRow.style.transition = 'opacity 0.3s ease-out';
+        nextRow.style.opacity = '0';
+        setTimeout(() => nextRow.remove(), 300);
+    }
+    
+    // Remove main row with animation
+    row.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+    row.style.opacity = '0';
+    row.style.transform = 'translateX(-20px)';
+    setTimeout(() => {
+        row.remove();
+        updateTableCounts(entityType, -1);
+    }, 300);
+}
+
+function removeFromCards(entityType, entityId, idField) {
+    let cardSelector;
+    switch(entityType) {
+        case 'faculty':
+            cardSelector = `.faculty-card[data-faculty-id="${entityId}"]`;
+            break;
+        case 'class':
+            cardSelector = `.class-card[data-class-id="${entityId}"]`;
+            break;
+        case 'course':
+            cardSelector = `.course-card[data-course-id="${entityId}"]`;
+            break;
+        default:
+            return;
+    }
+    
+    const card = document.querySelector(cardSelector);
+    if (card) {
+        // Remove card with animation
+        card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+            card.remove();
+            updateCardCounts(entityType, -1);
+        }, 300);
+    }
+}
+
+function detectPageType() {
+    const url = window.location.pathname.toLowerCase();
+    const title = document.title.toLowerCase();
+    
+    if (title.includes('director') || url.includes('director.php')) {
+        return 'director';
+    } else if (title.includes('program') || url.includes('program.php')) {
+        return 'program';
+    }
+    return 'unknown';
+}
+
+function updateTableCounts(entityType, delta) {
+    // Update header statistics if they exist
+    const statLabels = {
+        'faculty': 'Faculty',
+        'class': 'Classes', 
+        'course': 'Courses',
+        'announcement': 'Announcements'
+    };
+    
+    const label = statLabels[entityType];
+    if (label) {
+        const statElements = document.querySelectorAll('.header-stat-label, .stat-label');
+        statElements.forEach(statElement => {
+            if (statElement.textContent.trim() === label) {
+                const numberElement = statElement.parentElement.querySelector('.header-stat-number, .stat-number');
+                if (numberElement) {
+                    const currentValue = parseInt(numberElement.textContent) || 0;
+                    const newValue = Math.max(0, currentValue + delta);
+                    numberElement.textContent = newValue;
+                    
+                    // Animate the change
+                    numberElement.style.color = delta > 0 ? '#4CAF50' : '#f44336';
+                    setTimeout(() => {
+                        numberElement.style.color = '';
+                    }, 2000);
+                }
+            }
+        });
+    }
+}
+
+function updateCardCounts(entityType, delta) {
+    updateTableCounts(entityType, delta); // Same logic for now
+}
+
+// Toggle row expansion functionality
+function toggleRowExpansion(row) {
+    const expansionRow = row.nextElementSibling;
+    
+    if (expansionRow && expansionRow.classList.contains('expansion-row')) {
+        const isExpanded = row.classList.contains('expanded');
+        
+        if (isExpanded) {
+            // Collapse
+            row.classList.remove('expanded');
+            expansionRow.style.display = 'none';
+        } else {
+            // Expand
+            row.classList.add('expanded');
+            expansionRow.style.display = 'table-row';
+        }
+    }
+}
