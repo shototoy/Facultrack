@@ -590,11 +590,10 @@ let ticking = false;
 document.addEventListener('DOMContentLoaded', function() {
     header = document.querySelector('.page-header');
     
-    console.log('Page header script loaded for:', document.body.className);
     
     // Add scroll listener for all pages, but behavior differs by page and screen size
     window.addEventListener('scroll', function() {
-        console.log('Window scroll event triggered');
+
         if (!ticking) {
             requestAnimationFrame(handleScroll);
             ticking = true;
@@ -603,9 +602,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // For faculty page, also listen on body scroll
     if (document.body.classList.contains('faculty-page')) {
-        console.log('Adding body scroll listener for faculty page');
+
         document.body.addEventListener('scroll', function() {
-            console.log('Body scroll event triggered');
+
             if (!ticking) {
                 requestAnimationFrame(handleScroll);
                 ticking = true;
@@ -618,18 +617,18 @@ function handleScroll() {
     if (window.innerWidth <= 768) {
         // Faculty page specific behavior on phone
         if (document.body.classList.contains('faculty-page')) {
-            console.log('Faculty page detected in scroll handler');
+
             let scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
             
-            console.log('Faculty scroll detected:', scrollTop);
+
             
             // Add scrolling class when user starts scrolling
             if (scrollTop > 50) {
                 document.body.classList.add('scrolling');
-                console.log('Added scrolling class');
+
             } else {
                 document.body.classList.remove('scrolling');
-                console.log('Removed scrolling class');
+
             }
             
             if (scrollTop > lastScrollTop && scrollTop > 100) {
@@ -637,13 +636,13 @@ function handleScroll() {
                 header.classList.add('scrolling-down');
                 header.classList.remove('scrolling-up');
                 document.body.classList.add('header-hidden');
-                console.log('Header hidden');
+
             } else if (scrollTop < lastScrollTop || scrollTop <= 20) {
                 // Scrolling up or near top - show header and restore padding
                 header.classList.add('scrolling-up');
                 header.classList.remove('scrolling-down');
                 document.body.classList.remove('header-hidden');
-                console.log('Header shown');
+
             }
             
             // Ensure header is always visible when at the very top
@@ -651,7 +650,7 @@ function handleScroll() {
                 header.classList.remove('scrolling-down', 'scrolling-up');
                 document.body.classList.remove('header-hidden');
                 document.body.classList.remove('scrolling');
-                console.log('At top - reset all');
+
             }
             
             lastScrollTop = scrollTop;

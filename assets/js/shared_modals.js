@@ -6,40 +6,32 @@ function openModal(modalId) {
         document.body.style.overflow = 'hidden';
     }
 }
-
 function closeModal() {
     document.querySelectorAll('.modal-overlay.show').forEach(modal => modal.classList.remove('show'));
     document.body.style.overflow = '';
 }
-
 function submitGenericForm(formElement) {
     const action = formElement.dataset.action;
     const tab = formElement.dataset.tab;
     submitForm(action, formElement.id, tab);
 }
-
 async function submitForm(action, formId, tabName) {
     const form = document.getElementById(formId);
     const formData = new FormData(form);
     formData.append('action', action);
-
     try {
         showFormLoading(formId, true);
-
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             body: formData
         });
-
         const result = await response.json();
-
         if (result.success) {
             switchTab(tabName);
             setTimeout(() => {
                 addNewRowToTable(tabName, result.data);
                 updateStatistics();
             }, 100);
-
             closeModal();
             form.reset();
             showNotification(result.message, 'success');
@@ -52,21 +44,17 @@ async function submitForm(action, formId, tabName) {
         showFormLoading(formId, false);
     }
 }
-
 function showFormLoading(formId, isLoading) {
     const form = document.getElementById(formId);
     const submitBtn = form?.querySelector('button[type="submit"]');
     if (!submitBtn) return;
-
     submitBtn.disabled = isLoading;
     submitBtn.innerHTML = isLoading
         ? '<span class="loading-spinner"></span> Processing...'
         : submitBtn.dataset.originalText || 'Submit';
 }
-
 function showNotification(message, type = 'info') {
     document.querySelector('.notification')?.remove();
-
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.style.cssText = `
@@ -82,39 +70,31 @@ function showNotification(message, type = 'info') {
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     `;
     notification.textContent = message;
-
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 5000);
     notification.addEventListener('click', () => notification.remove());
 }
-
 function setupClassCodeGeneration() {
     const classNameInput = document.getElementById('class_name');
     const yearLevelSelect = document.getElementById('year_level');
     const classCodeInput = document.getElementById('class_code');
-
     function generateClassCode() {
         if (!classNameInput || !yearLevelSelect || !classCodeInput) return;
-
         const className = classNameInput.value.trim();
         const yearLevel = yearLevelSelect.value;
         if (!className || !yearLevel) return;
-
         const skipWords = ['bs', 'bachelor', 'of', 'science', 'arts', 'master', 'masters', 'in'];
         const acronym = className
             .split(' ')
             .filter(word => !skipWords.includes(word.toLowerCase()))
             .map(word => word.charAt(0).toUpperCase())
             .join('');
-
         const prefix = className.toLowerCase().includes('bs ') || className.toLowerCase().includes('bachelor') ? 'BS' : '';
         classCodeInput.value = `${prefix}${acronym}-${yearLevel}A`;
     }
-
     classNameInput?.addEventListener('input', generateClassCode);
     yearLevelSelect?.addEventListener('change', generateClassCode);
 }
-
 function setupAcademicYear() {
     const input = document.getElementById('academic_year');
     if (input && !input.value) {
@@ -122,45 +102,36 @@ function setupAcademicYear() {
         input.value = `${y}-${y + 1}`;
     }
 }
-
 document.addEventListener('DOMContentLoaded', () => {
     setupClassCodeGeneration();
     setupAcademicYear();
-
     document.querySelectorAll('button[type="submit"]').forEach(btn => {
         btn.dataset.originalText = btn.innerHTML;
     });
 });
-
 document.addEventListener('click', e => {
     if (e.target.classList.contains('modal-overlay')) closeModal();
 });
-
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
         document.querySelector('.modal-overlay.show')?.classList.remove('show');
         document.body.style.overflow = '';
     }
 });
-
 document.addEventListener('click', function(e) {
     const modalId =
         e.target.closest('button[data-modal]')?.dataset.modal ||
         e.target.closest('.add-card[data-modal]')?.dataset.modal;
-
     if (modalId) {
         openModal(modalId);
     }
 });
-
 function toggleSearch() {
     const container = document.getElementById('searchContainer');
     const searchInput = document.getElementById('searchInput');
-    
     if (!container || !searchInput) {
         return;
     }
-    
     if (container.classList.contains('collapsed')) {
         container.classList.remove('collapsed');
         container.classList.add('expanded');
@@ -176,14 +147,11 @@ function toggleSearch() {
         }
     }
 }
-
 window.toggleSearch = toggleSearch;
-
 function setupSearchFunctionality() {
     const searchInput = document.getElementById('searchInput');
     const searchContainer = document.getElementById('searchContainer');
     const searchBar = document.querySelector('.search-bar');
-    
     if (searchInput) {
         searchInput.addEventListener('input', function() {
             if (typeof searchContent === 'function') {
@@ -191,7 +159,6 @@ function setupSearchFunctionality() {
             }
         });
     }
-    
     if (searchContainer && searchBar) {
         document.addEventListener('click', function(event) {
             if (!searchBar.contains(event.target) && 
@@ -204,7 +171,6 @@ function setupSearchFunctionality() {
         });
     }
 }
-
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setupSearchFunctionality);
 } else {

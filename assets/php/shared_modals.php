@@ -384,7 +384,7 @@ $role = $_SESSION['role'] ?? '';
 
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" onclick="closeModal('updateSemesterModal')">Cancel</button>
-                <button type="button" class="btn-primary" id="updateSemesterBtn" onclick="alert('Button clicked directly!'); window.updateSemester(document.getElementById('updateSemesterForm'));">Update Semester</button>
+                <button type="button" class="btn-primary" id="updateSemesterBtn" onclick="window.updateSemester(document.getElementById('updateSemesterForm'));">Update Semester</button>
             </div>
         </form>
     </div>

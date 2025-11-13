@@ -1,23 +1,12 @@
 <?php
-// Turn off error display to prevent HTML output
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-
 require_once 'common_utilities.php';
 initializeSession();
 header('Content-Type: application/json');
-
-
 $pdo = initializeDatabase();
 $action = $_GET['action'] ?? $_POST['action'] ?? $_POST['admin_action'] ?? '';
-
-// Debug: Log what we received
-// error_log("Polling API called with action: " . $action);
-// error_log("GET params: " . print_r($_GET, true));
-// error_log("POST params: " . print_r($_POST, true));
-
-// Include required functions from other files
 function getAllFaculty($pdo) {
     $faculty_query = "
         SELECT 
@@ -42,7 +31,6 @@ function getAllFaculty($pdo) {
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getAllClasses($pdo) {
     $classes_query = "
         SELECT 
@@ -61,12 +49,10 @@ function getAllClasses($pdo) {
         WHERE c.is_active = TRUE
         GROUP BY c.class_id
         ORDER BY c.year_level, c.class_name";
-    
     $stmt = $pdo->prepare($classes_query);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getAllCourses($pdo) {
     $courses_query = "
         SELECT 
@@ -79,12 +65,10 @@ function getAllCourses($pdo) {
         LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
         GROUP BY c.course_id
         ORDER BY c.course_code";
-    
     $stmt = $pdo->prepare($courses_query);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getAllAnnouncements($pdo) {
     $all_announcements_query = "
         SELECT 
@@ -99,12 +83,10 @@ function getAllAnnouncements($pdo) {
         JOIN users u ON a.created_by = u.user_id
         WHERE a.is_active = TRUE
         ORDER BY a.created_at DESC";
-    
     $stmt = $pdo->prepare($all_announcements_query);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getProgramChairs($pdo) {
     $program_chairs_query = "
         SELECT f.user_id, u.full_name, f.program
@@ -112,23 +94,19 @@ function getProgramChairs($pdo) {
         JOIN users u ON f.user_id = u.user_id
         WHERE u.role = 'program_chair' AND f.is_active = TRUE
         ORDER BY u.full_name";
-    
     $stmt = $pdo->prepare($program_chairs_query);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getFacultyInfo($pdo, $user_id) {
     $faculty_query = "SELECT f.*, u.full_name FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.user_id = ? AND u.is_active = TRUE";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute([$user_id]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
-
 function getScheduleForDays($pdo, $faculty_id, $days) {
     $current_time = date('H:i:s');
     $time_condition = "TIME(NOW())";
-    
     $schedule_query = "
         SELECT s.*, c.course_description, cl.class_name, cl.class_code,
             CASE 
@@ -160,7 +138,6 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
     $stmt->execute([$faculty_id, $days, $days, $days, $days, $days, $days, $days]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function generateScheduleHTML($schedule_data) {
     $html = '';
     foreach ($schedule_data as $schedule) {
@@ -188,7 +165,6 @@ function generateScheduleHTML($schedule_data) {
     }
     return $html;
 }
-
 function getScheduleStatus($status) {
     switch ($status) {
         case 'ongoing': return ['text' => 'In Progress', 'class' => 'ongoing'];
@@ -197,13 +173,9 @@ function getScheduleStatus($status) {
         default: return ['text' => 'Unknown', 'class' => 'unknown'];
     }
 }
-
-// formatTime function exists in common_utilities.php - removed duplicate
-
 function markFacultyAttendance($pdo, $user_id, $schedule_id) {
     try {
         $pdo->beginTransaction();
-    
     $location_query = "SELECT s.room, c.course_code, c.course_description 
                       FROM schedules s 
                       JOIN courses c ON s.course_code = c.course_code 
@@ -211,39 +183,30 @@ function markFacultyAttendance($pdo, $user_id, $schedule_id) {
     $stmt = $pdo->prepare($location_query);
     $stmt->execute([$schedule_id]);
     $schedule_info = $stmt->fetch(PDO::FETCH_ASSOC);
-    
     if (!$schedule_info) {
         $pdo->rollBack();
         return ['success' => false, 'message' => 'Schedule not found'];
     }
-    
     $faculty_query = "SELECT faculty_id FROM faculty WHERE user_id = ? AND is_active = TRUE";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute([$user_id]);
     $faculty = $stmt->fetch(PDO::FETCH_ASSOC);
-    
     if (!$faculty) {
         $pdo->rollBack();
         return ['success' => false, 'message' => 'Faculty not found'];
     }
-    
     $faculty_id = $faculty['faculty_id'];
     $location = !empty($schedule_info['room']) ? $schedule_info['room'] : 'In Class';
-    
     $update_prev_query = "UPDATE location_history SET time_changed = NOW() WHERE faculty_id = ? AND time_changed IS NULL";
     $stmt = $pdo->prepare($update_prev_query);
     $stmt->execute([$faculty_id]);
-    
     $insert_history_query = "INSERT INTO location_history (faculty_id, location, time_set) VALUES (?, ?, NOW())";
     $stmt = $pdo->prepare($insert_history_query);
     $stmt->execute([$faculty_id, $location]);
-    
     $update_location_query = "UPDATE faculty SET current_location = ?, last_location_update = NOW() WHERE faculty_id = ?";
     $stmt = $pdo->prepare($update_location_query);
     $stmt->execute([$location, $faculty_id]);
-    
         $pdo->commit();
-        
         return [
             'success' => true,
             'message' => 'Attendance marked and location updated',
@@ -255,37 +218,28 @@ function markFacultyAttendance($pdo, $user_id, $schedule_id) {
         return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
     }
 }
-
 function updateFacultyLocation($pdo, $user_id, $location) {
     try {
         $pdo->beginTransaction();
-    
     $faculty_query = "SELECT faculty_id FROM faculty WHERE user_id = ? AND is_active = TRUE";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute([$user_id]);
     $faculty = $stmt->fetch(PDO::FETCH_ASSOC);
-    
     if (!$faculty) {
         $pdo->rollBack();
         return ['success' => false, 'message' => 'Faculty not found'];
     }
-    
     $faculty_id = $faculty['faculty_id'];
-    
     $update_prev_query = "UPDATE location_history SET time_changed = NOW() WHERE faculty_id = ? AND time_changed IS NULL";
     $stmt = $pdo->prepare($update_prev_query);
     $stmt->execute([$faculty_id]);
-    
     $insert_history_query = "INSERT INTO location_history (faculty_id, location, time_set) VALUES (?, ?, NOW())";
     $stmt = $pdo->prepare($insert_history_query);
     $stmt->execute([$faculty_id, $location]);
-    
     $update_query = "UPDATE faculty SET current_location = ?, last_location_update = NOW() WHERE user_id = ?";
     $stmt = $pdo->prepare($update_query);
     $stmt->execute([$location, $user_id]);
-    
         $pdo->commit();
-        
         return [
             'success' => true,
             'message' => 'Location updated successfully',
@@ -297,18 +251,13 @@ function updateFacultyLocation($pdo, $user_id, $location) {
         return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
     }
 }
-
 function getClassFaculty($pdo, $user_id) {
-    // Get class info first
     $class_query = "SELECT class_id FROM classes WHERE user_id = ? AND is_active = TRUE";
     $stmt = $pdo->prepare($class_query);
     $stmt->execute([$user_id]);
     $class_info = $stmt->fetch(PDO::FETCH_ASSOC);
-    
     if (!$class_info) return [];
-    
     $class_id = $class_info['class_id'];
-    
     $faculty_query = "
         SELECT DISTINCT
             f.faculty_id,
@@ -326,24 +275,18 @@ function getClassFaculty($pdo, $user_id) {
         WHERE f.is_active = TRUE 
         AND s.is_active = TRUE 
         AND s.class_id = ?";
-    
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute([$class_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getFacultyCoursesForClass($pdo, $user_id) {
-    // Get class info first
     $class_query = "SELECT class_id FROM classes WHERE user_id = ? AND is_active = TRUE";
     $stmt = $pdo->prepare($class_query);
     $stmt->execute([$user_id]);
     $class_info = $stmt->fetch(PDO::FETCH_ASSOC);
-    
     if (!$class_info) return [];
-    
     $class_id = $class_info['class_id'];
     $faculty_courses = [];
-    
     $courses_query = "
         SELECT s.faculty_id, s.course_code, c.course_description, s.time_start, s.time_end, s.room,
             CASE 
@@ -355,24 +298,15 @@ function getFacultyCoursesForClass($pdo, $user_id) {
         JOIN courses c ON s.course_code = c.course_code
         WHERE s.class_id = ? AND s.is_active = TRUE
         ORDER BY s.time_start";
-    
     $stmt = $pdo->prepare($courses_query);
     $stmt->execute([$class_id]);
     $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
     foreach ($courses as $course) {
         $faculty_courses[$course['faculty_id']][] = $course;
     }
-    
     return $faculty_courses;
 }
-
-// Program action functions removed - they belong in program.php, not polling
-
-
-// CONSOLIDATED POLLING API - ALL polling endpoints in one place
 switch ($action) {
-    // ADMIN ACTIONS
     case 'add_course':
     case 'add_faculty':
     case 'add_class':
@@ -383,47 +317,30 @@ switch ($action) {
     case 'delete_announcement':
         $user_id = $_SESSION['user_id'];
         $user_role = $_SESSION['role'];
-        
-        // Handle delete operations directly (bypassing handle_admin_actions.php complexity)
         if ($action === 'delete_course') {
             $course_id = $_POST['course_id'] ?? '';
-            
             if (empty($course_id)) {
                 sendJsonResponse(['success' => false, 'message' => 'Course ID is required']);
                 break;
             }
-            
             try {
-                // Get course_code first for cascade deletes
                 $stmt = $pdo->prepare("SELECT course_code FROM courses WHERE course_id = ?");
                 $stmt->execute([$course_id]);
                 $course = $stmt->fetch(PDO::FETCH_ASSOC);
-                
                 if (!$course) {
                     sendJsonResponse(['success' => false, 'message' => 'Course not found']);
                     break;
                 }
-                
                 $course_code = $course['course_code'];
-                
                 $pdo->beginTransaction();
-                
-                // Delete related schedules
                 $stmt = $pdo->prepare("DELETE FROM schedules WHERE course_code = ?");
                 $stmt->execute([$course_code]);
-                
-                // Delete related curriculum
                 $stmt = $pdo->prepare("DELETE FROM curriculum WHERE course_code = ?");
                 $stmt->execute([$course_code]);
-                
-                // Delete course
                 $stmt = $pdo->prepare("DELETE FROM courses WHERE course_id = ?");
                 $stmt->execute([$course_id]);
-                
                 $pdo->commit();
-                
                 sendJsonResponse(['success' => true, 'message' => 'Course deleted successfully']);
-                
             } catch (Exception $e) {
                 if (isset($pdo)) {
                     $pdo->rollback();
@@ -432,41 +349,27 @@ switch ($action) {
             }
         } elseif ($action === 'delete_class') {
             $class_id = $_POST['class_id'] ?? '';
-            
             if (empty($class_id)) {
                 sendJsonResponse(['success' => false, 'message' => 'Class ID is required']);
                 break;
             }
-            
             try {
                 $pdo->beginTransaction();
-                
-                // Get user_id before deleting class record (classes have associated user accounts)
                 $stmt = $pdo->prepare("SELECT user_id FROM classes WHERE class_id = ?");
                 $stmt->execute([$class_id]);
                 $class_data = $stmt->fetch(PDO::FETCH_ASSOC);
-                
                 if (!$class_data) {
                     sendJsonResponse(['success' => false, 'message' => 'Class not found']);
                     break;
                 }
-                
-                // Delete related schedules first
                 $stmt = $pdo->prepare("DELETE FROM schedules WHERE class_id = ?");
                 $stmt->execute([$class_id]);
-                
-                // HARD DELETE: Delete the class record
                 $stmt = $pdo->prepare("DELETE FROM classes WHERE class_id = ?");
                 $stmt->execute([$class_id]);
-                
-                // HARD DELETE: Delete user account completely (like faculty)
                 $stmt = $pdo->prepare("DELETE FROM users WHERE user_id = ?");
                 $stmt->execute([$class_data['user_id']]);
-                
                 $pdo->commit();
-                
                 sendJsonResponse(['success' => true, 'message' => 'Class and user account deleted successfully']);
-                
             } catch (Exception $e) {
                 if (isset($pdo)) {
                     $pdo->rollback();
@@ -475,45 +378,29 @@ switch ($action) {
             }
         } elseif ($action === 'delete_faculty') {
             $faculty_id = $_POST['faculty_id'] ?? '';
-            
             if (empty($faculty_id)) {
                 sendJsonResponse(['success' => false, 'message' => 'Faculty ID is required']);
                 break;
             }
-            
             try {
                 $pdo->beginTransaction();
-                
-                // Get user_id before deleting faculty record
                 $stmt = $pdo->prepare("SELECT user_id FROM faculty WHERE faculty_id = ?");
                 $stmt->execute([$faculty_id]);
                 $faculty_data = $stmt->fetch(PDO::FETCH_ASSOC);
-                
                 if (!$faculty_data) {
                     sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
                     break;
                 }
-                
-                // Delete related schedules
                 $stmt = $pdo->prepare("DELETE FROM schedules WHERE faculty_id = ?");
                 $stmt->execute([$faculty_id]);
-                
-                // Delete location history
                 $stmt = $pdo->prepare("DELETE FROM location_history WHERE faculty_id = ?");
                 $stmt->execute([$faculty_id]);
-                
-                // HARD DELETE: Delete faculty record
                 $stmt = $pdo->prepare("DELETE FROM faculty WHERE faculty_id = ?");
                 $stmt->execute([$faculty_id]);
-                
-                // HARD DELETE: Delete user account completely
                 $stmt = $pdo->prepare("DELETE FROM users WHERE user_id = ?");
                 $stmt->execute([$faculty_data['user_id']]);
-                
                 $pdo->commit();
-                
                 sendJsonResponse(['success' => true, 'message' => 'Faculty and user account deleted successfully']);
-                
             } catch (Exception $e) {
                 if (isset($pdo)) {
                     $pdo->rollback();
@@ -522,30 +409,23 @@ switch ($action) {
             }
         } elseif ($action === 'delete_announcement') {
             $announcement_id = $_POST['announcement_id'] ?? '';
-            
             if (empty($announcement_id)) {
                 sendJsonResponse(['success' => false, 'message' => 'Announcement ID is required']);
                 break;
             }
-            
             try {
-                // Simple delete for announcements (no cascading needed)
                 $stmt = $pdo->prepare("DELETE FROM announcements WHERE announcement_id = ?");
                 $stmt->execute([$announcement_id]);
-                
                 if ($stmt->rowCount() > 0) {
                     sendJsonResponse(['success' => true, 'message' => 'Announcement deleted successfully']);
                 } else {
                     sendJsonResponse(['success' => false, 'message' => 'Announcement not found']);
                 }
-                
             } catch (Exception $e) {
                 sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
         } else {
-            // Handle ADD operations directly in polling_api.php
             if (strpos($action, 'add_') === 0) {
-                // ADD operation configuration
                 $config = [
                     'add_faculty' => [
                         'required' => ['full_name', 'username', 'password'],
@@ -579,29 +459,21 @@ switch ($action) {
                         'fields' => ['title', 'content', 'priority', 'target_audience']
                     ]
                 ];
-
                 if (!isset($config[$action])) {
                     sendJsonResponse(['success' => false, 'message' => 'Invalid action']);
                     break;
                 }
-
                 $c = $config[$action];
-
-                // Role validation
                 if (isset($c['role_required']) && $user_role !== $c['role_required']) {
                     sendJsonResponse(['success' => false, 'message' => 'Unauthorized']);
                     break;
                 }
-
-                // Required fields validation
                 foreach ($c['required'] as $field) {
                     if (empty($_POST[$field])) {
                         sendJsonResponse(['success' => false, 'message' => "Missing required field: $field"]);
                         break 2;
                     }
                 }
-
-                // Unique fields validation
                 foreach ($c['unique'] ?? [] as $u) {
                     [$table, $column] = explode('.', $u);
                     $stmt = $pdo->prepare("SELECT 1 FROM $table WHERE $column = ?");
@@ -611,10 +483,8 @@ switch ($action) {
                         break 2;
                     }
                 }
-
                 try {
                     $pdo->beginTransaction();
-
                     $new_user_id = null;
                     if (isset($c['user'])) {
                         $role = is_callable($c['user']['role']) ? $c['user']['role']($_POST) : $c['user']['role'];
@@ -627,12 +497,9 @@ switch ($action) {
                         ]);
                         $new_user_id = $pdo->lastInsertId();
                     }
-
                     $insert_data = [];
-
                     if ($action === 'add_faculty') {
                         $role = is_callable($c['user']['role']) ? $c['user']['role']($_POST) : 'faculty';
-                        
                         if ($role === 'program_chair') {
                             if ($user_role === 'campus_director') {
                                 $insert_data['program'] = $_POST['program'] ?? null;
@@ -645,14 +512,12 @@ switch ($action) {
                                 $insert_data['program'] = $stmt->fetchColumn();
                             }
                         }
-
                         $prefix = $c['generate_id']['prefix']($_POST);
                         $stmt = $pdo->prepare("SELECT COUNT(*) FROM {$c['generate_id']['table']} WHERE {$c['generate_id']['column']} LIKE ?");
                         $stmt->execute([$prefix . '%']);
                         $count = $stmt->fetchColumn();
                         $insert_data['employee_id'] = $prefix . str_pad($count + 1, 4, '0', STR_PAD_LEFT);
                     }
-
                     if ($action === 'add_class') {
                         if ($user_role === 'program_chair') {
                             $insert_data['program_chair_id'] = $user_id;
@@ -663,31 +528,23 @@ switch ($action) {
                             }
                         }
                     }
-
                     if ($action === 'add_announcement') {
                         $insert_data['created_by'] = $user_id;
                     }
-
                     foreach ($c['fields'] as $field) {
                         $insert_data[$field] = $_POST[$field] ?? null;
                     }
-
                     if ($new_user_id) {
                         $insert_data['user_id'] = $new_user_id;
                     }
-
                     $columns = array_keys($insert_data);
                     $placeholders = array_fill(0, count($columns), '?');
                     $stmt = $pdo->prepare("INSERT INTO {$c['table']} (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")");
                     $stmt->execute(array_values($insert_data));
-
                     $entity_id = $pdo->lastInsertId();
                     $pdo->commit();
-
-                    // Fetch the added record
                     $result = fetchAddedRecord($pdo, $action, $entity_id);
                     sendJsonResponse($result);
-
                 } catch (Exception $e) {
                     $pdo->rollBack();
                     sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);
@@ -697,27 +554,19 @@ switch ($action) {
             }
         }
         break;
-        
-    // TEST ENDPOINT
     case 'test':
         sendJsonResponse(['success' => true, 'message' => 'Polling API is working', 'timestamp' => date('Y-m-d H:i:s')]);
         break;
-        
-    // STATISTICS ENDPOINTS - DEPRECATED: Use get_dashboard_data for consistency
     case 'get_statistics':
-        // Redirect to dashboard data for consistency
         $response_data = [
             'success' => true,
             'timestamp' => date('Y-m-d H:i:s')
         ];
-        
         if ($_SESSION['role'] === 'campus_director' || $_SESSION['role'] === 'program_chair') {
             $response_data['faculty_data'] = getAllFaculty($pdo);
             $response_data['classes_data'] = getAllClasses($pdo);
             $response_data['courses_data'] = getAllCourses($pdo);
             $response_data['announcements_data'] = getAllAnnouncements($pdo);
-            
-            // Calculate statistics from the same data
             $response_data['data'] = [
                 'total_faculty' => count($response_data['faculty_data']),
                 'total_classes' => count($response_data['classes_data']),
@@ -728,15 +577,11 @@ switch ($action) {
                 }))
             ];
         }
-        
         sendJsonResponse($response_data);
         break;
-        
-    // LOCATION ENDPOINTS  
     case 'get_location_updates':
         include 'get_location.php';
         break;
-        
     case 'get_status':
         validateUserSession('faculty');
         try {
@@ -745,7 +590,6 @@ switch ($action) {
             $stmt = $pdo->prepare($status_query);
             $stmt->execute([$user_id]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            
             if ($result) {
                 sendJsonResponse(['success' => true, 'last_updated' => getTimeAgo($result['last_location_update'])]);
             } else {
@@ -755,7 +599,6 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Database error']);
         }
         break;
-        
     case 'get_location_history':
         validateUserSession('faculty');
         try {
@@ -764,11 +607,9 @@ switch ($action) {
             $stmt = $pdo->prepare($faculty_query);
             $stmt->execute([$user_id]);
             $faculty_info = $stmt->fetch(PDO::FETCH_ASSOC);
-            
             if (!$faculty_info) {
                 sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
             }
-            
             $limit = 10;
             $query = "SELECT location, time_set, time_changed 
                       FROM location_history 
@@ -778,7 +619,6 @@ switch ($action) {
             $stmt = $pdo->prepare($query);
             $stmt->execute([$faculty_info['faculty_id']]);
             $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
             $html = '';
             if (!empty($history)) {
                 foreach ($history as $index => $h) {
@@ -786,7 +626,6 @@ switch ($action) {
                     $timeDisplay = $h['time_changed'] 
                         ? date('M j, Y g:i A', strtotime($h['time_changed']))
                         : date('M j, Y g:i A', strtotime($h['time_set']));
-                    
                     $html .= '<div class="history-item' . ($isCurrent ? ' current-location' : '') . '">';
                     $html .= '<div class="history-location-name">' . htmlspecialchars($h['location']) . '</div>';
                     $html .= '<div class="history-timestamp">' . $timeDisplay . '</div>';
@@ -798,30 +637,23 @@ switch ($action) {
             } else {
                 $html = '<div class="no-history"><p>No location history available</p></div>';
             }
-            
             sendJsonResponse(['success' => true, 'html' => $html]);
         } catch (Exception $e) {
             sendJsonResponse(['success' => false, 'message' => 'Database error']);
         }
         break;
-        
-    // DASHBOARD DATA ENDPOINTS
     case 'get_dashboard_data':
         $tab = $_GET['tab'] ?? 'faculty';
         $role = $_SESSION['role'];
-        
         if (!in_array($role, ['campus_director', 'program_chair', 'class'])) {
             sendJsonResponse(['success' => false, 'message' => 'Unauthorized access'], 403);
         }
-        
         try {
             $response_data = [
                 'success' => true,
                 'timestamp' => date('Y-m-d H:i:s')
             ];
-            
             if ($role === 'campus_director') {
-                // Director: Return specific tab data
                 switch ($tab) {
                     case 'faculty':
                         $response_data['faculty_data'] = getAllFaculty($pdo);
@@ -844,38 +676,24 @@ switch ($action) {
                         break;
                 }
             } else if ($role === 'program_chair') {
-                // Program Chair: Return all data
                 $user_id = $_SESSION['user_id'];
-                
                 $classes_query = "SELECT * FROM classes WHERE program_chair_id = ? AND is_active = TRUE ORDER BY year_level, class_name";
                 $stmt = $pdo->prepare($classes_query);
                 $stmt->execute([$user_id]);
                 $response_data['classes_data'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
                 $response_data['faculty_data'] = getAllFaculty($pdo);
                 $response_data['courses_data'] = getAllCourses($pdo);
-                
             } else if ($role === 'class') {
-                // Class: Return faculty data with courses
                 $response_data['faculty_data'] = getClassFaculty($pdo, $_SESSION['user_id']);
                 $response_data['faculty_courses'] = getFacultyCoursesForClass($pdo, $_SESSION['user_id']);
             }
-            
-            // Add change tracking for NEW/DELETED entities only
             $response_data['changes'] = detectDataChanges($pdo, $role, $tab);
-            
-            // Add current entity data for status updates
             $response_data['current_entities'] = getAllCurrentEntities($pdo, $role, $tab);
-            
             sendJsonResponse($response_data);
-            
         } catch (Exception $e) {
-            error_log("Dashboard data error: " . $e->getMessage());
             sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         }
         break;
-        
-    // SCHEDULE ENDPOINTS
     case 'get_schedule_updates':
         validateUserSession('faculty');
         try {
@@ -884,7 +702,6 @@ switch ($action) {
             $stmt = $pdo->prepare($faculty_query);
             $stmt->execute([$user_id]);
             $faculty_info = $stmt->fetch(PDO::FETCH_ASSOC);
-            
             if ($faculty_info) {
                 $schedule_query = "
                     SELECT s.*, c.course_description, cl.class_name,
@@ -898,11 +715,9 @@ switch ($action) {
                     JOIN classes cl ON s.class_id = cl.class_id
                     WHERE s.faculty_id = ? AND s.is_active = TRUE
                     ORDER BY s.time_start";
-                    
                 $stmt = $pdo->prepare($schedule_query);
                 $stmt->execute([$faculty_info['faculty_id']]);
                 $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
                 sendJsonResponse([
                     'success' => true,
                     'schedules' => $schedules,
@@ -915,40 +730,30 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
-        
     case 'get_schedule':
         validateUserSession('faculty');
         $days = $_POST['days'] ?? '';
         $user_id = $_SESSION['user_id'];
-        
         try {
             $faculty_info = getFacultyInfo($pdo, $user_id);
             $faculty_id = $faculty_info['faculty_id'];
             $schedule_data = getScheduleForDays($pdo, $faculty_id, $days);
-            
             if (empty($schedule_data)) {
                 sendJsonResponse(['success' => false, 'message' => 'No schedule found']);
             }
-            
             $html = generateScheduleHTML($schedule_data);
             sendJsonResponse(['success' => true, 'html' => $html]);
         } catch (Exception $e) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
-        
-    // PROGRAM CHAIR ENDPOINTS - removed, these are actions not polling
-        
-    // ATTENDANCE/LOCATION UPDATES
     case 'mark_attendance':
         validateUserSession('faculty');
         $user_id = $_SESSION['user_id'];
         $schedule_id = validateInput($_POST['schedule_id'] ?? '');
-        
         if (empty($schedule_id)) {
             sendJsonResponse(['success' => false, 'message' => 'Schedule ID is required']);
         }
-        
         try {
             $result = markFacultyAttendance($pdo, $user_id, $schedule_id);
             sendJsonResponse($result);
@@ -956,16 +761,13 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
-        
     case 'update_location':
         validateUserSession('faculty');
         $user_id = $_SESSION['user_id'];
         $location = validateInput($_POST['location'] ?? '');
-        
         if (empty($location)) {
             sendJsonResponse(['success' => false, 'message' => 'Location cannot be empty']);
         }
-        
         try {
             $result = updateFacultyLocation($pdo, $user_id, $location);
             sendJsonResponse($result);
@@ -973,19 +775,15 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
-        
-    // UPDATE SEMESTER ENDPOINTS
     case 'get_classes_for_semester':
         validateUserSession('campus_director');
         try {
             $semester = $_POST['semester'] ?? '';
             $academic_year = $_POST['academic_year'] ?? '';
-            
             if (empty($semester) || empty($academic_year)) {
                 sendJsonResponse(['success' => false, 'message' => 'Semester and academic year are required']);
                 break;
             }
-            
             $classes_query = "
                 SELECT c.class_id, c.class_code, c.class_name, c.year_level, 
                        u.full_name as program_chair_name,
@@ -999,72 +797,54 @@ switch ($action) {
                 WHERE c.is_active = TRUE
                 GROUP BY c.class_id
                 ORDER BY c.year_level, c.class_name";
-            
             $stmt = $pdo->prepare($classes_query);
             $stmt->execute();
             $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
             sendJsonResponse([
                 'success' => true,
                 'classes' => $classes
             ]);
-            
         } catch (Exception $e) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
-        
     case 'update_semester':
         validateUserSession('campus_director');
         try {
             $semester = $_POST['semester'] ?? '';
             $academic_year = $_POST['academic_year'] ?? '';
-            
             if (empty($semester) || empty($academic_year)) {
                 sendJsonResponse(['success' => false, 'message' => 'Semester and academic year are required']);
                 break;
             }
-            
             $pdo->beginTransaction();
-            
-            // Step 1: Get ALL active classes (we'll update them to the new semester/academic year)
             $classes_query = "
                 SELECT c.class_id, c.year_level, c.program_chair_id 
                 FROM classes c
                 WHERE c.is_active = TRUE";
-            
             $stmt = $pdo->prepare($classes_query);
             $stmt->execute();
             $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
             if (empty($classes)) {
                 $pdo->rollback();
                 sendJsonResponse(['success' => false, 'message' => 'No classes found for the selected semester']);
                 break;
             }
-            
-            // Step 1.5: Update classes to current semester/academic year if needed
             $update_classes_query = "
                 UPDATE classes 
                 SET semester = ?, academic_year = ?, updated_at = NOW()
                 WHERE class_id IN (" . implode(',', array_column($classes, 'class_id')) . ")";
             $stmt = $pdo->prepare($update_classes_query);
             $stmt->execute([$semester, $academic_year]);
-            
             $updated_classes = 0;
             $total_schedules_added = 0;
-            
             foreach ($classes as $class) {
                 $class_id = $class['class_id'];
                 $year_level = $class['year_level'];
                 $program_chair_id = $class['program_chair_id'];
-                
-                // Step 2: Reset all faculty assignments for this class (delete all schedules)
                 $delete_schedules = "DELETE FROM schedules WHERE class_id = ?";
                 $stmt = $pdo->prepare($delete_schedules);
                 $stmt->execute([$class_id]);
-                
-                // Step 3: Get all courses from curriculum for this year level and semester
                 $curriculum_query = "
                     SELECT curr.course_code 
                     FROM curriculum curr
@@ -1073,18 +853,14 @@ switch ($action) {
                     AND curr.academic_year = ?
                     AND curr.program_chair_id = ?
                     AND curr.is_active = TRUE";
-                
                 $stmt = $pdo->prepare($curriculum_query);
                 $stmt->execute([$year_level, $semester, $academic_year, $program_chair_id]);
                 $curriculum_courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                // Step 4: Add all curriculum courses as unassigned schedules (no faculty assigned yet)
                 foreach ($curriculum_courses as $course) {
                     $insert_schedule = "
                         INSERT INTO schedules (course_code, class_id, faculty_id, section, days, time_start, time_end, 
                                              room, semester, academic_year, is_active, created_at, updated_at) 
                         VALUES (?, ?, 0, 'TBA', 'TBA', '00:00:00', '00:00:00', 'TBA', ?, ?, TRUE, NOW(), NOW())";
-                    
                     $stmt = $pdo->prepare($insert_schedule);
                     $stmt->execute([
                         $course['course_code'],
@@ -1092,20 +868,15 @@ switch ($action) {
                         $semester,
                         $academic_year
                     ]);
-                    
                     $total_schedules_added++;
                 }
-                
                 $updated_classes++;
             }
-            
             $pdo->commit();
-            
             sendJsonResponse([
                 'success' => true,
                 'message' => "Successfully updated {$updated_classes} classes with {$total_schedules_added} courses from curriculum. All faculty assignments have been reset."
             ]);
-            
         } catch (Exception $e) {
             if (isset($pdo)) {
                 $pdo->rollback();
@@ -1113,14 +884,10 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
-        
     default:
-        error_log("Unknown action received: " . $action);
         sendJsonResponse(['success' => false, 'message' => 'Unknown action: ' . $action], 400);
         break;
 }
-
-// Function to fetch added records for response
 function fetchAddedRecord($pdo, $action, $id) {
     switch ($action) {
         case 'add_faculty':
@@ -1137,7 +904,6 @@ function fetchAddedRecord($pdo, $action, $id) {
                 WHERE f.faculty_id = ? AND f.is_active = TRUE
             ");
             break;
-
         case 'add_course':
             $stmt = $pdo->prepare("
                 SELECT c.course_id, c.course_code, c.course_description, c.units,
@@ -1148,7 +914,6 @@ function fetchAddedRecord($pdo, $action, $id) {
                 GROUP BY c.course_id
             ");
             break;
-
         case 'add_class':
             $stmt = $pdo->prepare("
                 SELECT c.class_id, c.class_code, c.class_name, c.year_level, c.semester, c.academic_year,
@@ -1162,7 +927,6 @@ function fetchAddedRecord($pdo, $action, $id) {
                 GROUP BY c.class_id
             ");
             break;
-
         case 'add_announcement':
             $stmt = $pdo->prepare("
                 SELECT a.announcement_id, a.title, a.content, a.priority, a.target_audience,
@@ -1172,18 +936,14 @@ function fetchAddedRecord($pdo, $action, $id) {
                 WHERE a.announcement_id = ?
             ");
             break;
-
         default:
             return ['success' => false, 'message' => 'Unknown action for fetching record'];
     }
-
     $stmt->execute([$id]);
     $record = $stmt->fetch(PDO::FETCH_ASSOC);
-    
     if (!$record) {
         return ['success' => false, 'message' => 'Failed to fetch added record'];
     }
-    
     return [
         'success' => true, 
         'data' => $record, 
@@ -1193,70 +953,45 @@ function fetchAddedRecord($pdo, $action, $id) {
         'entity_id' => $id
     ];
 }
-
-// Dynamic change detection for indexed updates
 function detectDataChanges($pdo, $role, $tab = null) {
     $changes = [];
-    
     try {
         if ($role === 'campus_director' || $role === 'program_chair') {
-            // Only detect ACTUAL new entities (created in last 3 seconds) or hard deletions
             $time_threshold = date('Y-m-d H:i:s', strtotime('-3 seconds'));
-            
             if (!$tab || $tab === 'faculty') {
                 $changes['faculty'] = checkNewOrDeletedEntities($pdo, 'faculty', 'faculty_id', $time_threshold);
             }
-            
             if (!$tab || $tab === 'classes') {
                 $changes['classes'] = checkNewOrDeletedEntities($pdo, 'classes', 'class_id', $time_threshold);
             }
-            
             if (!$tab || $tab === 'courses') {
                 $changes['courses'] = checkNewOrDeletedEntities($pdo, 'courses', 'course_id', $time_threshold);
             }
-            
             if (!$tab || $tab === 'announcements') {
                 $changes['announcements'] = checkNewOrDeletedEntities($pdo, 'announcements', 'announcement_id', $time_threshold);
             }
         }
-        
         return array_filter($changes);
-        
     } catch (Exception $e) {
-        error_log("Change detection error: " . $e->getMessage());
         return [];
     }
 }
-
 function checkNewOrDeletedEntities($pdo, $table, $id_field, $time_threshold) {
     $changes = [];
-    
     try {
-        // ONLY check for genuinely NEW entities (created recently)
         $stmt = $pdo->prepare("SELECT * FROM {$table} WHERE created_at >= ? ORDER BY created_at DESC LIMIT 2");
         $stmt->execute([$time_threshold]);
         $newEntities = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         if (!empty($newEntities)) {
             $changes['added'] = $newEntities;
-            error_log("New {$table} entities added: " . count($newEntities));
         }
-        
-        // For hard deletions, we can't detect them directly since records are gone
-        // But we can detect count mismatches in the frontend polling comparison
-        
         return $changes;
-        
     } catch (Exception $e) {
-        error_log("Entity check error for {$table}: " . $e->getMessage());
         return [];
     }
 }
-
-// Return all current entity data for status updates
 function getAllCurrentEntities($pdo, $role, $tab = null) {
     $entities = [];
-    
     try {
         if ($role === 'campus_director' || $role === 'program_chair') {
             if (!$tab || $tab === 'faculty') {
@@ -1272,13 +1007,9 @@ function getAllCurrentEntities($pdo, $role, $tab = null) {
                 $entities['announcements'] = getAllAnnouncements($pdo);
             }
         }
-        
         return $entities;
-        
     } catch (Exception $e) {
-        error_log("Get entities error: " . $e->getMessage());
         return [];
     }
 }
-
 ?>

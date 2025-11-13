@@ -1,566 +1,377 @@
-// escapeHtml() moved to shared_functions.js
-// switchTab() moved to shared_functions.js
-// exportData(), extractTableData(), downloadCSV() moved to shared_functions.js
-// deleteEntity() and capitalize() moved to shared_functions.js
 function updateStatistics() {
     fetch('assets/php/get_statistics.php')
         .then(response => response.json())
         .then(data => {
-            updateDashboardStats(data);
-        })
-        .catch(error => {
-            updateStatisticsFromTables();
+            if (data.success) {
+                document.getElementById('totalFaculty').textContent = data.statistics.total_faculty || '0';
+                document.getElementById('totalClasses').textContent = data.statistics.total_classes || '0';
+                document.getElementById('totalCourses').textContent = data.statistics.total_courses || '0';
+                document.getElementById('totalAnnouncements').textContent = data.statistics.total_announcements || '0';
+            }
         });
 }
-function updateStatisticsFromTables() {
-    const statsConfig = [
-        { selector: '#faculty-content .data-table tbody tr', cardId: 'total-faculty' },
-        { selector: '#classes-content .data-table tbody tr', cardId: 'total-classes' },
-        { selector: '#courses-content .data-table tbody tr', cardId: 'total-courses' },
-        { selector: '#announcements-content .data-table tbody tr', cardId: 'active-announcements' }
-    ];
-    
-    statsConfig.forEach(config => {
-        const count = document.querySelectorAll(config.selector).length;
-        updateStatCard(config.cardId, count);
-    });
-}
-function updateDashboardStats(data) {
-    const statsMapping = {
-        'total_faculty': 'total-faculty',
-        'total_classes': 'total-classes', 
-        'total_courses': 'total-courses',
-        'active_announcements': 'active-announcements'
-    };
-    
-    Object.entries(statsMapping).forEach(([dataKey, cardId]) => {
-        if (data[dataKey]) {
-            updateStatCard(cardId, data[dataKey]);
-        }
-    });
-}
-function updateStatCard(cardId, value) {
-    const card = document.getElementById(cardId);
-    if (card) {
-        const numberElement = card.querySelector('.stat-number');
-        if (numberElement) {
-            const currentValue = parseInt(numberElement.textContent) || 0;
-            animateNumber(numberElement, currentValue, value);
-        }
-    }
-}
-function animateNumber(element, start, end) {
-    const duration = 500;
-    const stepTime = 50;
-    const steps = duration / stepTime;
-    const stepValue = (end - start) / steps;
-    let current = start;
-    
-    const timer = setInterval(() => {
-        current += stepValue;
-        element.textContent = Math.round(current);
-        
-        if ((stepValue > 0 && current >= end) || (stepValue < 0 && current <= end)) {
-            element.textContent = end;
-            clearInterval(timer);
-        }
-    }, stepTime);
-}
-// handleFormSubmission() moved to shared_functions.js
 
-function addNewRowToTable(type, data) {
-    if (!data) {
-        return;
+function createSearchResultActions() {
+    if (document.querySelector('#searchInput')) {
+        const searchInput = document.querySelector('#searchInput');
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const activeTab = document.querySelector('.tab-content.active');
+            
+            if (activeTab.id === 'faculty-content') {
+                searchTable(query, 'faculty');
+            } else if (activeTab.id === 'classes-content') {
+                searchTable(query, 'class');
+            } else if (activeTab.id === 'courses-content') {
+                searchTable(query, 'course');
+            } else if (activeTab.id === 'announcements-content') {
+                searchTable(query, 'announcement');
+            }
+        });
     }
+}
+
+function searchTable(query, type) {
+    const table = document.querySelector(`#${type === 'class' ? 'classes' : type}-content .data-table`);
+    if (!table) return;
     
-    const activeTab = document.querySelector('.tab-content.active');
-    if (!activeTab || !activeTab.id.startsWith(type)) {
-        switchTab(type);
-        setTimeout(() => addNewRowToTable(type, data), 50);
-        return;
-    }
+    const rows = table.querySelectorAll('tbody tr:not(.expansion-row)');
+    let visibleCount = 0;
     
-    const tableBody = document.querySelector(`#${type}-content .data-table tbody`);
-    if (!tableBody) {
-        return;
-    }
-    
-    const rowTemplates = {
-        faculty: (data) => `
-            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-faculty-id="${data.faculty_id}">
-                <td class="name-column">${escapeHtml(data.full_name || 'N/A')}</td>
-                <td class="status-column">
-                    <span class="status-badge status-${data.status ? data.status.toLowerCase() : 'offline'}">
-                        ${data.status || 'Offline'}
-                    </span>
-                </td>
-                <td class="location-column">${escapeHtml(data.current_location || 'Not Available')}</td>
-                <td class="actions-column">
-                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_faculty', ${data.faculty_id})">Delete</button>
-                </td>
-            </tr>
-            <tr class="expansion-row" id="faculty-expansion-${data.faculty_id}" style="display: none;">
-                <td colspan="4" class="expansion-content">
-                    <div class="expanded-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Employee ID:</span>
-                            <span class="detail-value">${escapeHtml(data.employee_id || 'N/A')}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Program:</span>
-                            <span class="detail-value">${escapeHtml(data.program || 'N/A')}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Contact Email:</span>
-                            <span class="detail-value">${escapeHtml(data.contact_email || 'N/A')}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Phone:</span>
-                            <span class="detail-value">${escapeHtml(data.contact_phone || 'N/A')}</span>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        `,
-        classes: (data) => `
-            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-class-id="${data.class_id}">
-                <td class="id-column">${escapeHtml(data.class_code)}</td>
-                <td class="name-column">${escapeHtml(data.class_name)}</td>
-                <td class="id-column">${data.year_level}</td>
-                <td class="date-column">${escapeHtml(data.academic_year)}</td>
-                <td class="actions-column">
-                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_class', ${data.class_id})">Delete</button>
-                </td>
-            </tr>
-            <tr class="expansion-row" id="class-expansion-${data.class_id}" style="display: none;">
-                <td colspan="5" class="expansion-content">
-                    <div class="expanded-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Semester:</span>
-                            <span class="detail-value">${escapeHtml(data.semester || 'N/A')}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Program Chair:</span>
-                            <span class="detail-value">${escapeHtml(data.program_chair_name || 'Unassigned')}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Total Subjects:</span>
-                            <span class="detail-value">${data.total_subjects || 0}</span>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        `,
-        courses: (data) => `
-            <tr data-course-id="${data.course_id}" style="display: none;">
-                <td class="id-column">${escapeHtml(data.course_code || 'N/A')}</td>
-                <td class="description-column">${escapeHtml(data.course_description || 'N/A')}</td>
-                <td class="id-column">${data.units || 0}</td>
-                <td class="id-column">${data.times_scheduled || 0}</td>
-                <td class="actions-column"><button class="delete-btn" onclick="deleteEntity('delete_course', ${data.course_id})">Delete</button></td>
-            </tr>
-        `,
-        announcements: (data) => {
-            const createdDate = data.created_at ? 
-                new Date(data.created_at).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) :
-                new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
-                
-            return `
-                <td>${escapeHtml(data.title || 'N/A')}</td>
-                <td>${escapeHtml((data.content || '').substring(0, 50))}${data.content && data.content.length > 50 ? '...' : ''}</td>
-                <td><span class="status-badge priority-${data.priority || 'low'}">${(data.priority || 'LOW').toUpperCase()}</span></td>
-                <td>${escapeHtml(data.target_audience || 'N/A')}</td>
-                <td>${escapeHtml(data.created_by_name || 'Unknown')}</td>
-                <td>${createdDate}</td>
-                <td><button class="delete-btn" onclick="deleteEntity('delete_announcement', ${data.announcement_id})">Delete</button></td>
-            `;
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const isVisible = text.includes(query);
+        row.style.display = isVisible ? '' : 'none';
+        
+        const expansionRow = row.nextElementSibling;
+        if (expansionRow && expansionRow.classList.contains('expansion-row')) {
+            expansionRow.style.display = isVisible ? 'none' : 'none';
+            row.classList.remove('expanded');
         }
-    };
+        
+        if (isVisible) visibleCount++;
+    });
+}
+
+function createFacultyRow(faculty) {
+    const status = faculty.status || 'Offline';
+    const statusClass = status.toLowerCase().replace(' ', '-');
     
-    const template = rowTemplates[type];
-    if (!template) {
-        return;
-    }
+    return `
+        <tr class="expandable-row" onclick="toggleRowExpansion(this)">
+            <td>
+                <div class="faculty-info">
+                    <div class="faculty-name">${faculty.full_name}</div>
+                    <div class="faculty-id">${faculty.employee_id}</div>
+                </div>
+            </td>
+            <td>
+                <span class="status-indicator ${statusClass}">
+                    ${status}
+                </span>
+            </td>
+            <td>${faculty.program || 'N/A'}</td>
+            <td>${faculty.contact_email || 'N/A'}</td>
+            <td class="actions-cell">
+                <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_faculty', ${faculty.faculty_id})">Delete</button>
+            </td>
+        </tr>
+        <tr class="expansion-row">
+            <td colspan="5">
+                <div class="expansion-content">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Office Hours:</label>
+                            <span>${faculty.office_hours || 'Not set'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Phone:</label>
+                            <span>${faculty.contact_phone || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Current Location:</label>
+                            <span>${faculty.current_location || 'Unknown'}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Last Update:</label>
+                            <span>${faculty.last_location_update ? new Date(faculty.last_location_update).toLocaleString() : 'Never'}</span>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+function addRowToTable(tableSelector, htmlContent, entityType) {
+    const tableBody = document.querySelector(`${tableSelector} tbody`);
+    if (!tableBody) return;
     
-    // Insert the HTML directly since templates now include <tr> elements
-    tableBody.insertAdjacentHTML('afterbegin', template(data));
+    tableBody.insertAdjacentHTML('afterbegin', htmlContent);
     
-    // Get the newly inserted row(s)
     const newRows = [];
-    if (type === 'faculty') {
-        // Faculty has 2 rows (main + expansion)
-        newRows.push(tableBody.firstElementChild); // expansion row
-        newRows.push(tableBody.children[1]); // main row
+    if (entityType === 'faculty') {
+        newRows.push(tableBody.firstElementChild);
+        newRows.push(tableBody.children[1]);
     } else {
-        // Other types have 1 row
         newRows.push(tableBody.firstElementChild);
     }
     
-    // Show and animate the main row
-    const mainRow = newRows[newRows.length - 1];
-    mainRow.style.display = '';
-    mainRow.style.backgroundColor = '#d4edda';
-    mainRow.style.transition = 'background-color 0.5s ease';
-    
-    mainRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    
-    setTimeout(() => {
-        mainRow.style.backgroundColor = '';
-    }, 3000);
-}
-
-function setupFormHandlers() {
-    const forms = document.querySelectorAll('form');
-    
-    forms.forEach(form => {
-        const newForm = form.cloneNode(true);
-        form.parentNode.replaceChild(newForm, form);
+    const mainRow = newRows[entityType === 'faculty' ? 1 : 0];
+    if (mainRow) {
+        mainRow.style.opacity = '0';
+        mainRow.style.transform = 'translateX(-20px)';
         
-        const modal = newForm.closest('.modal-overlay, .modal');
-        if (!modal) return;
-        
-        let type = '';
-        if (modal.id.includes('faculty') || newForm.id.includes('faculty')) {
-            type = 'faculty';
-        } else if (modal.id.includes('class') || newForm.id.includes('class')) {
-            type = 'classes';
-        } else if (modal.id.includes('course') || newForm.id.includes('course')) {
-            type = 'courses';
-        } else if (modal.id.includes('announcement') || newForm.id.includes('announcement')) {
-            type = 'announcements';
-        }
-        
-        if (type) {
-            newForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                handleFormSubmission(this, type);
-                return false;
-            });
-        }
-    });
-}
-
-function resetAllTabsVisibility() {
-    const rows = document.querySelectorAll('.data-table tbody tr:not(.expansion-row)');
-    rows.forEach(row => row.style.display = '');
-    
-    // Explicitly hide all expansion rows
-    const expansionRows = document.querySelectorAll('.expansion-row');
-    expansionRows.forEach(row => row.style.display = 'none');
-    
-    // Remove expanded classes
-    const expandableRows = document.querySelectorAll('.expandable-row');
-    expandableRows.forEach(row => row.classList.remove('expanded'));
-    
-    const emptyStates = document.querySelectorAll('.search-empty-state');
-    emptyStates.forEach(state => state.remove());
-}
-
-function searchContent() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const activeTab = document.querySelector('.tab-content.active').id;
-    
-    if (activeTab === 'faculty-content') {
-        searchFaculty(searchTerm);
-    } else if (activeTab === 'classes-content') {
-        searchClasses(searchTerm);
-    } else if (activeTab === 'courses-content') {
-        searchCourses(searchTerm);
-    } else if (activeTab === 'announcements-content') {
-        searchAnnouncements(searchTerm);
-    }
-}
-
-function searchFaculty(searchTerm) {
-    const rows = document.querySelectorAll('#faculty-content .data-table tbody tr');
-    let visibleCount = 0;
-
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length === 0) return;
-        
-        const name = cells[0].textContent.toLowerCase();
-        const employeeId = cells[1].textContent.toLowerCase();
-        const program = cells[2].textContent.toLowerCase();
-        const email = cells[5].textContent.toLowerCase();
-        
-        if (name.includes(searchTerm) || employeeId.includes(searchTerm) || 
-            program.includes(searchTerm) || email.includes(searchTerm)) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-
-    updateEmptyState('#faculty-content .table-container', visibleCount, searchTerm, 'No faculty found', 'Try adjusting your search criteria');
-}
-
-function searchClasses(searchTerm) {
-    const rows = document.querySelectorAll('#classes-content .data-table tbody tr');
-    let visibleCount = 0;
-
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length === 0) return;
-        
-        const classCode = cells[0].textContent.toLowerCase();
-        const className = cells[1].textContent.toLowerCase();
-        const yearLevel = cells[2].textContent.toLowerCase();
-        const semester = cells[3].textContent.toLowerCase();
-        const academicYear = cells[4].textContent.toLowerCase();
-        const programChair = cells[5].textContent.toLowerCase();
-        
-        if (classCode.includes(searchTerm) || className.includes(searchTerm) || 
-            yearLevel.includes(searchTerm) || semester.includes(searchTerm) ||
-            academicYear.includes(searchTerm) || programChair.includes(searchTerm)) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-
-    updateEmptyState('#classes-content .table-container', visibleCount, searchTerm, 'No classes found', 'Try adjusting your search criteria');
-}
-
-function searchCourses(searchTerm) {
-    const rows = document.querySelectorAll('#courses-content .data-table tbody tr');
-    let visibleCount = 0;
-
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length === 0) return;
-        
-        const courseCode = cells[0].textContent.toLowerCase();
-        const courseDescription = cells[1].textContent.toLowerCase();
-        const units = cells[2].textContent.toLowerCase();
-        
-        if (courseCode.includes(searchTerm) || courseDescription.includes(searchTerm) || 
-            units.includes(searchTerm)) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-
-    updateEmptyState('#courses-content .table-container', visibleCount, searchTerm, 'No courses found', 'Try adjusting your search criteria');
-}
-
-function searchAnnouncements(searchTerm) {
-    const rows = document.querySelectorAll('#announcements-content .data-table tbody tr');
-    let visibleCount = 0;
-
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length === 0) return;
-        
-        const title = cells[0].textContent.toLowerCase();
-        const content = cells[1].textContent.toLowerCase();
-        const priority = cells[2].textContent.toLowerCase();
-        const targetAudience = cells[3].textContent.toLowerCase();
-        const createdBy = cells[4].textContent.toLowerCase();
-        
-        if (title.includes(searchTerm) || content.includes(searchTerm) || 
-            priority.includes(searchTerm) || targetAudience.includes(searchTerm) ||
-            createdBy.includes(searchTerm)) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-
-    updateEmptyState('#announcements-content .table-container', visibleCount, searchTerm, 'No announcements found', 'Try adjusting your search criteria');
-}
-
-function updateEmptyState(containerSelector, visibleCount, searchTerm, title, message) {
-    const container = document.querySelector(containerSelector);
-    if (!container) return;
-    
-    const existingEmptyState = container.querySelector('.search-empty-state');
-    
-    if (existingEmptyState) {
-        existingEmptyState.remove();
-    }
-
-    if (visibleCount === 0 && searchTerm.trim() !== '') {
-        const emptyState = document.createElement('div');
-        emptyState.className = 'empty-state search-empty-state';
-        emptyState.style.textAlign = 'center';
-        emptyState.style.padding = '40px';
-        emptyState.style.color = '#666';
-        emptyState.innerHTML = `
-            <h3>${title}</h3>
-            <p>${message}</p>
-        `;
-        container.appendChild(emptyState);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('keyup', function(event) {
-            if (event.key === 'Enter') {
-                searchContent();
-            } else {
-                searchContent();
-            }
+        requestAnimationFrame(() => {
+            mainRow.style.transition = 'all 0.3s ease';
+            mainRow.style.opacity = '1';
+            mainRow.style.transform = 'translateX(0)';
         });
     }
     
-    setTimeout(() => setupFormHandlers(), 500);
-    setTimeout(() => setupFormHandlers(), 2000);
-});
+    return newRows;
+}
 
-// Dynamic UI removal functions for consolidated admin actions
-function removeEntityFromUI(entityType, entityId, idField) {
-    const currentPage = detectPageType();
+function createClassRow(classData) {
+    return `
+        <tr class="expandable-row" onclick="toggleRowExpansion(this)">
+            <td>
+                <div class="class-info">
+                    <div class="class-name">${classData.class_name}</div>
+                    <div class="class-code">${classData.class_code}</div>
+                </div>
+            </td>
+            <td>Year ${classData.year_level}</td>
+            <td>${classData.semester}</td>
+            <td>${classData.academic_year}</td>
+            <td>${classData.program_chair_name || 'N/A'}</td>
+            <td class="actions-cell">
+                <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_class', ${classData.class_id})">Delete</button>
+            </td>
+        </tr>
+        <tr class="expansion-row">
+            <td colspan="6">
+                <div class="expansion-content">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Total Subjects:</label>
+                            <span>${classData.total_subjects || 0}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Enrolled Students:</label>
+                            <span>${classData.enrolled_students || 0}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Program Chair:</label>
+                            <span>${classData.program_chair_name || 'Not assigned'}</span>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+function resetTableRowStates() {
+    const allExpansionRows = document.querySelectorAll('.expansion-row');
+    allExpansionRows.forEach(row => {
+        row.style.display = 'none';
+    });
     
-    if (currentPage === 'director') {
-        // Remove from table view
-        removeFromTable(entityType, entityId, idField);
-    } else if (currentPage === 'program') {
-        // Remove from card view  
-        removeFromCards(entityType, entityId, idField);
+    const allExpandableRows = document.querySelectorAll('.expandable-row');
+    allExpandableRows.forEach(row => {
+        row.classList.remove('expanded');
+    });
+}
+
+function createCourseRow(course) {
+    return `
+        <tr>
+            <td>
+                <div class="course-info">
+                    <div class="course-code">${course.course_code}</div>
+                    <div class="course-description">${course.course_description}</div>
+                </div>
+            </td>
+            <td>${course.units}</td>
+            <td>${course.times_scheduled || 0}</td>
+            <td class="actions-cell">
+                <button class="delete-btn" onclick="deleteEntity('delete_course', ${course.course_id})">Delete</button>
+            </td>
+        </tr>
+    `;
+}
+
+function createAnnouncementRow(announcement) {
+    const priorityClass = announcement.priority ? announcement.priority.toLowerCase() : 'normal';
+    const date = new Date(announcement.created_at);
+    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    
+    return `
+        <tr>
+            <td>
+                <div class="announcement-info">
+                    <div class="announcement-title">${announcement.title}</div>
+                    <div class="announcement-preview">${announcement.content.substring(0, 100)}${announcement.content.length > 100 ? '...' : ''}</div>
+                </div>
+            </td>
+            <td><span class="priority-badge ${priorityClass}">${announcement.priority || 'Normal'}</span></td>
+            <td>${announcement.target_audience || 'All'}</td>
+            <td>${announcement.created_by_name || 'System'}</td>
+            <td>${formattedDate}</td>
+            <td class="actions-cell">
+                <button class="delete-btn" onclick="deleteEntity('delete_announcement', ${announcement.announcement_id})">Delete</button>
+            </td>
+        </tr>
+    `;
+}
+
+function removeEntityFromUI(entityType, entityId) {
+    switch(entityType) {
+        case 'faculty':
+            removeFacultyFromTable(entityId);
+            break;
+        case 'class':
+            removeClassFromTable(entityId);
+            break;
+        case 'course':
+            removeCourseFromTable(entityId);
+            break;
+        case 'announcement':
+            removeAnnouncementFromTable(entityId);
+            break;
     }
 }
 
-function removeFromTable(entityType, entityId, idField) {
-    const row = document.querySelector(`tr[data-${idField.replace('_', '-')}="${entityId}"]`);
-    if (!row) {
-        // Try alternative selector patterns
-        const alternativeSelectors = [
-            `tr[data-faculty-id="${entityId}"]`,
-            `tr[data-class-id="${entityId}"]`, 
-            `tr[data-course-id="${entityId}"]`,
-            `tr[data-announcement-id="${entityId}"]`
-        ];
-        
-        for (const selector of alternativeSelectors) {
-            const foundRow = document.querySelector(selector);
-            if (foundRow) {
-                performTableRowRemoval(foundRow, entityType);
-                return;
+function removeFacultyFromTable(facultyId) {
+    const selectors = [
+        `tr:has(button[onclick*="delete_faculty, ${facultyId}"])`,
+        `tr:has(button[onclick*="'delete_faculty', ${facultyId}"])`,
+        `button[onclick*="delete_faculty, ${facultyId}"]`,
+        `button[onclick*="'delete_faculty', ${facultyId}"]`
+    ];
+    
+    let targetRow = null;
+    
+    for (const selector of selectors) {
+        try {
+            const button = document.querySelector(selector);
+            if (button) {
+                targetRow = button.closest('tr');
+                break;
             }
-        }
-        
-        // Fallback: find row by checking delete button onclick
-        const deleteButtons = document.querySelectorAll('.delete-btn');
-        for (const btn of deleteButtons) {
-            const onclick = btn.getAttribute('onclick');
-            if (onclick && onclick.includes(entityId)) {
-                const row = btn.closest('tr');
-                if (row) {
-                    performTableRowRemoval(row, entityType);
-                    return;
+        } catch (e) {
+            const buttons = document.querySelectorAll('button[onclick*="delete_faculty"]');
+            buttons.forEach(button => {
+                if (button.getAttribute('onclick').includes(facultyId.toString())) {
+                    targetRow = button.closest('tr');
                 }
-            }
+            });
+            if (targetRow) break;
         }
-    } else {
-        performTableRowRemoval(row, entityType);
-    }
-}
-
-function performTableRowRemoval(row, entityType) {
-    // Remove expansion row if it exists
-    const nextRow = row.nextElementSibling;
-    if (nextRow && nextRow.classList.contains('expansion-row')) {
-        nextRow.style.transition = 'opacity 0.3s ease-out';
-        nextRow.style.opacity = '0';
-        setTimeout(() => nextRow.remove(), 300);
     }
     
-    // Remove main row with animation
-    row.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-    row.style.opacity = '0';
-    row.style.transform = 'translateX(-20px)';
+    if (!targetRow) return;
+    
+    const expansionRow = targetRow.nextElementSibling;
+    if (expansionRow && expansionRow.classList.contains('expansion-row')) {
+        expansionRow.remove();
+    }
+    
+    targetRow.style.transition = 'all 0.3s ease';
+    targetRow.style.opacity = '0';
+    targetRow.style.transform = 'translateX(-20px)';
+    
     setTimeout(() => {
-        row.remove();
-        updateTableCounts(entityType, -1);
+        targetRow.remove();
+        updateHeaderStatistics('faculty', -1);
     }, 300);
 }
 
-function removeFromCards(entityType, entityId, idField) {
-    let cardSelector;
-    switch(entityType) {
-        case 'faculty':
-            cardSelector = `.faculty-card[data-faculty-id="${entityId}"]`;
-            break;
-        case 'class':
-            cardSelector = `.class-card[data-class-id="${entityId}"]`;
-            break;
-        case 'course':
-            cardSelector = `.course-card[data-course-id="${entityId}"]`;
-            break;
-        default:
-            return;
-    }
+function removeClassFromTable(classId) {
+    const targetRow = document.querySelector(`button[onclick*="'delete_class', ${classId}"]`)?.closest('tr') ||
+                     document.querySelector(`button[onclick*="delete_class, ${classId}"]`)?.closest('tr');
     
-    const card = document.querySelector(cardSelector);
-    if (card) {
-        // Remove card with animation
-        card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-        card.style.opacity = '0';
-        card.style.transform = 'scale(0.9)';
+    if (targetRow) {
+        const expansionRow = targetRow.nextElementSibling;
+        if (expansionRow && expansionRow.classList.contains('expansion-row')) {
+            expansionRow.remove();
+        }
+        
+        targetRow.style.transition = 'all 0.3s ease';
+        targetRow.style.opacity = '0';
+        targetRow.style.transform = 'translateX(-20px)';
+        
         setTimeout(() => {
-            card.remove();
-            updateCardCounts(entityType, -1);
+            targetRow.remove();
+            updateHeaderStatistics('class', -1);
         }, 300);
     }
 }
 
-function detectPageType() {
-    const url = window.location.pathname.toLowerCase();
-    const title = document.title.toLowerCase();
+function removeCourseFromTable(courseId) {
+    const targetRow = document.querySelector(`button[onclick*="'delete_course', ${courseId}"]`)?.closest('tr') ||
+                     document.querySelector(`button[onclick*="delete_course, ${courseId}"]`)?.closest('tr');
     
-    if (title.includes('director') || url.includes('director.php')) {
-        return 'director';
-    } else if (title.includes('program') || url.includes('program.php')) {
-        return 'program';
+    if (targetRow) {
+        targetRow.style.transition = 'all 0.3s ease';
+        targetRow.style.opacity = '0';
+        targetRow.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            targetRow.remove();
+            updateHeaderStatistics('course', -1);
+        }, 300);
     }
-    return 'unknown';
+}
+
+function removeAnnouncementFromTable(announcementId) {
+    const targetRow = document.querySelector(`button[onclick*="'delete_announcement', ${announcementId}"]`)?.closest('tr') ||
+                     document.querySelector(`button[onclick*="delete_announcement, ${announcementId}"]`)?.closest('tr');
+    
+    if (targetRow) {
+        targetRow.style.transition = 'all 0.3s ease';
+        targetRow.style.opacity = '0';
+        targetRow.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            targetRow.remove();
+            updateHeaderStatistics('announcement', -1);
+        }, 300);
+    }
+}
+
+function updateHeaderStatistics(entityType, delta) {
+    const elementMap = {
+        'faculty': 'totalFaculty',
+        'class': 'totalClasses', 
+        'course': 'totalCourses',
+        'announcement': 'totalAnnouncements'
+    };
+    
+    const elementId = elementMap[entityType];
+    const element = document.getElementById(elementId);
+    
+    if (element) {
+        const currentValue = parseInt(element.textContent) || 0;
+        const newValue = Math.max(0, currentValue + delta);
+        
+        if (currentValue !== newValue) {
+            element.style.transition = 'all 0.3s ease';
+            element.style.transform = 'scale(1.1)';
+            element.textContent = newValue;
+            
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+            }, 150);
+        }
+    }
 }
 
 function updateTableCounts(entityType, delta) {
-    // Update header statistics if they exist
-    const statLabels = {
-        'faculty': 'Faculty',
-        'class': 'Classes', 
-        'course': 'Courses',
-        'announcement': 'Announcements'
-    };
-    
-    const label = statLabels[entityType];
-    if (label) {
-        const statElements = document.querySelectorAll('.header-stat-label, .stat-label');
-        statElements.forEach(statElement => {
-            if (statElement.textContent.trim() === label) {
-                const numberElement = statElement.parentElement.querySelector('.header-stat-number, .stat-number');
-                if (numberElement) {
-                    const currentValue = parseInt(numberElement.textContent) || 0;
-                    const newValue = Math.max(0, currentValue + delta);
-                    numberElement.textContent = newValue;
-                    
-                    // Animate the change
-                    numberElement.style.color = delta > 0 ? '#4CAF50' : '#f44336';
-                    setTimeout(() => {
-                        numberElement.style.color = '';
-                    }, 2000);
-                }
-            }
-        });
-    }
+    updateTableCounts(entityType, delta);
 }
 
-function updateCardCounts(entityType, delta) {
-    updateTableCounts(entityType, delta); // Same logic for now
-}
-
-// Toggle row expansion functionality
 function toggleRowExpansion(row) {
     const expansionRow = row.nextElementSibling;
     
@@ -568,18 +379,15 @@ function toggleRowExpansion(row) {
         const isExpanded = row.classList.contains('expanded');
         
         if (isExpanded) {
-            // Collapse
             row.classList.remove('expanded');
             expansionRow.style.display = 'none';
         } else {
-            // Expand
             row.classList.add('expanded');
             expansionRow.style.display = 'table-row';
         }
     }
 }
 
-// UPDATE SEMESTER FUNCTIONALITY - Make functions globally available
 window.loadClassesForSemester = async function(semester) {
     const academicYearSelect = document.querySelector('[name="academic_year"]');
     const academicYear = academicYearSelect.value;
@@ -587,9 +395,7 @@ window.loadClassesForSemester = async function(semester) {
     const previewContent = document.getElementById('classesPreviewContent');
     const updateBtn = document.getElementById('updateSemesterBtn');
     
-    // Reset state
     previewDiv.style.display = 'none';
-    // updateBtn.disabled = true; // COMMENTED OUT - Don't disable the button
     
     if (!semester || !academicYear) {
         return;
@@ -610,7 +416,6 @@ window.loadClassesForSemester = async function(semester) {
         
         if (result.success) {
             if (result.classes.length > 0) {
-                // Show classes preview
                 let html = '<div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; padding: 10px;">';
                 result.classes.forEach(classItem => {
                     html += `
@@ -630,71 +435,38 @@ window.loadClassesForSemester = async function(semester) {
                 
                 previewContent.innerHTML = html;
                 previewDiv.style.display = 'block';
-                // updateBtn.disabled = false; // Keep button enabled
             } else {
                 previewContent.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">No classes found for this semester and academic year.</div>';
                 previewDiv.style.display = 'block';
-                // updateBtn.disabled = true; // Keep button enabled for testing
-            }
-        } else {
-            if (typeof showNotification === 'function') {
-                showNotification('Error loading classes: ' + result.message, 'error');
-            } else {
-                console.error('Error loading classes:', result.message);
             }
         }
     } catch (error) {
-        if (typeof showNotification === 'function') {
-            showNotification('Error loading classes: ' + error.message, 'error');
-        } else {
-            console.error('Error loading classes:', error.message);
-        }
     }
 }
 
 window.updateSemester = async function(form) {
-    alert('updateSemester function called! Form: ' + (form ? 'Found' : 'NULL'));
-    
-    const submitBtn = document.getElementById('updateSemesterBtn');
-    const originalText = submitBtn ? submitBtn.textContent : 'BUTTON NOT FOUND';
-    
-    alert('Submit button: ' + (submitBtn ? 'Found' : 'NOT FOUND') + ', Text: ' + originalText);
-    
     if (!confirm('Are you sure you want to update the semester? This will:\n• Add ALL curriculum courses to selected classes\n• Reset ALL faculty assignments\n• This action cannot be undone!')) {
-        alert('User cancelled confirmation');
         return;
     }
     
-    alert('User confirmed, proceeding with update');
+    const submitBtn = document.getElementById('updateSemesterBtn');
+    const originalText = submitBtn.textContent;
     
     try {
-        console.log('Starting form submission...');
-        
         submitBtn.disabled = true;
         submitBtn.textContent = 'Updating...';
         
         const formData = new FormData(form);
         formData.set('action', 'update_semester');
         
-        console.log('FormData created:');
-        for (let pair of formData.entries()) {
-            console.log('- ' + pair[0] + ': ' + pair[1]);
-        }
-        
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             body: formData
         });
         
-        console.log('Response status:', response.status);
-        const responseText = await response.text();
-        console.log('Raw response:', responseText);
-        
-        const result = JSON.parse(responseText);
-        console.log('Parsed result:', result);
+        const result = await response.json();
         
         if (result.success) {
-            // Use the global notification system
             if (typeof showNotification === 'function') {
                 showNotification(result.message, 'success');
             } else if (typeof window.showNotification === 'function') {
@@ -703,7 +475,6 @@ window.updateSemester = async function(form) {
                 alert('Success: ' + result.message);
             }
             
-            // Close modal using the global function
             if (typeof closeModal === 'function') {
                 closeModal('updateSemesterModal');
             } else if (typeof window.closeModal === 'function') {
@@ -714,24 +485,20 @@ window.updateSemester = async function(form) {
             
             form.reset();
             
-            // Reset modal state
             const previewDiv = document.getElementById('classesPreview');
             if (previewDiv) previewDiv.style.display = 'none';
             submitBtn.disabled = true;
             
-            // Refresh classes tab if it's currently active
             const activeTab = document.querySelector('.tab-content.active');
             if (activeTab && activeTab.id === 'classes-content') {
-                // Trigger a refresh of the classes data
                 setTimeout(() => {
-                    window.location.reload(); // Simple refresh for now
+                    window.location.reload();
                 }, 1500);
             }
         } else {
             throw new Error(result.message || 'Failed to update semester');
         }
     } catch (error) {
-        // Use the global notification system for errors too
         if (typeof showNotification === 'function') {
             showNotification('Error updating semester: ' + error.message, 'error');
         } else if (typeof window.showNotification === 'function') {
@@ -745,19 +512,14 @@ window.updateSemester = async function(form) {
     }
 }
 
-// Add direct event listener for Update Semester form when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         const updateForm = document.getElementById('updateSemesterForm');
         if (updateForm) {
-            console.log('Found updateSemesterForm, adding event listener');
             updateForm.addEventListener('submit', function(e) {
-                alert('Form submit event fired!');
                 e.preventDefault();
                 window.updateSemester(this);
             });
-        } else {
-            console.log('updateSemesterForm NOT FOUND');
         }
-    }, 1000); // Wait for modal to be ready
+    }, 1000);
 });

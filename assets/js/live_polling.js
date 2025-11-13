@@ -1,4 +1,3 @@
-// Utility function for HTML escaping
 function escapeHtml(text) {
     if (!text) return '';
     const map = {
@@ -10,7 +9,6 @@ function escapeHtml(text) {
     };
     return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
 }
-
 class LivePollingManager {
     constructor() {
         this.intervals = {};
@@ -26,7 +24,6 @@ class LivePollingManager {
             courses: 3000,
             classes: 3000
         };
-        
         this.visibilityObserver = null;
         this.currentTab = this.detectInitialTab();
         this.visibleElements = new Set();
@@ -35,18 +32,15 @@ class LivePollingManager {
         this.observableElements = this.getObservableElementsForPage();
         this.lastStatusCheck = {};  // Track last known status for each faculty
         this.initialized = false;   // Track if this is initial load
-        
         this.setupVisibilityHandling();
         this.setupNetworkHandling();
         this.setupIntersectionObserver();
         this.startHeartbeat();
         this.init();
     }
-
     detectPageType() {
         const title = document.title.toLowerCase();
         const url = window.location.pathname.toLowerCase();
-        
         if (title.includes('faculty dashboard') || url.includes('faculty.php')) {
             return 'faculty';
         } else if (title.includes('director dashboard') || url.includes('director.php')) {
@@ -58,7 +52,6 @@ class LivePollingManager {
         }
         return 'unknown';
     }
-
     detectInitialTab() {
         const activeTab = document.querySelector('.tab-content.active');
         if (activeTab) {
@@ -66,11 +59,8 @@ class LivePollingManager {
         }
         return 'faculty'; // default fallback
     }
-
     getObservableElementsForPage() {
         const elements = {};
-        
-        // Common elements across pages
         const statCards = document.querySelectorAll('.header-stat, .stat-card');
         if (statCards.length > 0) {
             elements.statistics = {
@@ -79,8 +69,6 @@ class LivePollingManager {
                 polling: 'statistics'
             };
         }
-
-        // Page-specific elements
         switch (this.pageType) {
             case 'director':
                 this.addDirectorElements(elements);
@@ -95,12 +83,9 @@ class LivePollingManager {
                 this.addClassElements(elements);
                 break;
         }
-
         return elements;
     }
-
     addDirectorElements(elements) {
-        // Tab-based tables
         const tabs = ['faculty', 'classes', 'courses', 'announcements'];
         tabs.forEach(tab => {
             const tabElement = document.querySelector(`#${tab}-content`);
@@ -112,11 +97,9 @@ class LivePollingManager {
                     condition: () => {
                         const tabContent = document.querySelector(`#${tab}-content`);
                         const isActive = tabContent?.classList.contains('active');
-                        // console.log(`Tab ${tab} active check: ${isActive}`); // Debug
                         return isActive;
                     }
                 };
-                
                 const tableElement = tabElement.querySelector('.data-table');
                 if (tableElement) {
                     elements[`${tab}_table`] = {
@@ -127,7 +110,6 @@ class LivePollingManager {
                             const tabContent = document.querySelector(`#${tab}-content`);
                             const isActive = tabContent?.classList.contains('active');
                             const hasTable = !!tabContent?.querySelector('.data-table');
-                            // console.log(`Table ${tab} active check: ${isActive && hasTable}`); // Debug
                             return isActive && hasTable;
                         }
                     };
@@ -135,7 +117,6 @@ class LivePollingManager {
             }
         });
     }
-
     addFacultyElements(elements) {
         const locationElements = document.querySelectorAll('.faculty-location, .current-location-display');
         if (locationElements.length > 0) {
@@ -145,7 +126,6 @@ class LivePollingManager {
                 polling: 'location'
             };
         }
-
         const scheduleElements = document.querySelectorAll('.schedule-container, .schedule-section');
         if (scheduleElements.length > 0) {
             elements.schedules = {
@@ -155,9 +135,7 @@ class LivePollingManager {
             };
         }
     }
-
     addProgramElements(elements) {
-        // Three tabs with GRIDS/CARDS (not tables!)
         const tabs = ['faculty', 'classes', 'courses'];
         tabs.forEach(tab => {
             const tabElement = document.querySelector(`#${tab}-content`);
@@ -170,8 +148,6 @@ class LivePollingManager {
                 };
             }
         });
-        
-        // Faculty cards (online status polling)
         const facultyGrid = document.querySelector('.faculty-grid');
         if (facultyGrid) {
             elements.faculty_cards = {
@@ -180,8 +156,6 @@ class LivePollingManager {
                 polling: 'location'
             };
         }
-        
-        // Course cards polling when courses tab is active
         const coursesGrid = document.querySelector('.courses-grid');
         if (coursesGrid) {
             elements.course_cards = {
@@ -192,7 +166,6 @@ class LivePollingManager {
             };
         }
     }
-
     addClassElements(elements) {
         const scheduleElements = document.querySelectorAll('.schedule-container');
         if (scheduleElements.length > 0) {
@@ -202,7 +175,6 @@ class LivePollingManager {
                 polling: 'schedules'
             };
         }
-
         const announcementElements = document.querySelectorAll('.announcements-section');
         if (announcementElements.length > 0) {
             elements.announcements = {
@@ -212,21 +184,15 @@ class LivePollingManager {
             };
         }
     }
-
     init() {
         if (typeof window.userRole !== 'undefined') {
-            // console.clear(); // TEMP DISABLED FOR DEBUG
             const pageName = document.title.split(' - ')[1] || 'Dashboard';
-            console.log(`Page: ${pageName}`);
-            
             setTimeout(() => {
                 this.logCurrentStatus();
             }, 300);
-            
             this.startPolling();
         }
     }
-
     setupVisibilityHandling() {
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
@@ -236,12 +202,9 @@ class LivePollingManager {
                 this.processUpdateQueue();
             }
         });
-
         window.addEventListener('beforeunload', () => {
             this.stopAllPolling();
         });
-        
-        // Tab switching detection
         document.addEventListener('click', (e) => {
             const tabButton = e.target.closest('.tab-button');
             if (tabButton && tabButton.dataset.tab) {
@@ -255,20 +218,17 @@ class LivePollingManager {
             }
         });
     }
-    
     setupNetworkHandling() {
         window.addEventListener('online', () => {
             this.isOnline = true;
             this.processUpdateQueue();
             this.resumePolling();
         });
-        
         window.addEventListener('offline', () => {
             this.isOnline = false;
             this.pausePolling();
         });
     }
-    
     setupIntersectionObserver() {
         this.visibilityObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -282,68 +242,47 @@ class LivePollingManager {
             threshold: 0.1,
             rootMargin: '50px'
         });
-        
-        // Observe elements after DOM is loaded
         setTimeout(() => this.observeElements(), 100);
     }
-    
     observeElements() {
-        // Observe stat cards
         const statCards = document.querySelectorAll('.header-stat');
         statCards.forEach(el => {
             this.visibilityObserver.observe(el);
         });
-        
-        // Observe tables
         const tables = document.querySelectorAll('.data-table');
         tables.forEach(el => {
             this.visibilityObserver.observe(el);
         });
-        
-        // Observe tab contents
         const tabContents = document.querySelectorAll('.tab-content');
         tabContents.forEach(el => {
             this.visibilityObserver.observe(el);
         });
-        
-        // Observe location displays
         const locationElements = document.querySelectorAll('.faculty-location, .current-location-display');
         locationElements.forEach(el => {
             this.visibilityObserver.observe(el);
         });
-        
     }
-    
     refreshVisibleElements() {
-        // Clear current observations
         this.visibleElements.clear();
-        
-        // Re-observe elements without logging
         const statCards = document.querySelectorAll('.header-stat');
         statCards.forEach(el => {
             this.visibilityObserver.observe(el);
         });
-        
         const tables = document.querySelectorAll('.data-table');
         tables.forEach(el => {
             this.visibilityObserver.observe(el);
         });
-        
         const tabContents = document.querySelectorAll('.tab-content');
         tabContents.forEach(el => {
             this.visibilityObserver.observe(el);
         });
-        
         const locationElements = document.querySelectorAll('.faculty-location, .current-location-display');
         locationElements.forEach(el => {
             this.visibilityObserver.observe(el);
         });
     }
-
     startPolling() {
         if (!this.isOnline) return;
-        
-        // Original polling logic based on user role
         switch(window.userRole) {
             case 'program_chair':
             case 'campus_director':
@@ -363,30 +302,22 @@ class LivePollingManager {
                 break;
         }
     }
-
     startSchedulePolling() {
         if (this.intervals.schedules) return; // Avoid duplicate intervals
-        
         this.intervals.schedules = setInterval(() => {
             if (this.hasVisibleElement('schedules')) {
                 this.fetchScheduleUpdates();
             }
         }, this.defaultIntervals.schedules);
-        
         this.fetchScheduleUpdates();
     }
-
     hasVisibleElement(pollingType) {
-        // Handle both 'tables' and 'cards' polling types
         const targetTypes = pollingType === 'tables' ? ['tables', 'cards'] : [pollingType];
-        
         return Object.values(this.observableElements).some(element => {
             if (!targetTypes.includes(element.polling)) return false;
-            
             if (element.condition) {
                 return element.condition();
             }
-            
             const domElement = document.querySelector(element.selector);
             if (domElement) {
                 return this.isElementVisible(domElement) || 
@@ -396,9 +327,7 @@ class LivePollingManager {
             return false;
         });
     }
-    
     isElementVisible(element) {
-        // Handle both element objects and selector strings
         if (typeof element === 'string') {
             if (element.endsWith('-content')) {
                 return document.querySelector(`#${element}`)?.classList.contains('active') || false;
@@ -406,111 +335,85 @@ class LivePollingManager {
             const domElement = document.querySelector(element);
             return domElement ? this.isElementVisible(domElement) : false;
         }
-        
-        // Handle DOM elements
         if (element && element.nodeType === Node.ELEMENT_NODE) {
             const elementId = element.id || element.className;
             return this.visibleElements.has(elementId) || 
                    (element.offsetParent !== null && element.offsetWidth > 0 && element.offsetHeight > 0);
         }
-        
         return false;
     }
-
     startStatisticsPolling() {
         this.intervals.statistics = setInterval(() => {
             if (this.isElementVisible('header-stat') || this.visibleElements.size > 0) {
-                // Use the same endpoint as tables for consistency
                 this.fetchTableUpdates();
             }
         }, this.defaultIntervals.statistics);
-        
-        // Initial fetch
         this.fetchTableUpdates();
     }
-    
     startTablePolling() {
         this.intervals.tables = setInterval(() => {
             if (this.isElementVisible(`${this.currentTab}-content`)) {
                 this.fetchTableUpdates();
             }
         }, this.defaultIntervals.tables);
-        
         this.fetchTableUpdates();
     }
-
     startLocationPolling() {
         this.intervals.location = setInterval(() => {
             if (this.isElementVisible('faculty-location') || this.isElementVisible('current-location-display')) {
                 this.fetchLocationUpdates();
             }
         }, this.defaultIntervals.location);
-        
         this.fetchLocationUpdates();
     }
-
     startAnnouncementsPolling() {
         this.intervals.announcements = setInterval(() => {
             this.fetchAnnouncementsUpdates();
         }, this.defaultIntervals.announcements);
     }
-
     async fetchScheduleUpdates() {
         if (!this.isOnline) {
             this.queueUpdate('schedules', { action: 'get_schedule_updates' });
             return;
         }
-        
         try {
             const response = await fetch('assets/php/polling_api.php?action=get_schedule_updates', {
                 method: 'GET',
                 credentials: 'same-origin'
             });
-            
             const data = await response.json();
-            
             if (data.success) {
                 this.updateScheduleDisplay(data);
             }
         } catch (error) {
-            console.error('Schedule polling failed:', error);
             this.handlePollingError('schedules', error);
         }
     }
-
     updateScheduleDisplay(data) {
         if (data.schedules) {
-            // Update schedule containers
             const scheduleContainers = document.querySelectorAll('.schedule-container, .schedule-section');
             scheduleContainers.forEach(container => {
                 if (container.querySelector('.schedule-item')) {
-                    // Update existing schedule items
                     this.updateScheduleItems(container, data.schedules);
                 }
             });
         }
     }
-
     updateScheduleItems(container, schedules) {
-        // Update schedule items based on current time and status
         const scheduleItems = container.querySelectorAll('.schedule-item');
         scheduleItems.forEach(item => {
             const courseCode = item.querySelector('.course-code')?.textContent;
             const schedule = schedules.find(s => s.course_code === courseCode);
-            
             if (schedule && schedule.status) {
                 const statusBadge = item.querySelector('.status-badge');
                 if (statusBadge) {
                     statusBadge.className = `status-badge status-${schedule.status}`;
                     statusBadge.textContent = this.getStatusText(schedule.status);
                 }
-                
-                // Update class info based on schedule status
                 item.className = `schedule-item ${schedule.status}`;
             }
         });
     }
-
     getStatusText(status) {
         switch (status) {
             case 'ongoing': return 'In Progress';
@@ -519,67 +422,45 @@ class LivePollingManager {
             default: return 'Unknown';
         }
     }
-
     async fetchStatistics() {
-        // DEPRECATED: Use fetchTableUpdates() instead for consistency
-        // This ensures statistics and tables use the same data source
-        console.log('fetchStatistics() is deprecated - using fetchTableUpdates() for consistency');
         this.fetchTableUpdates();
     }
-    
     async fetchTableUpdates() {
         if (!this.isOnline) {
             this.queueUpdate('tables', { action: 'fetch_tables', tab: this.currentTab });
             return;
         }
-        
         try {
             let params = new URLSearchParams();
             params.append('action', 'get_dashboard_data');
             if (this.pageType === 'director') {
                 params.append('tab', this.currentTab);
             }
-            
             const response = await fetch(`assets/php/polling_api.php?${params}`, {
                 method: 'GET',
                 credentials: 'same-origin'
             });
-            
             const data = await response.json();
-            
             if (data.success) {
                 this.detectAndLogChanges(data);
-                
-                // Handle NEW/DELETED entities
                 if (data.changes) {
                     this.handleDynamicChanges(data.changes);
                 }
-                
-                // Handle STATUS UPDATES for existing entities
                 if (data.current_entities) {
                     this.handleStatusUpdates(data.current_entities);
                 }
-                
-                // Update statistics cards using the same data as tables
                 this.updateStatisticsFromTableData(data);
             }
         } catch (error) {
-            console.error('Table polling failed:', error);
             this.handlePollingError('tables', error);
         }
     }
-    
     detectAndLogChanges(data) {
         const activeTabContent = document.querySelector('.tab-content.active');
         const activeTabId = activeTabContent ? activeTabContent.id.replace('-content', '') : null;
-        
-        // Store previous data for deletion detection
         if (!this.previousData) this.previousData = {};
-        
         let changesDetected = false;
-        
         if (this.pageType === 'director') {
-            // Director: Check current active tab
             if (activeTabId === 'faculty' && data.faculty_data) {
                 const changes = this.checkTableChanges('#faculty-content .data-table tbody', data.faculty_data, 'faculty');
                 if (changes) {
@@ -614,7 +495,6 @@ class LivePollingManager {
                 this.previousData.announcements_data = [...data.announcements_data];
             }
         } else if (this.pageType === 'program') {
-            // Program: Check all tabs but only log for active one
             if (data.faculty_data) {
                 const changes = this.checkCardChanges('.faculty-grid', data.faculty_data, 'faculty');
                 if (changes && activeTabId === 'faculty') {
@@ -624,7 +504,6 @@ class LivePollingManager {
                 this.handleDeletions(this.previousData.faculty_data, data.faculty_data, 'faculty');
                 this.previousData.faculty_data = [...data.faculty_data];
             }
-            
             if (data.classes_data) {
                 const changes = this.checkCardChanges('.classes-grid', data.classes_data, 'classes');
                 if (changes && activeTabId === 'classes') {
@@ -634,7 +513,6 @@ class LivePollingManager {
                 this.handleDeletions(this.previousData.classes_data, data.classes_data, 'classes');
                 this.previousData.classes_data = [...data.classes_data];
             }
-            
             if (data.courses_data) {
                 const changes = this.checkCardChanges('.courses-grid', data.courses_data, 'courses');
                 if (changes && activeTabId === 'courses') {
@@ -646,17 +524,13 @@ class LivePollingManager {
             }
         }
     }
-    
     checkTableChanges(containerSelector, newData, type) {
         const container = document.querySelector(containerSelector);
         if (!container || !Array.isArray(newData)) return null;
-        
-        // Count rows properly for each type
         const currentRows = (type === 'faculty' || type === 'classes') ? 
             container.querySelectorAll('tr.expandable-row').length : // Faculty/Classes: count main rows only
             container.querySelectorAll('tr:not(.expansion-row)').length; // Others: count non-expansion rows
         const newCount = newData.length;
-        
         if (currentRows !== newCount) {
             const difference = newCount - currentRows;
             console.log(`${type} count change detected:`, {
@@ -665,35 +539,26 @@ class LivePollingManager {
                 difference,
                 containerSelector
             });
-            
-            // Handle the change immediately
             if (difference > 0) {
-                // Items added - add new rows individually instead of reloading everything
                 const currentIds = Array.from(container.querySelectorAll('tr')).map(row => {
                     const idField = this.getIdField(type).replace('_', '-');
                     return row.getAttribute(`data-${idField}`);
                 }).filter(id => id);
-                
                 console.log(`${type} ID check:`, {
                     currentIds: currentIds,
                     newDataIds: newData.map(item => item[this.getIdField(type)]),
                     idField: this.getIdField(type)
                 });
-                
-                // Find and add new items only
                 newData.forEach(item => {
                     const itemId = item[this.getIdField(type)];
                     const willAdd = !currentIds.includes(itemId.toString());
-                    console.log(`${type} item ${itemId}: willAdd=${willAdd}`);
                     if (willAdd) {
                         this.addToTable(type, item);
                     }
                 });
             } else if (difference < 0) {
-                // Items deleted - reload the entire table to ensure consistency
                 this.reloadTableData(containerSelector, newData, type);
             }
-            
             return {
                 type: 'count_change',
                 oldCount: currentRows,
@@ -701,29 +566,20 @@ class LivePollingManager {
                 difference: difference
             };
         }
-        
         return null;
     }
-    
     checkCardChanges(containerSelector, newData, type) {
         const container = document.querySelector(containerSelector);
         if (!container || !Array.isArray(newData)) return null;
-        
         const currentCards = container.querySelectorAll('.faculty-card:not(.add-card), .class-card:not(.add-card), .course-card:not(.add-card)').length;
         const newCount = newData.length;
-        
         if (currentCards !== newCount) {
             const difference = newCount - currentCards;
-            
-            // Handle the change immediately
             if (difference > 0) {
-                // Items added - reload the entire grid to avoid duplicates
                 this.reloadCardData(containerSelector, newData, type);
             } else if (difference < 0) {
-                // Items deleted - reload the entire grid to ensure consistency
                 this.reloadCardData(containerSelector, newData, type);
             }
-            
             return {
                 type: 'count_change',
                 oldCount: currentCards,
@@ -731,135 +587,98 @@ class LivePollingManager {
                 difference: difference
             };
         }
-        
         return null;
     }
-    
-    logChanges(type, changeInfo) {
-        // console.clear(); // TEMP DISABLED FOR DEBUG
+    logCurrentStatus() {
         const pageName = document.title.split(' - ')[1] || 'Dashboard';
-        console.log(`Page: ${pageName}`);
+        console.log(`${this.currentTab}: Polling active`);
+    }
+    logChanges(type, changeInfo) {
+        const pageName = document.title.split(' - ')[1] || 'Dashboard';
         this.logCurrentStatus();
-        
         if (changeInfo.difference > 0) {
             const itemType = this.pageType === 'director' ? 'entr' : 'card';
-            console.log(`${type}: ${changeInfo.difference} new ${itemType}${changeInfo.difference > 1 ? (this.pageType === 'director' ? 'ies' : 's') : (this.pageType === 'director' ? 'y' : '')} added`);
         } else if (changeInfo.difference < 0) {
             const itemType = this.pageType === 'director' ? 'entr' : 'card';
-            console.log(`${type}: ${Math.abs(changeInfo.difference)} ${itemType}${Math.abs(changeInfo.difference) > 1 ? (this.pageType === 'director' ? 'ies' : 's') : (this.pageType === 'director' ? 'y' : '')} removed`);
         }
     }
-    
-    
     getLastUpdateTimestamp(tab) {
         return localStorage.getItem(`last_update_${tab}_${window.userRole}`);
     }
-    
     setLastUpdateTimestamp(tab, timestamp) {
         localStorage.setItem(`last_update_${tab}_${window.userRole}`, timestamp);
     }
-    
     hasDataChanged(row, update, tableType) {
         switch(tableType) {
             case 'faculty':
                 const currentName = row.querySelector('.name-column')?.textContent.trim();
                 const currentLocation = row.querySelector('.location-column')?.textContent.trim();
-                
-                // Only check visible table data, ignore is_active status changes
                 return (update.full_name && update.full_name !== currentName) ||
                        (update.location && update.location !== currentLocation);
-                       
             case 'classes':
                 const currentClassName = row.querySelector('.name-column')?.textContent.trim();
                 return update.class_name && update.class_name !== currentClassName;
-                
             case 'announcements':
                 const currentTitle = row.querySelector('.name-column')?.textContent.trim();
                 const currentPriority = row.querySelector('.status-column .status-badge')?.textContent.trim();
-                
                 return (update.title && update.title !== currentTitle) ||
                        (update.priority && update.priority.toUpperCase() !== currentPriority);
-                       
             default:
                 return true;
         }
     }
-
     async fetchLocationUpdates() {
         if (!this.isOnline) {
             this.queueUpdate('location', { action: 'get_location_updates' });
             return;
         }
-        
         try {
             const response = await fetch('assets/php/polling_api.php?action=get_location_updates', {
                 method: 'GET',
                 credentials: 'same-origin'
             });
-            
             const data = await response.json();
-            
             if (data.success) {
                 this.updateLocationDisplay(data);
             }
         } catch (error) {
-            console.error('Location polling failed:', error);
             this.handlePollingError('location', error);
         }
     }
-
     async fetchAnnouncementsUpdates() {
         if (!this.isOnline) {
             this.queueUpdate('announcements', { action: 'fetch_announcements' });
             return;
         }
-        
         try {
             const response = await fetch('assets/php/get_announcements.php', {
                 method: 'GET',
                 credentials: 'same-origin'
             });
-            
             const data = await response.json();
-            
             if (data.success) {
                 this.updateAnnouncementsDisplay(data);
             }
         } catch (error) {
-            console.error('Announcements polling failed:', error);
             this.handlePollingError('announcements', error);
         }
     }
-
     handleDynamicChanges(changes) {
-        // DISABLED - Using count-based detection instead
-        // The backend change detection is unreliable
-        console.log('Dynamic changes detection disabled - using count-based detection');
     }
-
-    // Handle deletions by detecting count mismatches
     handleDeletions(oldData, newData, entityType) {
         if (!oldData || !newData) return;
-        
         const oldCount = Array.isArray(oldData) ? oldData.length : 0;
         const newCount = Array.isArray(newData) ? newData.length : 0;
-        
         if (oldCount > newCount) {
             const deletedCount = oldCount - newCount;
-            console.log(`➖ ${deletedCount} ${entityType} deleted`);
-            
-            // Find which entities were removed by comparing IDs
             const oldIds = oldData.map(item => item[this.getIdField(entityType)]);
             const newIds = newData.map(item => item[this.getIdField(entityType)]);
             const deletedIds = oldIds.filter(id => !newIds.includes(id));
-            
-            // Remove deleted entities from UI
             deletedIds.forEach(id => {
                 this.removeEntityFromUI(entityType, id);
             });
         }
     }
-
     getIdField(entityType) {
         const mapping = {
             'faculty': 'faculty_id',
@@ -869,35 +688,28 @@ class LivePollingManager {
         };
         return mapping[entityType] || 'id';
     }
-
     removeEntityFromUI(entityType, entityId) {
         if (this.pageType === 'director') {
-            // Remove from table
             const idField = this.getIdField(entityType);
             const row = document.querySelector(`tr[data-${idField.replace('_', '-')}="${entityId}"]`);
             if (row) {
-                // Remove expansion row if exists
                 const nextRow = row.nextElementSibling;
                 if (nextRow && nextRow.classList.contains('expansion-row')) {
                     nextRow.style.transition = 'opacity 0.3s ease-out';
                     nextRow.style.opacity = '0';
                     setTimeout(() => nextRow.remove(), 300);
                 }
-                
-                // Remove main row with animation
                 row.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
                 row.style.opacity = '0';
                 row.style.transform = 'translateX(-20px)';
                 setTimeout(() => row.remove(), 300);
             }
         } else if (this.pageType === 'program') {
-            // Remove from cards
             const cardSelectors = [
                 `.faculty-card[data-faculty-id="${entityId}"]`,
                 `.course-card[data-course-id="${entityId}"]`,
                 `.class-card[data-class-id="${entityId}"]`
             ];
-            
             cardSelectors.forEach(selector => {
                 const card = document.querySelector(selector);
                 if (card) {
@@ -909,17 +721,13 @@ class LivePollingManager {
             });
         }
     }
-
     handleStatusUpdates(currentEntities) {
-        // SIMPLIFIED: Just mark as initialized, let polling refresh handle updates like Courses
         if (!this.initialized) {
             this.initialized = true;
         }
     }
-
     updateEntityStatus(entityType, entityData) {
         if (this.pageType === 'director') {
-            // Update table row status
             const idField = entityType.replace('s', '') + '_id';
             const entityId = entityData[idField];
             const row = document.querySelector(`tr[data-${entityType.replace('s', '')}-id="${entityId}"]`);
@@ -927,143 +735,96 @@ class LivePollingManager {
                 this.updateTableRowStatus(row, entityData, entityType);
             }
         } else if (this.pageType === 'program' && entityType === 'faculty') {
-            // Find the EXISTING faculty card by name (not the generated one)
             const existingCard = document.querySelector(`.faculty-card[data-name*="${entityData.full_name}"]`);
             if (existingCard) {
                 const oldStatus = existingCard.querySelector('.location-text')?.textContent?.trim();
                 const newStatus = entityData.status || 'Offline';
-                
-                // Only log if status actually changed from our last known status
                 const lastKnownStatus = this.lastStatusCheck[entityData.full_name];
                 if (lastKnownStatus && lastKnownStatus !== newStatus) {
                     const action = newStatus === 'Available' ? '🟢 logged in' : '🔴 logged out';
-                    console.log(`${entityData.full_name} ${action}`);
                 }
-                
-                // Update our tracking
                 this.lastStatusCheck[entityData.full_name] = newStatus;
-                
                 this.updateCardStatus(existingCard, entityData, entityType);
             }
         }
     }
-
     updateTableRowStatus(row, entityData, entityType) {
         if (entityType === 'faculty') {
             const statusBadge = row.querySelector('.status-badge');
             const locationCell = row.querySelector('.location-column');
-            
             if (statusBadge) {
                 const status = entityData.status || 'Offline';
                 statusBadge.className = `status-badge status-${status.toLowerCase()}`;
                 statusBadge.textContent = status;
             }
-            
             if (locationCell) {
                 locationCell.textContent = entityData.current_location || 'Not Available';
             }
         }
     }
-
     updateCardStatus(card, entityData, entityType) {
         if (entityType === 'faculty') {
-            // Update the ACTUAL card structure (not the created one)
             const statusDot = card.querySelector('.status-dot');
             const locationText = card.querySelector('.location-text');
             const locationDiv = card.querySelector('.location-info div:nth-child(2)');
-            
             if (statusDot && locationText) {
                 const status = entityData.status || 'Offline';
                 const statusClass = status.toLowerCase() === 'available' ? 'available' : 'offline';
-                
-                // Update status dot and text
                 statusDot.className = `status-dot status-${statusClass}`;
                 locationText.textContent = status;
             }
-            
-            // Update location if present
             if (locationDiv && entityData.current_location) {
                 locationDiv.textContent = entityData.current_location;
             }
-            
-            // Update time info
             const timeInfo = card.querySelector('.time-info');
             if (timeInfo) {
                 timeInfo.textContent = 'Last updated: 0 minutes ago';
             }
         }
     }
-
     isRecentlyCreated(entity) {
         if (!entity.created_at) return false;
-        
         const createdTime = new Date(entity.created_at);
         const currentTime = new Date();
         const timeDifference = (currentTime - createdTime) / 1000; // in seconds
-        
-        // Only consider it recently created if it was made within the last 5 seconds
         return timeDifference <= 5;
     }
-
     entityExistsInUI(entityType, entity) {
         const idField = entityType.replace('s', '') + '_id';
         const entityId = entity[idField];
-        
         if (this.pageType === 'director') {
-            // Check if row already exists in table
             return document.querySelector(`tr[data-${entityType.replace('s', '')}-id="${entityId}"]`) !== null;
         } else if (this.pageType === 'program') {
-            // Check BOTH possible card selectors (existing and newly created)
             const existingCard = document.querySelector(`.faculty-card[data-name*="${entity.full_name}"]`);
             const newCard = document.querySelector(`.faculty-card[data-faculty-id="${entityId}"]`);
             return existingCard !== null || newCard !== null;
         }
-        
         return false;
     }
-
     addEntityToUI(entityType, entityData) {
-        console.log(`addEntityToUI called: ${entityType} on ${this.pageType} page`);
-        
         if (this.pageType === 'director') {
-            // Director dashboard: Add to table view ONLY
             this.addToTable(entityType, entityData);
         } else if (this.pageType === 'program') {
-            // Program dashboard: Add to card view ONLY  
             this.addToCards(entityType, entityData);
         }
-        
-        // Update statistics
         this.updateCounts(entityType, 1);
     }
-
     addToTable(entityType, entityData) {
-        // Only for director dashboard - check if we're actually on director page
         if (this.pageType !== 'director') return;
-        
         const tableBody = document.querySelector(`#${entityType}-content .data-table tbody`);
         if (!tableBody) return;
-        
-        // Check if this entity already exists to prevent duplicates
         const selector = `[data-${entityType.replace('s', '')}-id="${entityData[entityType.replace('s', '') + '_id']}"]`;
         const existingRow = tableBody.querySelector(selector);
-        console.log('Duplicate check:', entityType, selector, 'Found:', !!existingRow);
         if (existingRow) {
-            console.log('BLOCKING: Row already exists, not adding');
             return; // Don't add if already exists
         }
-        
-        // Create new row based on entity type
         let newRow = '';
-        
         switch(entityType) {
             case 'courses':
                 newRow = this.createCourseRow(entityData);
                 break;
             case 'faculty':
-                console.log('createFacultyRow called with data:', entityData);
                 newRow = this.createFacultyRow(entityData);
-                console.log('createFacultyRow returned:', newRow ? 'HTML content' : 'EMPTY/NULL');
                 break;
             case 'classes':
                 newRow = this.createClassRow(entityData);
@@ -1072,21 +833,14 @@ class LivePollingManager {
                 newRow = this.createAnnouncementRow(entityData);
                 break;
         }
-        
         if (newRow) {
             let insertedRow;
-            
-            // Special handling for expandable rows (faculty and classes)
             if (entityType === 'faculty' || entityType === 'classes') {
-                // Create a temporary table to properly parse TR elements
                 const tempTable = document.createElement('table');
                 const tempTbody = document.createElement('tbody');
                 tempTbody.innerHTML = newRow;
                 tempTable.appendChild(tempTbody);
-                
-                // Insert each row individually to maintain proper structure
                 const rows = tempTbody.querySelectorAll('tr');
-                // Insert rows in correct order at the top
                 const firstExistingRow = tableBody.firstElementChild;
                 rows.forEach((row, index) => {
                     const clonedRow = row.cloneNode(true);
@@ -1096,41 +850,28 @@ class LivePollingManager {
                         tableBody.appendChild(clonedRow);
                     }
                 });
-                
                 insertedRow = tableBody.firstElementChild;
             } else {
-                // Insert at the top with animation for other entity types
                 tableBody.insertAdjacentHTML('afterbegin', newRow);
                 insertedRow = tableBody.firstElementChild;
             }
-            
-            // Animate the new row
             insertedRow.style.opacity = '0';
             insertedRow.style.transform = 'translateY(-20px)';
             insertedRow.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-            
             setTimeout(() => {
                 insertedRow.style.opacity = '1';
                 insertedRow.style.transform = 'translateY(0)';
             }, 100);
         }
     }
-
     addToCards(entityType, entityData) {
-        // Only for program dashboard - check if we're actually on program page
         if (this.pageType !== 'program') return;
-        
         const cardContainer = document.querySelector(`.${entityType}-grid, .${entityType}-cards`);
         if (!cardContainer) return;
-        
-        // Check if this entity already exists to prevent duplicates
         const idField = entityType.replace('s', '') + '_id';
         const existingCard = cardContainer.querySelector(`[data-${entityType.replace('s', '')}-id="${entityData[idField]}"]`);
         if (existingCard) return; // Don't add if already exists
-        
-        // Create new card based on entity type
         let newCard = '';
-        
         switch(entityType) {
             case 'faculty':
                 newCard = this.createFacultyCard(entityData);
@@ -1142,33 +883,25 @@ class LivePollingManager {
                 newCard = this.createCourseCard(entityData);
                 break;
         }
-        
         if (newCard) {
-            // Insert at the beginning with animation
             cardContainer.insertAdjacentHTML('afterbegin', newCard);
             const insertedCard = cardContainer.firstElementChild;
-            
-            // Animate the new card
             insertedCard.style.opacity = '0';
             insertedCard.style.transform = 'scale(0.9)';
             insertedCard.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-            
             setTimeout(() => {
                 insertedCard.style.opacity = '1';
                 insertedCard.style.transform = 'scale(1)';
             }, 100);
         }
     }
-
     updateCounts(entityType, delta) {
-        // Update header statistics
         const statLabels = {
             'faculty': 'Faculty',
             'classes': 'Classes', 
             'courses': 'Courses',
             'announcements': 'Announcements'
         };
-        
         const label = statLabels[entityType];
         if (label) {
             const statElements = document.querySelectorAll('.header-stat-label');
@@ -1178,15 +911,12 @@ class LivePollingManager {
                     if (numberElement) {
                         const currentValue = parseInt(numberElement.textContent) || 0;
                         const newValue = Math.max(0, currentValue + delta);
-                        
-                        // Animate the change
                         this.animateValueChange(numberElement, currentValue, newValue);
                     }
                 }
             });
         }
     }
-
     createCourseRow(course) {
         return `
             <tr>
@@ -1200,7 +930,6 @@ class LivePollingManager {
             </tr>
         `;
     }
-
     createFacultyRow(faculty) {
         const status = faculty.status || 'Offline';
         return `
@@ -1238,7 +967,6 @@ class LivePollingManager {
             </tr>
         `;
     }
-
     createClassRow(classData) {
         return `
             <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-class-id="${classData.class_id}">
@@ -1270,7 +998,6 @@ class LivePollingManager {
             </tr>
         `;
     }
-
     createAnnouncementRow(announcement) {
         return `
             <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-announcement-id="${announcement.announcement_id}">
@@ -1309,22 +1036,16 @@ class LivePollingManager {
             </tr>
         `;
     }
-
     createFacultyCard(faculty) {
-        // Check if this is for Program dashboard (no delete button needed)
         const isProgram = this.pageType === 'program';
         const status = faculty.status || 'Offline';
         const statusClass = status.toLowerCase() === 'available' ? 'available' : 'offline';
-        
-        // Get initials for avatar
         const nameParts = (faculty.full_name || '').split(' ');
         const initials = nameParts.map(part => part.charAt(0)).join('').substring(0, 2);
-        
         return `
             <div class="faculty-card" data-name="${escapeHtml(faculty.full_name)}" ${!isProgram ? `data-faculty-id="${faculty.faculty_id}"` : ''}>
                 <div class="faculty-avatar">${initials}</div>
                 <div class="faculty-name">${escapeHtml(faculty.full_name)}</div>   
-                
                 <div class="location-info">
                     <div class="location-status">
                         <span class="status-dot status-${statusClass}"></span>
@@ -1335,12 +1056,10 @@ class LivePollingManager {
                     </div>
                     <div class="time-info">Last updated: 0 minutes ago</div>
                 </div>
-
                 <div class="contact-info">
                     <div class="office-hours">
                         Office Hours:<br>${escapeHtml(faculty.office_hours || 'Not specified')}
                     </div>
-                    
                     <div class="faculty-actions">
                         ${faculty.contact_email ? `<button class="action-btn primary" onclick="contactFaculty('${faculty.contact_email}')">Email</button>` : ''}
                         ${faculty.contact_phone ? `<button class="action-btn" onclick="callFaculty('${faculty.contact_phone}')">Call</button>` : ''}
@@ -1352,9 +1071,7 @@ class LivePollingManager {
             </div>
         `;
     }
-
     createClassCard(classData) {
-        // Generate the sophisticated class card layout matching the original program.php structure
         return `
             <div class="class-card" data-name="${escapeHtml(classData.class_name)}" data-code="${escapeHtml(classData.class_code)}">
                 <div class="class-card-content">
@@ -1368,7 +1085,6 @@ class LivePollingManager {
                                 </div>
                             </div>
                         </div>
-
                         <div class="class-stats">
                             <div class="class-stat">
                                 <div class="class-stat-number">${classData.total_subjects || 0}</div>
@@ -1380,7 +1096,6 @@ class LivePollingManager {
                             </div>
                         </div>
                     </div>
-
                     <div class="class-details-overlay">
                         <div class="overlay-header">
                             <h4>Schedule</h4>
@@ -1395,7 +1110,6 @@ class LivePollingManager {
                         </div>
                     </div>
                 </div>
-
                 <button class="class-details-toggle" onclick="toggleClassDetailsOverlay(this)">
                     View Schedule Details
                     <span class="arrow">▼</span>
@@ -1403,12 +1117,8 @@ class LivePollingManager {
             </div>
         `;
     }
-
-    // UNIVERSAL entity creation - works for both tables and cards
-    // UNIVERSAL entity creation function - replaces all manual generation
     createEntity(entityData, entityType, viewType = 'auto') {
         const actualViewType = viewType === 'auto' ? this.pageType : viewType;
-        
         switch(actualViewType) {
             case 'director':
                 return this.createTableRow(entityData, entityType);
@@ -1418,16 +1128,11 @@ class LivePollingManager {
                 return null;
         }
     }
-
-    // UNIVERSAL entity renderer - can be called for initial load AND dynamic updates
     renderEntities(containerSelector, entitiesData, entityType, viewType = 'auto') {
         const container = document.querySelector(containerSelector);
         if (!container) return;
-        
         const actualViewType = viewType === 'auto' ? this.pageType : viewType;
-        
         if (actualViewType === 'director') {
-            // Clear table body
             const tbody = container.querySelector('tbody') || container;
             tbody.querySelectorAll('tr:not(.expansion-row)').forEach(row => {
                 const nextRow = row.nextElementSibling;
@@ -1436,8 +1141,6 @@ class LivePollingManager {
                 }
                 row.remove();
             });
-            
-            // Render all entities
             entitiesData.forEach(entity => {
                 const entityHTML = this.createEntity(entity, entityType, 'director');
                 if (entityHTML) {
@@ -1445,10 +1148,7 @@ class LivePollingManager {
                 }
             });
         } else if (actualViewType === 'program') {
-            // Clear cards (except add-card)
             container.querySelectorAll('.faculty-card:not(.add-card), .class-card:not(.add-card), .course-card:not(.add-card), .announcement-card:not(.add-card)').forEach(card => card.remove());
-            
-            // Render all entities
             entitiesData.forEach(entity => {
                 const entityHTML = this.createEntity(entity, entityType, 'program');
                 if (entityHTML) {
@@ -1462,57 +1162,34 @@ class LivePollingManager {
             });
         }
     }
-
     updateStatisticsFromTableData(data) {
-        // Calculate statistics from the same data used by tables
         const stats = {};
-        
         if (data.faculty_data) {
             stats.total_faculty = data.faculty_data.length;
             stats.available_faculty = data.faculty_data.filter(f => f.status === 'Available').length;
         }
-        
         if (data.classes_data) {
             stats.total_classes = data.classes_data.length;
         }
-        
         if (data.courses_data) {
             stats.total_courses = data.courses_data.length;
         }
-        
         if (data.announcements_data) {
             stats.active_announcements = data.announcements_data.length;
         }
-        
-        // Update the display with consistent data
         this.updateStatisticsDisplay(stats);
     }
-
     reloadTableData(containerSelector, newData, type) {
-        // Use universal renderer
         this.renderEntities(containerSelector, newData, type, 'director');
     }
-
     reloadCardData(containerSelector, newData, type) {
-        // Use universal renderer
         this.renderEntities(containerSelector, newData, type, 'program');
     }
-
     refreshExistingContent(containerSelector, newData, type) {
-        // Instead of generating new HTML, let the backend handle the rendering
-        // This ensures we use the SAME card generation logic as initial load
         const container = document.querySelector(containerSelector);
         if (!container) return;
-        
-        // Count-based update: if count changed, do a targeted refresh
-        console.log(`${type} count changed - backend will handle card generation on next poll`);
-        
-        // Optional: Force a refresh of just this tab's content
-        // This would use the existing PHP rendering instead of JS card creation
     }
-
     createTableRow(item, type) {
-        // Use the existing creation functions
         switch(type) {
             case 'faculty':
                 return this.createFacultyRow(item);
@@ -1526,9 +1203,7 @@ class LivePollingManager {
                 return null;
         }
     }
-
     createCard(item, type) {
-        // Universal card creation function
         switch(type) {
             case 'faculty':
                 return this.createFacultyCard(item);
@@ -1542,11 +1217,9 @@ class LivePollingManager {
                 return null;
         }
     }
-
     createCourseCard(course) {
         const units = parseFloat(course.units) || 0;
         const unitsDisplay = units % 1 === 0 ? `${units}.00` : units.toString();
-        
         return `
             <div class="course-card" data-course="${course.course_code}" data-course-id="${course.course_id}" style="display: block;">
                 <div class="course-card-content">
@@ -1558,7 +1231,6 @@ class LivePollingManager {
                         <div class="course-description">
                             ${escapeHtml(course.course_description)}
                         </div>
-                        
                         <div class="course-actions">
                             <button class="action-btn primary" onclick="assignCourseToYearLevel('${course.course_code}')">
                                 Assign to Year Level
@@ -1568,7 +1240,6 @@ class LivePollingManager {
                             </button>
                         </div>
                     </div>
-
                     <div class="course-details-overlay">
                         <div class="overlay-header">
                             <h4>Current Assignments</h4>
@@ -1580,7 +1251,6 @@ class LivePollingManager {
                         </div>
                     </div>
                 </div>
-
                 <button class="course-details-toggle" onclick="toggleCourseDetailsOverlay(this, '${course.course_code}')">
                     View Assignments
                     <span class="arrow">▼</span>
@@ -1588,7 +1258,6 @@ class LivePollingManager {
             </div>
         `;
     }
-
     updateStatisticsDisplay(stats) {
         const statElements = document.querySelectorAll('.header-stat');
         const statMappings = {
@@ -1598,7 +1267,6 @@ class LivePollingManager {
             'active_announcements': 'Announcements',
             'available_faculty': 'Online'
         };
-
         statElements.forEach(element => {
             const label = element.querySelector('.header-stat-label');
             if (label) {
@@ -1606,19 +1274,14 @@ class LivePollingManager {
                 const statKey = Object.keys(statMappings).find(key => 
                     statMappings[key] === labelText
                 );
-                
                 if (statKey && stats[statKey] !== undefined) {
                     const numberElement = element.querySelector('.header-stat-number');
                     if (numberElement) {
                         const currentValue = parseInt(numberElement.textContent);
                         const newValue = parseInt(stats[statKey]);
-                        
                         if (currentValue !== newValue) {
-                            // console.clear(); // TEMP DISABLED FOR DEBUG
                             const pageName = document.title.split(' - ')[1] || 'Dashboard';
-                            console.log(`Page: ${pageName}`);
                             this.logCurrentStatus();
-                            console.log(`${statKey}: ${currentValue} → ${newValue}`);
                             this.animateValueChange(numberElement, currentValue, newValue);
                         }
                     }
@@ -1626,28 +1289,22 @@ class LivePollingManager {
             }
         });
     }
-
     updateLocationDisplay(data) {
         if (window.userRole === 'class') {
             const facultyData = data.faculty || [];
-            
             facultyData.forEach(faculty => {
                 const facultyElements = document.querySelectorAll(`[data-faculty-id="${faculty.faculty_id}"]`);
-                
                 facultyElements.forEach(element => {
                     const locationElement = element.querySelector('.faculty-location');
                     const statusElement = element.querySelector('.faculty-status');
                     const lastUpdatedElement = element.querySelector('.last-updated');
-                    
                     if (locationElement) {
                         locationElement.textContent = faculty.current_location || 'Location not set';
                     }
-                    
                     if (statusElement) {
                         statusElement.className = `faculty-status status-${faculty.status}`;
                         statusElement.textContent = faculty.status.charAt(0).toUpperCase() + faculty.status.slice(1);
                     }
-                    
                     if (lastUpdatedElement) {
                         lastUpdatedElement.textContent = faculty.last_updated;
                     }
@@ -1657,24 +1314,19 @@ class LivePollingManager {
             this.updateFacultyOwnLocation(data);
         }
     }
-
     updateFacultyOwnLocation(data) {
         const currentLocationElement = document.querySelector('.current-location-display');
         const lastUpdatedElement = document.querySelector('.location-last-updated');
-        
         if (data.current_location && currentLocationElement) {
             currentLocationElement.textContent = data.current_location;
         }
-        
         if (data.last_updated && lastUpdatedElement) {
             lastUpdatedElement.textContent = data.last_updated;
         }
     }
-
     updateAnnouncementsDisplay(data) {
         const announcementsContainer = document.getElementById('announcementsContainer');
         const announcementBadge = document.querySelector('.announcement-badge');
-        
         if (data.count !== undefined && announcementBadge) {
             if (data.count > 0) {
                 announcementBadge.textContent = data.count;
@@ -1683,33 +1335,26 @@ class LivePollingManager {
                 announcementBadge.style.display = 'none';
             }
         }
-        
         if (data.announcements && announcementsContainer) {
             const currentCount = announcementsContainer.children.length;
             if (data.announcements.length !== currentCount) {
-                // Only log significant announcement changes
                 const diff = data.announcements.length - currentCount;
                 if (diff > 0) {
-                    console.log(`📢 ${diff} new announcement${diff > 1 ? 's' : ''} added`);
                 }
             }
         }
     }
-
     animateValueChange(element, fromValue, toValue) {
         element.style.transform = 'scale(1.1)';
         element.style.color = '#4CAF50';
-        
         setTimeout(() => {
             element.textContent = toValue;
             element.style.transform = 'scale(1)';
-            
             setTimeout(() => {
                 element.style.color = '';
             }, 300);
         }, 150);
     }
-
     pausePolling() {
         this.isActive = false;
         Object.keys(this.intervals).forEach(key => {
@@ -1718,27 +1363,21 @@ class LivePollingManager {
             }
         });
     }
-
     resumePolling() {
         if (!this.isActive) {
             this.isActive = true;
             this.startPolling();
         }
     }
-
     stopAllPolling() {
         this.pausePolling();
         this.stopHeartbeat();
     }
-    
     logCurrentStatus() {
         const elements = [];
-        
-        // Use dynamic observable elements
         Object.keys(this.observableElements).forEach(key => {
             const element = this.observableElements[key];
             let isVisible = false;
-            
             if (element.condition) {
                 isVisible = element.condition();
             } else {
@@ -1749,67 +1388,47 @@ class LivePollingManager {
                                (domElement.offsetParent !== null && domElement.offsetWidth > 0 && domElement.offsetHeight > 0);
                 }
             }
-            
             elements.push(`${element.description}: ${isVisible}`);
         });
-        
-        // Log all found elements
         elements.forEach(element => console.log(element));
     }
-    
     startHeartbeat() {
-        // Send heartbeat every 2 minutes to maintain online status
         this.heartbeatInterval = setInterval(() => {
             if (this.isOnline && !document.hidden) {
                 this.sendHeartbeat();
             }
         }, 120000); // 2 minutes
-        
-        // Send initial heartbeat
         this.sendHeartbeat();
     }
-    
     stopHeartbeat() {
         if (this.heartbeatInterval) {
             clearInterval(this.heartbeatInterval);
             this.heartbeatInterval = null;
         }
     }
-    
     async sendHeartbeat() {
         try {
             const response = await fetch('assets/php/session_heartbeat.php', {
                 method: 'POST',
                 credentials: 'same-origin'
             });
-            
             const data = await response.json();
-            
             if (!data.success) {
-                console.warn('Heartbeat failed:', data.message);
             }
         } catch (error) {
-            console.error('Heartbeat error:', error);
         }
     }
-
     updateTableDisplay(data) {
         if (!this.isElementVisible(`${this.currentTab}-content`)) {
             return;
         }
-        
         const currentTable = document.querySelector(`#${this.currentTab}-content .data-table tbody`);
         if (!currentTable) {
             return;
         }
-        
         let actualChanges = 0;
-        
-        // Update existing rows
         data.updates?.forEach(update => {
             let row = null;
-            
-            // Find row by data attribute (faculty-id, class-id, or announcement-id)
             if (this.currentTab === 'faculty') {
                 row = currentTable.querySelector(`tr[data-faculty-id="${update.id}"]`);
             } else if (this.currentTab === 'classes') {
@@ -1817,7 +1436,6 @@ class LivePollingManager {
             } else if (this.currentTab === 'announcements') {
                 row = currentTable.querySelector(`tr[data-announcement-id="${update.id}"]`);
             }
-            
             if (row && row.classList.contains('expandable-row')) {
                 const hasChange = this.hasDataChanged(row, update, this.currentTab);
                 if (hasChange) {
@@ -1829,28 +1447,20 @@ class LivePollingManager {
                 this.addTableRow(currentTable, update, this.currentTab);
             }
         });
-        
-        // Only log if there were actual changes
         if (actualChanges > 0) {
-            // console.clear(); // TEMP DISABLED FOR DEBUG
             const pageName = document.title.split(' - ')[1] || 'Dashboard';
-            console.log(`Page: ${pageName}`);
             this.logCurrentStatus();
-            console.log(`${this.currentTab}: ${actualChanges} actual change${actualChanges > 1 ? 's' : ''}`);
         }
-        
         if (data.total_count !== undefined) {
             this.updateRowCount(this.currentTab, data.total_count);
         }
     }
-    
     updateTableRow(row, update, tableType) {
         switch(tableType) {
             case 'faculty':
                 const nameCell = row.querySelector('.name-column');
                 const statusCell = row.querySelector('.status-column .status-badge');
                 const locationCell = row.querySelector('.location-column');
-                
                 if (update.full_name && nameCell) {
                     nameCell.textContent = update.full_name;
                 }
@@ -1861,8 +1471,6 @@ class LivePollingManager {
                 if (update.location && locationCell) {
                     locationCell.textContent = update.location || 'Not Available';
                 }
-                
-                // Update hidden expansion row details
                 const expansionRow = row.nextElementSibling;
                 if (expansionRow && expansionRow.classList.contains('expansion-row')) {
                     const detailItems = expansionRow.querySelectorAll('.detail-value');
@@ -1873,13 +1481,11 @@ class LivePollingManager {
                     }
                 }
                 break;
-                
             case 'classes':
                 const classNameCell = row.querySelector('.name-column');
                 if (update.class_name && classNameCell) {
                     classNameCell.textContent = update.class_name;
                 }
-                
                 const classExpansionRow = row.nextElementSibling;
                 if (classExpansionRow && classExpansionRow.classList.contains('expansion-row')) {
                     const classDetailItems = classExpansionRow.querySelectorAll('.detail-value');
@@ -1890,11 +1496,9 @@ class LivePollingManager {
                     }
                 }
                 break;
-                
             case 'announcements':
                 const titleCell = row.querySelector('.name-column');
                 const priorityCell = row.querySelector('.status-column .status-badge');
-                
                 if (update.title && titleCell) {
                     titleCell.textContent = update.title;
                 }
@@ -1902,7 +1506,6 @@ class LivePollingManager {
                     priorityCell.className = `status-badge priority-${update.priority}`;
                     priorityCell.textContent = update.priority.toUpperCase();
                 }
-                
                 const announcementExpansionRow = row.nextElementSibling;
                 if (announcementExpansionRow && announcementExpansionRow.classList.contains('expansion-row')) {
                     const announcementDetailItems = announcementExpansionRow.querySelectorAll('.detail-value');
@@ -1920,8 +1523,6 @@ class LivePollingManager {
                 }
                 break;
         }
-        
-        // Only highlight if there was an actual change
         const hasActualChange = this.hasDataChanged(row, update, tableType);
         if (hasActualChange) {
             row.style.background = 'rgba(76, 175, 80, 0.1)';
@@ -1930,11 +1531,9 @@ class LivePollingManager {
             }, 2000);
         }
     }
-    
     addTableRow(tableBody, data, tableType) {
         let newRowHTML = '';
         let expansionRowHTML = '';
-        
         switch(tableType) {
             case 'faculty':
                 newRowHTML = `
@@ -1973,34 +1572,26 @@ class LivePollingManager {
                 `;
                 break;
         }
-        
         if (newRowHTML) {
             tableBody.insertAdjacentHTML('beforeend', newRowHTML + expansionRowHTML);
         }
     }
-    
     updateRowCount(tableType, count) {
         const countElement = document.querySelector(`#${tableType}-content .table-count`);
         if (countElement) {
             countElement.textContent = count;
         }
     }
-    
     queueUpdate(type, data) {
         this.updateQueue.push({ type, data, timestamp: Date.now() });
-        
-        // Limit queue size
         if (this.updateQueue.length > 50) {
             this.updateQueue = this.updateQueue.slice(-50);
         }
     }
-    
     processUpdateQueue() {
         if (!this.isOnline || this.updateQueue.length === 0) return;
-        
         const updates = [...this.updateQueue];
         this.updateQueue = [];
-        
         updates.forEach(update => {
             switch(update.type) {
                 case 'statistics':
@@ -2018,29 +1609,19 @@ class LivePollingManager {
             }
         });
     }
-    
     handlePollingError(type, error) {
-        // Exponential backoff for errors
         const currentInterval = this.defaultIntervals[type];
         const newInterval = Math.min(currentInterval * 2, 30000); // Max 30 seconds
-        
-        console.warn(`Polling error for ${type}, backing off to ${newInterval}ms`);
-        
-        // Reset to normal interval after 5 minutes
         setTimeout(() => {
             this.defaultIntervals[type] = 3000;
         }, 300000);
-        
         this.updateInterval(type, newInterval);
     }
-    
     updateInterval(type, newInterval) {
         if (this.intervals[type]) {
             clearInterval(this.intervals[type]);
         }
-        
         this.defaultIntervals[type] = newInterval;
-        
         if (this.isActive) {
             switch(type) {
                 case 'statistics':
@@ -2059,5 +1640,4 @@ class LivePollingManager {
         }
     }
 }
-
 window.livePolling = new LivePollingManager();

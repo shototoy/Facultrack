@@ -1127,7 +1127,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                     
                     // Generate class cards using the same function for initial load and dynamic updates
                     document.addEventListener('DOMContentLoaded', function() {
-                        const classGrid = document.querySelector('.class-grid');
+                        const classGrid = document.querySelector('.classes-grid');
                         const classesData = window.classesData || [];
                         
                         if (classesData.length === 0) {
@@ -1138,37 +1138,61 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                                 </div>
                             `;
                         } else {
-                            // Use the same createClassCard function for consistency
+                            // Use the sophisticated createClassCard layout for consistency with dynamic updates
                             classesData.forEach(classItem => {
-                                const cardHTML = window.livePollingManager ? 
-                                    window.livePollingManager.createClassCard(classItem) :
-                                    createClassCardFallback(classItem);
+                                const cardHTML = createSophisticatedClassCard(classItem);
                                 classGrid.insertAdjacentHTML('beforeend', cardHTML);
                             });
                         }
                     });
                     
-                    // Fallback function in case live polling manager isn't loaded yet
-                    function createClassCardFallback(classData) {
-                        const nameParts = (classData.class_name || '').split(' ');
-                        const initials = nameParts.map(part => part.charAt(0)).join('').substring(0, 2);
-                        
+                    // Sophisticated class card function that matches dynamic updates layout
+                    function createSophisticatedClassCard(classData) {
                         return `
-                            <div class="class-card" data-class-name="${escapeHtml(classData.class_name)}">
-                                <div class="class-avatar">${initials}</div>
-                                <div class="class-name">${escapeHtml(classData.class_name)}</div>   
-                                <div class="class-code-display">${escapeHtml(classData.class_code)}</div>
-                                <div class="class-info">
-                                    <div class="class-details">
-                                        <p><strong>Year Level:</strong> ${classData.year_level}</p>
-                                        <p><strong>Academic Year:</strong> ${escapeHtml(classData.academic_year)}</p>
-                                        <p><strong>Subjects:</strong> ${classData.total_subjects || 0}</p>
+                            <div class="class-card" data-name="${escapeHtml(classData.class_name)}" data-code="${escapeHtml(classData.class_code)}">
+                                <div class="class-card-content">
+                                    <div class="class-card-default-content">
+                                        <div class="class-header">
+                                            <div class="class-info">
+                                                <div class="class-name">${escapeHtml(classData.class_name)}</div>
+                                                <div class="class-code">${escapeHtml(classData.class_code)}</div>
+                                                <div class="class-meta">
+                                                    Year ${classData.year_level} • ${escapeHtml(classData.semester)} Semester • ${escapeHtml(classData.academic_year)}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="class-stats">
+                                            <div class="class-stat">
+                                                <div class="class-stat-number">${classData.total_subjects || 0}</div>
+                                                <div class="class-stat-label">Subjects</div>
+                                            </div>
+                                            <div class="class-stat">
+                                                <div class="class-stat-number">${classData.assigned_faculty || 0}</div>
+                                                <div class="class-stat-label">Faculty</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="class-details-overlay">
+                                        <div class="overlay-header">
+                                            <h4>Schedule</h4>
+                                        </div>
+                                        <div class="overlay-body">
+                                            <div class="no-data" style="padding: 20px; text-align: center;">
+                                                <div style="font-size: 2rem; margin-bottom: 10px;">
+                                                    <svg class="feather feather-xl"><use href="#calendar"></use></svg>
+                                                </div>
+                                                <p style="color: #666; margin: 0;">No schedules assigned yet</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="class-actions">
-                                    <button class="action-btn primary" onclick="viewClassSchedule(${classData.class_id})">Schedule</button>
-                                    <button class="action-btn" onclick="viewClassDetails(${classData.class_id})">Details</button>
-                                </div>
+
+                                <button class="class-details-toggle" onclick="toggleClassDetailsOverlay(this)">
+                                    View Schedule Details
+                                    <span class="arrow">▼</span>
+                                </button>
                             </div>
                         `;
                     }
