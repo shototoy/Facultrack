@@ -64,33 +64,37 @@ function getClassFaculty($pdo, $class_id) {
 }
 
 function getFacultyCourses($pdo, $faculty_id, $class_id) {
+    $current_day = date('w');
+    $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
+    $today_code = $day_mapping[$current_day];
+    $current_time = date('H:i:s');
     
     $courses_query = "
         SELECT s.course_code, c.course_description, s.days, s.time_start, s.time_end, s.room,
         CASE 
-            WHEN (s.days = '$debug_day' OR 
-                  (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                  (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                  (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                  (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                  (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
-                 AND TIME('$debug_time') > s.time_end
+            WHEN (s.days = '$today_code' OR 
+                  (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
+                  (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
+                  (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
+                  (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
+                  (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
+                 AND TIME('$current_time') > s.time_end
                  THEN 'finished'
-            WHEN TIME('$debug_time') BETWEEN s.time_start AND s.time_end 
-                 AND (s.days = '$debug_day' OR 
-                      (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                      (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                      (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                      (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                      (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+            WHEN TIME('$current_time') BETWEEN s.time_start AND s.time_end 
+                 AND (s.days = '$today_code' OR 
+                      (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
+                      (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
+                      (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
+                      (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
+                      (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
                  THEN 'current'
-            WHEN TIME('$debug_time') < s.time_start 
-                 AND (s.days = '$debug_day' OR 
-                      (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                      (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                      (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                      (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                      (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+            WHEN TIME('$current_time') < s.time_start 
+                 AND (s.days = '$today_code' OR 
+                      (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
+                      (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
+                      (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
+                      (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
+                      (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
                  THEN 'upcoming'
             ELSE 'not-today'
         END as status
@@ -99,29 +103,29 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
         WHERE s.faculty_id = ? AND s.class_id = ? AND s.is_active = TRUE
         ORDER BY 
             CASE 
-                WHEN (s.days = '$debug_day' OR 
-                      (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                      (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                      (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                      (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                      (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
-                     AND TIME('$debug_time') > s.time_end
+                WHEN (s.days = '$today_code' OR 
+                      (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
+                      (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
+                      (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
+                      (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
+                      (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
+                     AND TIME('$current_time') > s.time_end
                      THEN 1
-                WHEN TIME('$debug_time') BETWEEN s.time_start AND s.time_end 
-                     AND (s.days = '$debug_day' OR 
-                          (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                          (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                          (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                          (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                          (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                WHEN TIME('$current_time') BETWEEN s.time_start AND s.time_end 
+                     AND (s.days = '$today_code' OR 
+                          (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
+                          (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
+                          (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
+                          (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
+                          (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
                      THEN 2
-                WHEN TIME('$debug_time') < s.time_start 
-                     AND (s.days = '$debug_day' OR 
-                          (s.days = 'MW' AND '$debug_day' IN ('M', 'W')) OR
-                          (s.days = 'MF' AND '$debug_day' IN ('M', 'F')) OR
-                          (s.days = 'WF' AND '$debug_day' IN ('W', 'F')) OR
-                          (s.days = 'MWF' AND '$debug_day' IN ('M', 'W', 'F')) OR
-                          (s.days = 'TTH' AND '$debug_day' IN ('T', 'TH'))) 
+                WHEN TIME('$current_time') < s.time_start 
+                     AND (s.days = '$today_code' OR 
+                          (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
+                          (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
+                          (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
+                          (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
+                          (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
                      THEN 3
                 ELSE 4
             END,
@@ -251,6 +255,10 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
         </div>
     </div>
 
+<script>
+    window.userRole = 'class';
+</script>
+<script src="assets/js/live_polling.js"></script>
 <script src="assets/js/home.js"></script>
 </body>
 </html>

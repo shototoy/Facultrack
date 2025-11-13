@@ -1280,14 +1280,18 @@ body:has(.faculty-grid) .tab-content.active {
     width: 100%;
     border-collapse: collapse;
     background: transparent;
+    table-layout: fixed;
+    margin: 0;
 }
 
 .data-table th,
 .data-table td {
-    padding: 12px;
+    padding: 12px 8px;
     text-align: left;
     border-bottom: 1px solid rgba(222, 226, 230, 0.4);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .data-table th {
@@ -1298,6 +1302,8 @@ body:has(.faculty-grid) .tab-content.active {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 3px rgba(0, 0, 0, 0.05);
     position: relative;
     overflow: hidden;
+    font-size: 0.9rem;
+    white-space: nowrap;
 }
 
 .data-table tr {
@@ -1309,6 +1315,277 @@ body:has(.faculty-grid) .tab-content.active {
     background: linear-gradient(90deg, rgba(248, 249, 250, 0.8), rgba(233, 236, 239, 0.8));
     transform: translateX(2px);
     box-shadow: 0 2px 8px rgba(46, 125, 50, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.data-table td {
+    font-size: 0.85rem;
+    vertical-align: top;
+}
+
+.data-table .actions-column {
+    width: 140px;
+    text-align: center;
+}
+
+.data-table .status-column {
+    width: 120px;
+    text-align: center;
+}
+
+.data-table .id-column {
+    width: 100px;
+}
+
+.data-table .name-column {
+    width: auto;
+    min-width: 200px;
+}
+
+.data-table .program-column {
+    width: 140px;
+}
+
+.data-table .contact-column {
+    width: 160px;
+    font-size: 0.8rem;
+}
+
+.data-table .location-column {
+    width: 180px;
+    font-size: 0.8rem;
+}
+
+.data-table .description-column {
+    width: auto;
+    min-width: 250px;
+}
+
+.data-table .date-column {
+    width: 120px;
+    font-size: 0.8rem;
+}
+
+#faculty-content .data-table .name-column {
+    width: 40%;
+}
+
+#faculty-content .data-table .status-column {
+    width: 20%;
+}
+
+#faculty-content .data-table .location-column {
+    width: 25%;
+}
+
+#faculty-content .data-table .actions-column {
+    width: 15%;
+}
+
+#classes-content .data-table .id-column {
+    width: 20%;
+}
+
+#classes-content .data-table .name-column {
+    width: 35%;
+}
+
+#classes-content .data-table .date-column {
+    width: 25%;
+}
+
+#classes-content .data-table .actions-column {
+    width: 20%;
+}
+
+#courses-content .data-table .id-column {
+    width: 15%;
+}
+
+#courses-content .data-table .description-column {
+    width: 55%;
+}
+
+#courses-content .data-table .actions-column {
+    width: 15%;
+}
+
+#announcements-content .data-table .name-column {
+    width: 40%;
+}
+
+#announcements-content .data-table .status-column {
+    width: 20%;
+}
+
+#announcements-content .data-table .program-column {
+    width: 25%;
+}
+
+#announcements-content .data-table .actions-column {
+    width: 15%;
+}
+
+.expandable-row {
+    cursor: pointer;
+    position: relative;
+}
+
+.expandable-row .actions-column {
+    position: relative;
+    padding-right: 30px;
+}
+
+.expandable-row td {
+    vertical-align: middle;
+}
+
+.data-table tbody tr {
+    height: 60px;
+}
+
+.data-table tbody .expandable-row {
+    height: 60px;
+}
+
+.data-table tbody .expansion-row {
+    height: auto;
+}
+
+.expandable-row::before {
+    content: '▼';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: #6c757d;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+}
+
+.expandable-row.expanded::before {
+    transform: translateY(-50%) rotate(180deg);
+    color: #495057;
+}
+
+.expandable-row:hover {
+    background: linear-gradient(90deg, rgba(248, 249, 250, 0.9), rgba(233, 236, 239, 0.9)) !important;
+}
+
+.expandable-row:hover::before {
+    opacity: 0 !important;
+}
+
+.expandable-row.expanded::before {
+    opacity: 1;
+    color: #495057;
+}
+
+.expansion-row {
+    background: rgba(248, 249, 250, 0.3) !important;
+    border-top: none !important;
+}
+
+
+.expansion-content {
+    padding: 0 !important;
+    border: none !important;
+}
+
+.expanded-details {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 249, 250, 0.8));
+    border-radius: 8px;
+    margin: 8px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(222, 226, 230, 0.3);
+    max-height: 0;
+    padding: 0 20px;
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(-20px);
+}
+
+.expansion-row.expanding .expanded-details {
+    max-height: 300px;
+    padding: 16px 20px;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.expansion-row.expanded .expanded-details {
+    max-height: none;
+    padding: 16px 20px;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.expansion-row.collapsing .expanded-details {
+    max-height: 0;
+    padding: 0 20px;
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.expansion-row.expanding .expanded-details {
+    animation: flowDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.15s both;
+}
+
+.expansion-row.collapsing .expanded-details {
+    animation: flowUp 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes flowDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes flowUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(222, 226, 230, 0.2);
+    line-height: 1.2;
+    gap: 8px;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+    flex: 0 0 120px;
+}
+
+.detail-value {
+    color: #6c757d;
+    font-size: 0.9rem;
+    flex: 1;
+    text-align: right;
+    line-height: 1.2;
 }
 
 
@@ -1350,6 +1627,9 @@ body:has(.faculty-grid) .tab-content.active {
     font-size: 0.8rem;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     transition: all 0.25s ease;
+    white-space: nowrap;
+    min-width: 70px;
+    text-align: center;
 }
 
 .delete-btn:hover {
@@ -1811,6 +2091,51 @@ body:has(.faculty-grid) .tab-content.active {
         height: 32px;
     }
     
+    .table-container {
+        height: calc(100vh - 200px);
+        margin-bottom: 20px;
+    }
+    
+    .table-header {
+        padding: 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .table-title {
+        font-size: 1.1rem;
+    }
+    
+    .table-actions {
+        gap: 8px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 10px 6px;
+        font-size: 0.8rem;
+    }
+    
+    .data-table th {
+        font-size: 0.85rem;
+    }
+    
+    .data-table .contact-column,
+    .data-table .location-column {
+        font-size: 0.75rem;
+    }
+    
+    .data-table .actions-column {
+        width: 100px;
+    }
+    
+    .data-table .name-column {
+        width: 150px;
+    }
+    
+    .data-table .program-column {
+        width: 120px;
+    }
     
     .dashboard-grid {
         grid-template-columns: 1fr !important;
@@ -2013,6 +2338,155 @@ body:has(.faculty-grid) .tab-content.active {
         height: auto !important;
         min-height: 50vh !important;
         margin-bottom: 20px;
+    }
+    
+    .table-header {
+        padding: 12px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    
+    .table-title {
+        font-size: 1rem;
+        text-align: center;
+    }
+    
+    .table-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .add-btn, .export-btn {
+        flex: 1;
+        min-width: 120px;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .data-table {
+        font-size: 0.7rem;
+        table-layout: auto;
+    }
+    
+    .data-table th {
+        padding: 8px 4px;
+        font-size: 0.7rem;
+        white-space: normal;
+        text-align: center;
+    }
+    
+    .data-table td {
+        padding: 8px 4px;
+        font-size: 0.65rem;
+        text-align: center;
+        word-break: break-word;
+    }
+    
+    .data-table .name-column {
+        width: auto;
+        min-width: 80px;
+    }
+    
+    .data-table .id-column {
+        width: auto;
+        min-width: 60px;
+    }
+    
+    .data-table .program-column {
+        width: auto;
+        min-width: 70px;
+    }
+    
+    .data-table .status-column {
+        width: auto;
+        min-width: 60px;
+    }
+    
+    .data-table .contact-column {
+        width: auto;
+        min-width: 100px;
+        font-size: 0.6rem;
+    }
+    
+    .data-table .location-column {
+        width: auto;
+        min-width: 80px;
+        font-size: 0.6rem;
+    }
+    
+    .data-table .actions-column {
+        width: auto;
+        min-width: 70px;
+    }
+    
+    .data-table .description-column {
+        width: auto;
+        min-width: 120px;
+    }
+    
+    .data-table .date-column {
+        width: auto;
+        min-width: 70px;
+        font-size: 0.6rem;
+    }
+    
+    .delete-btn {
+        padding: 4px 8px;
+        font-size: 0.65rem;
+        border-radius: 4px;
+        white-space: nowrap;
+        min-width: 60px;
+    }
+    
+    .status-badge {
+        padding: 2px 6px;
+        font-size: 0.6rem;
+        border-radius: 8px;
+    }
+    
+    .expandable-row::before {
+        right: 4px;
+        font-size: 0.6rem;
+        opacity: 0;
+    }
+    
+    .expandable-row:hover::before {
+        opacity: 0 !important;
+    }
+    
+    .expandable-row.expanded::before {
+        opacity: 1 !important;
+    }
+    
+    .expanded-details {
+        padding: 12px;
+        margin: 4px;
+    }
+    
+    .detail-item {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 4px 0;
+        gap: 2px;
+        line-height: 1.1;
+    }
+    
+    .detail-label {
+        font-size: 0.8rem;
+        flex: none;
+        font-weight: 700;
+        color: #495057;
+        line-height: 1.1;
+    }
+    
+    .detail-value {
+        font-size: 0.85rem;
+        text-align: left;
+        word-break: break-word;
+        color: #6c757d;
+        line-height: 1.1;
     }
     
     .main-container {

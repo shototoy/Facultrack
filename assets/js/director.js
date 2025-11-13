@@ -18,7 +18,17 @@ function switchTab(tabName) {
     if (searchInput) {
         searchInput.value = '';
     }
-    resetAllTabsVisibility();
+    
+    // Reset expansion states when switching tabs
+    const allExpansionRows = document.querySelectorAll('.expansion-row');
+    allExpansionRows.forEach(row => {
+        row.style.display = 'none';
+    });
+    
+    const allExpandableRows = document.querySelectorAll('.expandable-row');
+    allExpandableRows.forEach(row => {
+        row.classList.remove('expanded');
+    });
 }
 function exportData(type) {
     const config = {
@@ -375,8 +385,17 @@ function setupFormHandlers() {
 }
 
 function resetAllTabsVisibility() {
-    const rows = document.querySelectorAll('.data-table tbody tr');
+    const rows = document.querySelectorAll('.data-table tbody tr:not(.expansion-row)');
     rows.forEach(row => row.style.display = '');
+    
+    // Explicitly hide all expansion rows
+    const expansionRows = document.querySelectorAll('.expansion-row');
+    expansionRows.forEach(row => row.style.display = 'none');
+    
+    // Remove expanded classes
+    const expandableRows = document.querySelectorAll('.expandable-row');
+    expandableRows.forEach(row => row.classList.remove('expanded'));
+    
     const emptyStates = document.querySelectorAll('.search-empty-state');
     emptyStates.forEach(state => state.remove());
 }

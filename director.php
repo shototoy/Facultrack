@@ -195,30 +195,46 @@ function getProgramChairs($pdo) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Employee ID</th>
-                            <th>Program</th>
-                            <th>Status</th>
-                            <th>Location</th>
-                            <th>Contact</th>
-                            <th>Actions</th>
+                            <th class="name-column">Name</th>
+                            <th class="status-column">Status</th>
+                            <th class="location-column">Location</th>
+                            <th class="actions-column">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($faculty_data as $faculty): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($faculty['full_name']); ?></td>
-                                <td><?php echo htmlspecialchars($faculty['employee_id']); ?></td>
-                                <td><?php echo htmlspecialchars($faculty['program']); ?></td>
-                                <td>
+                            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-faculty-id="<?php echo $faculty['faculty_id']; ?>">
+                                <td class="name-column"><?php echo htmlspecialchars($faculty['full_name']); ?></td>
+                                <td class="status-column">
                                     <span class="status-badge status-<?php echo strtolower($faculty['status']); ?>">
                                         <?php echo $faculty['status']; ?>
                                     </span>
                                 </td>
-                                <td><?php echo htmlspecialchars($faculty['current_location'] ?? 'Not Available'); ?></td>
-                                <td><?php echo htmlspecialchars($faculty['contact_email'] ?? 'N/A'); ?></td>
-                                <td>
-                                    <button class="delete-btn" onclick="deleteEntity('delete_faculty', <?php echo $faculty['faculty_id']; ?>)">Delete</button>
+                                <td class="location-column"><?php echo htmlspecialchars($faculty['current_location'] ?? 'Not Available'); ?></td>
+                                <td class="actions-column">
+                                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_faculty', <?php echo $faculty['faculty_id']; ?>)">Delete</button>
+                                </td>
+                            </tr>
+                            <tr class="expansion-row" id="faculty-expansion-<?php echo $faculty['faculty_id']; ?>" style="display: none;">
+                                <td colspan="4" class="expansion-content">
+                                    <div class="expanded-details">
+                                        <div class="detail-item">
+                                            <span class="detail-label">Employee ID:</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($faculty['employee_id']); ?></span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Program:</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($faculty['program']); ?></span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Contact Email:</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($faculty['contact_email'] ?? 'N/A'); ?></span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Phone:</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($faculty['contact_phone'] ?? 'N/A'); ?></span>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -243,28 +259,40 @@ function getProgramChairs($pdo) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Class Code</th>
-                            <th>Class Name</th>
-                            <th>Year Level</th>
-                            <th>Semester</th>
-                            <th>Academic Year</th>
-                            <th>Program Chair</th>
-                            <th>Subjects</th>
-                            <th>Actions</th>
+                            <th class="id-column">Class Code</th>
+                            <th class="name-column">Class Name</th>
+                            <th class="id-column">Year Level</th>
+                            <th class="date-column">Academic Year</th>
+                            <th class="actions-column">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($classes_data as $class): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($class['class_code']); ?></td>
-                                <td><?php echo htmlspecialchars($class['class_name']); ?></td>
-                                <td><?php echo $class['year_level']; ?></td>
-                                <td><?php echo htmlspecialchars($class['semester']); ?></td>
-                                <td><?php echo htmlspecialchars($class['academic_year']); ?></td>
-                                <td><?php echo htmlspecialchars($class['program_chair_name'] ?? 'Unassigned'); ?></td>
-                                <td><?php echo $class['total_subjects']; ?></td>
-                                <td>
-                                    <button class="delete-btn" onclick="deleteEntity('delete_class', <?php echo $class['class_id']; ?>)">Delete</button>
+                            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-class-id="<?php echo $class['class_id']; ?>">
+                                <td class="id-column"><?php echo htmlspecialchars($class['class_code']); ?></td>
+                                <td class="name-column"><?php echo htmlspecialchars($class['class_name']); ?></td>
+                                <td class="id-column"><?php echo $class['year_level']; ?></td>
+                                <td class="date-column"><?php echo htmlspecialchars($class['academic_year']); ?></td>
+                                <td class="actions-column">
+                                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_class', <?php echo $class['class_id']; ?>)">Delete</button>
+                                </td>
+                            </tr>
+                            <tr class="expansion-row" id="class-expansion-<?php echo $class['class_id']; ?>" style="display: none;">
+                                <td colspan="5" class="expansion-content">
+                                    <div class="expanded-details">
+                                        <div class="detail-item">
+                                            <span class="detail-label">Semester:</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($class['semester']); ?></span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Program Chair:</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($class['program_chair_name'] ?? 'Unassigned'); ?></span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Total Subjects:</span>
+                                            <span class="detail-value"><?php echo $class['total_subjects']; ?></span>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -289,21 +317,21 @@ function getProgramChairs($pdo) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Course Code</th>
-                            <th>Course Description</th>
-                            <th>Units</th>
-                            <th>Times Scheduled</th>
-                            <th>Actions</th>
+                            <th class="id-column">Course Code</th>
+                            <th class="description-column">Course Description</th>
+                            <th class="id-column">Units</th>
+                            <th class="id-column">Times Scheduled</th>
+                            <th class="actions-column">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($courses_data as $course): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($course['course_code']); ?></td>
-                                <td><?php echo htmlspecialchars($course['course_description']); ?></td>
-                                <td><?php echo $course['units']; ?></td>
-                                <td><?php echo $course['times_scheduled']; ?></td>
-                                <td>
+                                <td class="id-column"><?php echo htmlspecialchars($course['course_code']); ?></td>
+                                <td class="description-column"><?php echo htmlspecialchars($course['course_description']); ?></td>
+                                <td class="id-column"><?php echo $course['units']; ?></td>
+                                <td class="id-column"><?php echo $course['times_scheduled']; ?></td>
+                                <td class="actions-column">
                                     <button class="delete-btn" onclick="deleteEntity('delete_course', <?php echo $course['course_id']; ?>)">Delete</button>
                                 </td>
                             </tr>
@@ -329,30 +357,42 @@ function getProgramChairs($pdo) {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Title</th>
-                            <th>Content</th>
-                            <th>Priority</th>
-                            <th>Target Audience</th>
-                            <th>Created By</th>
-                            <th>Created Date</th>
-                            <th>Actions</th>
+                            <th class="name-column">Title</th>
+                            <th class="status-column">Priority</th>
+                            <th class="program-column">Target Audience</th>
+                            <th class="actions-column">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($all_announcements as $announcement): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($announcement['title']); ?></td>
-                                <td><?php echo htmlspecialchars(substr($announcement['content'], 0, 50)) . '...'; ?></td>
-                                <td>
+                            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-announcement-id="<?php echo $announcement['announcement_id']; ?>">
+                                <td class="name-column"><?php echo htmlspecialchars($announcement['title']); ?></td>
+                                <td class="status-column">
                                     <span class="status-badge priority-<?php echo $announcement['priority']; ?>">
                                         <?php echo strtoupper($announcement['priority']); ?>
                                     </span>
                                 </td>
-                                <td><?php echo htmlspecialchars($announcement['target_audience']); ?></td>
-                                <td><?php echo htmlspecialchars($announcement['created_by_name']); ?></td>
-                                <td><?php echo date('M d, Y', strtotime($announcement['created_at'])); ?></td>
-                                <td>
-                                    <button class="delete-btn" onclick="deleteEntity('delete_announcement', <?php echo $announcement['announcement_id']; ?>)">Delete</button>
+                                <td class="program-column"><?php echo htmlspecialchars($announcement['target_audience']); ?></td>
+                                <td class="actions-column">
+                                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_announcement', <?php echo $announcement['announcement_id']; ?>)">Delete</button>
+                                </td>
+                            </tr>
+                            <tr class="expansion-row" id="announcement-expansion-<?php echo $announcement['announcement_id']; ?>" style="display: none;">
+                                <td colspan="4" class="expansion-content">
+                                    <div class="expanded-details">
+                                        <div class="detail-item">
+                                            <span class="detail-label">Content:</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($announcement['content']); ?></span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Created By:</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($announcement['created_by_name']); ?></span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Created Date:</span>
+                                            <span class="detail-value"><?php echo date('M d, Y \a\t g:i A', strtotime($announcement['created_at'])); ?></span>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -368,6 +408,10 @@ function getProgramChairs($pdo) {
     ?>
     
     <script src="assets/js/shared_modals.js"></script>
+    <script>
+        window.userRole = 'campus_director';
+    </script>
+    <script src="assets/js/live_polling.js"></script>
     <script src="assets/js/director.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -406,6 +450,90 @@ function getProgramChairs($pdo) {
                 }
             };
         }
+        
+        // Initialize all expansion rows to be hidden on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const allExpansionRows = document.querySelectorAll('.expansion-row');
+            allExpansionRows.forEach(row => {
+                row.style.display = 'none';
+            });
+            
+            const allExpandableRows = document.querySelectorAll('.expandable-row');
+            allExpandableRows.forEach(row => {
+                row.classList.remove('expanded');
+            });
+            
+        });
+
+        // Row expansion functionality
+        window.toggleRowExpansion = function(row) {
+            const facultyId = row.getAttribute('data-faculty-id');
+            const classId = row.getAttribute('data-class-id');
+            const announcementId = row.getAttribute('data-announcement-id');
+            
+            let expansionRowId;
+            if (facultyId) {
+                expansionRowId = 'faculty-expansion-' + facultyId;
+            } else if (classId) {
+                expansionRowId = 'class-expansion-' + classId;
+            } else if (announcementId) {
+                expansionRowId = 'announcement-expansion-' + announcementId;
+            }
+            
+            const expansionRow = document.getElementById(expansionRowId);
+            
+            if (!expansionRow) {
+                return;
+            }
+            
+            const isExpanded = expansionRow.style.display === 'table-row';
+            
+            // Find the current table container to limit scope
+            const currentTable = row.closest('table');
+            
+            // Close all other expanded rows in the SAME table only
+            if (currentTable) {
+                currentTable.querySelectorAll('.expansion-row').forEach(otherRow => {
+                    if (otherRow !== expansionRow) {
+                        otherRow.style.display = 'none';
+                        const otherMainRow = otherRow.previousElementSibling;
+                        if (otherMainRow) {
+                            otherMainRow.classList.remove('expanded');
+                        }
+                    }
+                });
+            }
+            
+            // Toggle current row with animation
+            if (isExpanded) {
+                // Collapse animation - details shrink and fade
+                expansionRow.classList.remove('expanding', 'expanded');
+                expansionRow.classList.add('collapsing');
+                row.classList.remove('expanded');
+                
+                setTimeout(() => {
+                    expansionRow.style.display = 'none';
+                    expansionRow.classList.remove('collapsing');
+                }, 400);
+            } else {
+                // Expand animation - details grow and appear
+                expansionRow.style.display = 'table-row';
+                expansionRow.classList.remove('collapsing');
+                
+                // Force reflow
+                expansionRow.offsetHeight;
+                
+                // Start expansion - details will grow smoothly
+                expansionRow.classList.add('expanding');
+                row.classList.add('expanded');
+                
+                // Transition to natural height after initial growth
+                setTimeout(() => {
+                    expansionRow.classList.remove('expanding');
+                    expansionRow.classList.add('expanded');
+                }, 400);
+            }
+        };
     </script>
 </body>
 </html>

@@ -1417,6 +1417,10 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             </div>
         </div>
 
+    <script>
+        window.userRole = 'faculty';
+    </script>
+    <script src="assets/js/live_polling.js"></script>
     <script src="assets/js/faculty.js"></script>
     
 </body>
