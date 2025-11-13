@@ -850,7 +850,8 @@ class LivePollingManager {
         if (data.announcements && announcementsContainer) {
             const currentCount = announcementsContainer.children.length;
             if (data.announcements.length !== currentCount) {
-                location.reload();
+                // Removed reload - polling handles updates dynamically
+                console.log('Announcements count changed - polling will update automatically');
             }
         }
     }

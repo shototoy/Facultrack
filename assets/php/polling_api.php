@@ -367,10 +367,7 @@ function getFacultyCoursesForClass($pdo, $user_id) {
     return $faculty_courses;
 }
 
-function handleProgramAction($pdo, $action, $data) {
-    // Placeholder for program actions - this would need the actual implementations
-    sendJsonResponse(['success' => false, 'message' => 'Program action not implemented: ' . $action]);
-}
+// Program action functions removed - they belong in program.php, not polling
 
 // CONSOLIDATED POLLING API - ALL polling endpoints in one place
 switch ($action) {
@@ -583,18 +580,7 @@ switch ($action) {
         }
         break;
         
-    // PROGRAM CHAIR ENDPOINTS
-    case 'assign_course_load':
-    case 'get_curriculum_assignment_data':
-    case 'remove_curriculum_assignment':
-    case 'get_faculty_schedules':
-    case 'validate_schedule':
-    case 'get_course_curriculum':
-    case 'get_validated_options':
-        validateUserSession('program_chair');
-        include_once '../../program_functions.php';
-        handleProgramAction($pdo, $action, $_POST);
-        break;
+    // PROGRAM CHAIR ENDPOINTS - removed, these are actions not polling
         
     // ATTENDANCE/LOCATION UPDATES
     case 'mark_attendance':

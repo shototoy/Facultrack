@@ -1668,7 +1668,7 @@ function submitCurriculumAssignment(form, courseCode) {
         if (data.success) {
             showNotification('Course assigned to curriculum successfully!', 'success');
             closeModal('curriculumAssignModal');
-            location.reload();
+            // Removed reload - polling system handles updates
         } else {
             showNotification(data.message || 'Failed to assign course to curriculum', 'error');
         }
@@ -1722,7 +1722,7 @@ function deleteCourse(courseCode) {
     .then(data => {
         if (data.success) {
             showNotification('Course deleted successfully!', 'success');
-            location.reload();
+            // Removed reload - polling system handles updates
         } else {
             showNotification(data.message || 'Failed to delete course', 'error');
         }
@@ -2600,7 +2600,7 @@ function submitCourseAssignment(form, facultyId) {
         if (data.success) {
             showNotification('Course assigned successfully!', 'success');
             closeModal('facultyCourseLoadModal');
-            location.reload();
+            // Removed reload - polling system handles updates
         } else {
             showNotification(data.message || 'Failed to assign course', 'error');
         }
@@ -2708,7 +2708,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 setInterval(function() {
     if (!document.querySelector('.modal-overlay.show')) {
-        location.reload();
+        // Removed reload - polling system handles updates
     }
 }, 300000);
 
@@ -2775,7 +2775,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 setInterval(function() {
     if (!document.querySelector('.modal-overlay.show')) {
-        location.reload();
+        // Removed reload - polling system handles updates
     }
 }, 300000);
 
@@ -2893,7 +2893,8 @@ function addNewRowToTable(type, data) {
         console.log(`New ${type} added:`, data);
         // Just reload the page to refresh the cards - simpler than rebuilding card HTML
         setTimeout(() => {
-            window.location.reload();
+            // Reload removed - use dynamic updates instead
+            console.log('Action completed successfully');
         }, 1000);
     }
 }
