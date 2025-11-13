@@ -37,7 +37,7 @@ async function viewLocationHistory() {
     historyList.innerHTML = '<div style="text-align: center; padding: 20px;">Loading...</div>';
     
     try {
-        const response = await fetch(window.location.pathname + '?action=get_location_history');
+        const response = await fetch('assets/php/polling_api.php?action=get_location_history');
         const result = await response.json();
         
         if (result.success) {
@@ -69,7 +69,7 @@ async function updateLocation() {
     const finalLocation = customLocation || selectedLocation;
     
     try {
-        const response = await fetch(window.location.pathname, {
+        const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -99,7 +99,7 @@ async function markAttendance(scheduleId) {
     }
     
     try {
-        const response = await fetch(window.location.pathname, {
+        const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -151,7 +151,7 @@ async function switchScheduleTab(days, tabElement) {
     tabElement.classList.add('active');
     
     try {
-        const response = await fetch(window.location.pathname, {
+        const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -179,7 +179,7 @@ async function switchScheduleTab(days, tabElement) {
 
 async function updateLocationStatus() {
     try {
-        const response = await fetch(window.location.pathname + '?action=get_status');
+        const response = await fetch('assets/php/polling_api.php?action=get_status');
         const result = await response.json();
         
         if (result.success) {

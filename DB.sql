@@ -130,7 +130,6 @@ CREATE TABLE `announcements` (
   FOREIGN KEY (`created_by`) REFERENCES `users`(`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-
 CREATE TABLE `location_history` (
   `location_history_id` int(11) NOT NULL AUTO_INCREMENT,
   `faculty_id` int(11) NOT NULL,
@@ -154,10 +153,10 @@ INSERT INTO `users` VALUES
 (5, 'it1a_class', 'class123', 'IT 1A Class Account', 'class', NOW(), NOW(), 1),
 (6, 'it1b_class', 'class123', 'IT 1B Class Account', 'class', NOW(), NOW(), 1);
 
-INSERT INTO `faculty` VALUES 
-(1, 2, 'CHAIR-001', 'Information Technology', 'Dean Office - IT Building', NOW(), '8:00 AM - 5:00 PM', 'chair.it@sksu.edu.ph', '09123456789', NOW(), NOW(), 1),
-(2, 3, 'EMP-001', 'Information Technology', 'Faculty Lounge - IT Building', NOW(), '9:00 AM - 4:00 PM', 'maria.garcia@sksu.edu.ph', '09123456790', NOW(), NOW(), 1),
-(3, 4, 'EMP-002', 'Information Technology', 'Room 201 - IT Building', NOW(), '10:00 AM - 5:00 PM', 'john.santos@sksu.edu.ph', '09123456791', NOW(), NOW(), 1);
+INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `current_location`, `last_location_update`, `last_activity`, `office_hours`, `contact_email`, `contact_phone`, `created_at`, `updated_at`, `is_active`) VALUES 
+(1, 2, 'CHAIR-001', 'Information Technology', 'Dean Office - IT Building', NOW(), NOW(), '8:00 AM - 5:00 PM', 'chair.it@sksu.edu.ph', '09123456789', NOW(), NOW(), 1),
+(2, 3, 'EMP-001', 'Information Technology', 'Faculty Lounge - IT Building', NOW(), NOW(), '9:00 AM - 4:00 PM', 'maria.garcia@sksu.edu.ph', '09123456790', NOW(), NOW(), 1),
+(3, 4, 'EMP-002', 'Information Technology', 'Room 201 - IT Building', NOW(), NOW(), '10:00 AM - 5:00 PM', 'john.santos@sksu.edu.ph', '09123456791', NOW(), NOW(), 1);
 
 INSERT INTO `classes` VALUES 
 (1, 5, 'IT-1A', 'Information Technology 1A', 1, '1st', '2024-2025', 2, NOW(), NOW(), 1),
@@ -205,4 +204,3 @@ CREATE INDEX idx_announcements_target ON announcements(target_audience, created_
 CREATE INDEX idx_announcements_active ON announcements(is_active);
 
 COMMIT;
-
