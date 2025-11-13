@@ -1734,7 +1734,7 @@ function deleteCourse(courseCode) {
     
     // Use FormData exactly like the add functionality does
     const formData = new FormData();
-    formData.set('admin_action', 'delete_course');
+    formData.set('action', 'delete_course');
     formData.set('course_id', courseId);
     
     console.log('Sending delete request:');

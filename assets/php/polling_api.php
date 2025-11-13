@@ -543,18 +543,157 @@ switch ($action) {
                 sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
         } else {
-            // Handle add operations and other deletes via handle_admin_actions.php
-            require_once 'handle_admin_actions.php';
-            
-            try {
-                if (strpos($action, 'add_') === 0) {
-                    $result = handleAdd($pdo, $_POST, $user_id, $user_role);
-                } else {
-                    $result = handleDelete($pdo, $_POST, $user_id, $user_role);
+            // Handle ADD operations directly in polling_api.php
+            if (strpos($action, 'add_') === 0) {
+                // ADD operation configuration
+                $config = [
+                    'add_faculty' => [
+                        'required' => ['full_name', 'username', 'password'],
+                        'unique' => ['users.username'],
+                        'user' => ['role' => function($d) {
+                            return isset($d['is_program_chair']) && $d['is_program_chair'] == '1' ? 'program_chair' : 'faculty';
+                        }],
+                        'generate_id' => ['table' => 'faculty', 'column' => 'employee_id', 'prefix' => function($d) {
+                            return isset($d['is_program_chair']) && $d['is_program_chair'] == '1' ? 'CHAIR-' : 'EMP-';
+                        }],
+                        'table' => 'faculty',
+                        'fields' => ['program', 'office_hours', 'contact_email', 'contact_phone']
+                    ],
+                    'add_course' => [
+                        'required' => ['course_code', 'course_description', 'units'],
+                        'unique' => ['courses.course_code'],
+                        'table' => 'courses',
+                        'fields' => ['course_code', 'course_description', 'units']
+                    ],
+                    'add_class' => [
+                        'required' => ['class_name', 'class_code', 'year_level', 'semester', 'academic_year', 'username', 'password'],
+                        'unique' => ['users.username', 'classes.class_code'],
+                        'user' => ['role' => 'class'],
+                        'table' => 'classes',
+                        'fields' => ['class_code', 'class_name', 'year_level', 'semester', 'academic_year']
+                    ],
+                    'add_announcement' => [
+                        'required' => ['title', 'content', 'priority', 'target_audience'],
+                        'role_required' => 'campus_director',
+                        'table' => 'announcements',
+                        'fields' => ['title', 'content', 'priority', 'target_audience']
+                    ]
+                ];
+
+                if (!isset($config[$action])) {
+                    sendJsonResponse(['success' => false, 'message' => 'Invalid action']);
+                    break;
                 }
-                sendJsonResponse($result);
-            } catch (Exception $e) {
-                sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);
+
+                $c = $config[$action];
+
+                // Role validation
+                if (isset($c['role_required']) && $user_role !== $c['role_required']) {
+                    sendJsonResponse(['success' => false, 'message' => 'Unauthorized']);
+                    break;
+                }
+
+                // Required fields validation
+                foreach ($c['required'] as $field) {
+                    if (empty($_POST[$field])) {
+                        sendJsonResponse(['success' => false, 'message' => "Missing required field: $field"]);
+                        break 2;
+                    }
+                }
+
+                // Unique fields validation
+                foreach ($c['unique'] ?? [] as $u) {
+                    [$table, $column] = explode('.', $u);
+                    $stmt = $pdo->prepare("SELECT 1 FROM $table WHERE $column = ?");
+                    $stmt->execute([$_POST[$column]]);
+                    if ($stmt->fetch()) {
+                        sendJsonResponse(['success' => false, 'message' => ucfirst($column) . ' already exists']);
+                        break 2;
+                    }
+                }
+
+                try {
+                    $pdo->beginTransaction();
+
+                    $new_user_id = null;
+                    if (isset($c['user'])) {
+                        $role = is_callable($c['user']['role']) ? $c['user']['role']($_POST) : $c['user']['role'];
+                        $stmt = $pdo->prepare("INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)");
+                        $stmt->execute([
+                            $_POST['username'],
+                            password_hash($_POST['password'], PASSWORD_DEFAULT),
+                            $_POST['full_name'] . ($role === 'class' ? ' Class Account' : ''),
+                            $role
+                        ]);
+                        $new_user_id = $pdo->lastInsertId();
+                    }
+
+                    $insert_data = [];
+
+                    if ($action === 'add_faculty') {
+                        $role = is_callable($c['user']['role']) ? $c['user']['role']($_POST) : 'faculty';
+                        
+                        if ($role === 'program_chair') {
+                            if ($user_role === 'campus_director') {
+                                $insert_data['program'] = $_POST['program'] ?? null;
+                                if (!$insert_data['program']) {
+                                    throw new Exception('Program is required for Program Chair');
+                                }
+                            } else {
+                                $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
+                                $stmt->execute([$user_id]);
+                                $insert_data['program'] = $stmt->fetchColumn();
+                            }
+                        }
+
+                        $prefix = $c['generate_id']['prefix']($_POST);
+                        $stmt = $pdo->prepare("SELECT COUNT(*) FROM {$c['generate_id']['table']} WHERE {$c['generate_id']['column']} LIKE ?");
+                        $stmt->execute([$prefix . '%']);
+                        $count = $stmt->fetchColumn();
+                        $insert_data['employee_id'] = $prefix . str_pad($count + 1, 4, '0', STR_PAD_LEFT);
+                    }
+
+                    if ($action === 'add_class') {
+                        if ($user_role === 'program_chair') {
+                            $insert_data['program_chair_id'] = $user_id;
+                        } else {
+                            $insert_data['program_chair_id'] = $_POST['program_chair_id'] ?? null;
+                            if (!$insert_data['program_chair_id']) {
+                                throw new Exception('Program Chair ID is required for class creation');
+                            }
+                        }
+                    }
+
+                    if ($action === 'add_announcement') {
+                        $insert_data['created_by'] = $user_id;
+                    }
+
+                    foreach ($c['fields'] as $field) {
+                        $insert_data[$field] = $_POST[$field] ?? null;
+                    }
+
+                    if ($new_user_id) {
+                        $insert_data['user_id'] = $new_user_id;
+                    }
+
+                    $columns = array_keys($insert_data);
+                    $placeholders = array_fill(0, count($columns), '?');
+                    $stmt = $pdo->prepare("INSERT INTO {$c['table']} (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")");
+                    $stmt->execute(array_values($insert_data));
+
+                    $entity_id = $pdo->lastInsertId();
+                    $pdo->commit();
+
+                    // Fetch the added record
+                    $result = fetchAddedRecord($pdo, $action, $entity_id);
+                    sendJsonResponse($result);
+
+                } catch (Exception $e) {
+                    $pdo->rollBack();
+                    sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);
+                }
+            } else {
+                sendJsonResponse(['success' => false, 'message' => 'Unknown action: ' . $action]);
             }
         }
         break;
@@ -979,6 +1118,80 @@ switch ($action) {
         error_log("Unknown action received: " . $action);
         sendJsonResponse(['success' => false, 'message' => 'Unknown action: ' . $action], 400);
         break;
+}
+
+// Function to fetch added records for response
+function fetchAddedRecord($pdo, $action, $id) {
+    switch ($action) {
+        case 'add_faculty':
+            $stmt = $pdo->prepare("
+                SELECT f.faculty_id, u.full_name, f.employee_id, f.program, f.office_hours,
+                       f.contact_email, f.contact_phone, f.current_location, f.last_location_update,
+                       CASE 
+                           WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN 'Available'
+                           WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN 'Busy'
+                           ELSE 'Offline'
+                       END as status
+                FROM faculty f
+                JOIN users u ON f.user_id = u.user_id
+                WHERE f.faculty_id = ? AND f.is_active = TRUE
+            ");
+            break;
+
+        case 'add_course':
+            $stmt = $pdo->prepare("
+                SELECT c.course_id, c.course_code, c.course_description, c.units,
+                       COUNT(s.schedule_id) as times_scheduled
+                FROM courses c
+                LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
+                WHERE c.course_id = ?
+                GROUP BY c.course_id
+            ");
+            break;
+
+        case 'add_class':
+            $stmt = $pdo->prepare("
+                SELECT c.class_id, c.class_code, c.class_name, c.year_level, c.semester, c.academic_year,
+                       u.full_name as program_chair_name,
+                       COUNT(s.schedule_id) as total_subjects
+                FROM classes c
+                LEFT JOIN faculty f ON c.program_chair_id = f.user_id
+                LEFT JOIN users u ON f.user_id = u.user_id
+                LEFT JOIN schedules s ON c.class_id = s.class_id AND s.is_active = TRUE
+                WHERE c.class_id = ? AND c.is_active = TRUE
+                GROUP BY c.class_id
+            ");
+            break;
+
+        case 'add_announcement':
+            $stmt = $pdo->prepare("
+                SELECT a.announcement_id, a.title, a.content, a.priority, a.target_audience,
+                       a.created_at, u.full_name as created_by_name
+                FROM announcements a
+                JOIN users u ON a.created_by = u.user_id
+                WHERE a.announcement_id = ?
+            ");
+            break;
+
+        default:
+            return ['success' => false, 'message' => 'Unknown action for fetching record'];
+    }
+
+    $stmt->execute([$id]);
+    $record = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$record) {
+        return ['success' => false, 'message' => 'Failed to fetch added record'];
+    }
+    
+    return [
+        'success' => true, 
+        'data' => $record, 
+        'message' => ucfirst(str_replace('add_', '', $action)) . ' added successfully',
+        'action' => 'add',
+        'entity_type' => str_replace('add_', '', $action),
+        'entity_id' => $id
+    ];
 }
 
 // Dynamic change detection for indexed updates

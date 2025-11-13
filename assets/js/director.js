@@ -134,7 +134,7 @@ async function deleteEntity(action, id) {
 
         // Use FormData exactly like the add functionality does
         const formData = new FormData();
-        formData.set('admin_action', action);
+        formData.set('action', action);
         formData.set(idField, id);
 
         console.log('Director delete request:');
@@ -252,7 +252,7 @@ async function handleFormSubmission(form, type) {
         submitButton.textContent = 'Adding...';
         
         const formData = new FormData(form);
-        formData.set('admin_action', actionMap[type]);
+        formData.set('action', actionMap[type]);
         
         console.log('Sending add request:', actionMap[type]);
         
