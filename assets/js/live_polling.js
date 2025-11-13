@@ -652,8 +652,8 @@ class LivePollingManager {
         if (!container || !Array.isArray(newData)) return null;
         
         // Count rows properly for each type
-        const currentRows = type === 'faculty' ? 
-            container.querySelectorAll('tr.expandable-row').length : // Faculty: count main rows only
+        const currentRows = (type === 'faculty' || type === 'classes') ? 
+            container.querySelectorAll('tr.expandable-row').length : // Faculty/Classes: count main rows only
             container.querySelectorAll('tr:not(.expansion-row)').length; // Others: count non-expansion rows
         const newCount = newData.length;
         
@@ -1076,8 +1076,8 @@ class LivePollingManager {
         if (newRow) {
             let insertedRow;
             
-            // Special handling for faculty rows (which have expansion rows)
-            if (entityType === 'faculty') {
+            // Special handling for expandable rows (faculty and classes)
+            if (entityType === 'faculty' || entityType === 'classes') {
                 // Create a temporary table to properly parse TR elements
                 const tempTable = document.createElement('table');
                 const tempTbody = document.createElement('tbody');
@@ -1354,19 +1354,25 @@ class LivePollingManager {
     }
 
     createClassCard(classData) {
+        // Get initials for display - matching original program.php layout
+        const nameParts = (classData.class_name || '').split(' ');
+        const initials = nameParts.map(part => part.charAt(0)).join('').substring(0, 2);
+        
         return `
-            <div class="class-card" data-class-id="${classData.class_id}">
-                <div class="card-header">
-                    <h4>${escapeHtml(classData.class_name)}</h4>
-                    <span class="class-code">${escapeHtml(classData.class_code)}</span>
+            <div class="class-card" data-class-name="${escapeHtml(classData.class_name)}">
+                <div class="class-avatar">${initials}</div>
+                <div class="class-name">${escapeHtml(classData.class_name)}</div>   
+                <div class="class-code-display">${escapeHtml(classData.class_code)}</div>
+                <div class="class-info">
+                    <div class="class-details">
+                        <p><strong>Year Level:</strong> ${classData.year_level}</p>
+                        <p><strong>Academic Year:</strong> ${escapeHtml(classData.academic_year)}</p>
+                        <p><strong>Subjects:</strong> ${classData.total_subjects || 0}</p>
+                    </div>
                 </div>
-                <div class="card-content">
-                    <p><strong>Year Level:</strong> ${classData.year_level}</p>
-                    <p><strong>Academic Year:</strong> ${escapeHtml(classData.academic_year)}</p>
-                    <p><strong>Subjects:</strong> ${classData.total_subjects || 0}</p>
-                </div>
-                <div class="card-actions">
-                    <button class="delete-btn" onclick="deleteEntity('delete_class', ${classData.class_id})">Delete</button>
+                <div class="class-actions">
+                    <button class="action-btn primary" onclick="viewClassSchedule(${classData.class_id})">Schedule</button>
+                    <button class="action-btn" onclick="viewClassDetails(${classData.class_id})">Details</button>
                 </div>
             </div>
         `;

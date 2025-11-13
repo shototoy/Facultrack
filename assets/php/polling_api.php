@@ -441,21 +441,31 @@ switch ($action) {
             try {
                 $pdo->beginTransaction();
                 
+                // Get user_id before deleting class record (classes have associated user accounts)
+                $stmt = $pdo->prepare("SELECT user_id FROM classes WHERE class_id = ?");
+                $stmt->execute([$class_id]);
+                $class_data = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$class_data) {
+                    sendJsonResponse(['success' => false, 'message' => 'Class not found']);
+                    break;
+                }
+                
                 // Delete related schedules first
                 $stmt = $pdo->prepare("DELETE FROM schedules WHERE class_id = ?");
                 $stmt->execute([$class_id]);
                 
-                // Delete related curriculum assignments
-                $stmt = $pdo->prepare("DELETE FROM curriculum WHERE class_id = ?");
-                $stmt->execute([$class_id]);
-                
-                // Delete the class
+                // HARD DELETE: Delete the class record
                 $stmt = $pdo->prepare("DELETE FROM classes WHERE class_id = ?");
                 $stmt->execute([$class_id]);
                 
+                // HARD DELETE: Delete user account completely (like faculty)
+                $stmt = $pdo->prepare("DELETE FROM users WHERE user_id = ?");
+                $stmt->execute([$class_data['user_id']]);
+                
                 $pdo->commit();
                 
-                sendJsonResponse(['success' => true, 'message' => 'Class deleted successfully']);
+                sendJsonResponse(['success' => true, 'message' => 'Class and user account deleted successfully']);
                 
             } catch (Exception $e) {
                 if (isset($pdo)) {

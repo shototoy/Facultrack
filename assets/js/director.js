@@ -335,14 +335,33 @@ function addNewRowToTable(type, data) {
             </tr>
         `,
         classes: (data) => `
-            <td>${escapeHtml(data.class_code || 'N/A')}</td>
-            <td>${escapeHtml(data.class_name || 'N/A')}</td>
-            <td>${data.year_level || 'N/A'}</td>
-            <td>${escapeHtml(data.semester || 'N/A')}</td>
-            <td>${escapeHtml(data.academic_year || 'N/A')}</td>
-            <td>${escapeHtml(data.program_chair_name || 'Unassigned')}</td>
-            <td>${data.total_subjects || 0}</td>
-            <td><button class="delete-btn" onclick="deleteEntity('delete_class', ${data.class_id})">Delete</button></td>
+            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-class-id="${data.class_id}">
+                <td class="id-column">${escapeHtml(data.class_code)}</td>
+                <td class="name-column">${escapeHtml(data.class_name)}</td>
+                <td class="id-column">${data.year_level}</td>
+                <td class="date-column">${escapeHtml(data.academic_year)}</td>
+                <td class="actions-column">
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_class', ${data.class_id})">Delete</button>
+                </td>
+            </tr>
+            <tr class="expansion-row" id="class-expansion-${data.class_id}" style="display: none;">
+                <td colspan="5" class="expansion-content">
+                    <div class="expanded-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Semester:</span>
+                            <span class="detail-value">${escapeHtml(data.semester || 'N/A')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Program Chair:</span>
+                            <span class="detail-value">${escapeHtml(data.program_chair_name || 'Unassigned')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Total Subjects:</span>
+                            <span class="detail-value">${data.total_subjects || 0}</span>
+                        </div>
+                    </div>
+                </td>
+            </tr>
         `,
         courses: (data) => `
             <tr data-course-id="${data.course_id}" style="display: none;">

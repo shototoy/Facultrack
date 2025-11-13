@@ -1120,82 +1120,66 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                         <div class="add-card-title">Add Class</div>
                         <div class="add-card-subtitle">Assign a new class group</div>
                     </div>
-                    <?php if (empty($classes_data)): ?>
-                        <div class="no-data">
-                            <h3>No classes assigned</h3>
-                            <p>No classes are currently under your supervision</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($classes_data as $class): ?>
-                            <div class="class-card" data-name="<?php echo htmlspecialchars($class['class_name']); ?>" data-code="<?php echo htmlspecialchars($class['class_code']); ?>">
-                                <div class="class-card-content">
-                                    <div class="class-card-default-content">
-                                        <div class="class-header">
-                                            <div class="class-info">
-                                                <div class="class-name"><?php echo htmlspecialchars($class['class_name']); ?></div>
-                                                <div class="class-code"><?php echo htmlspecialchars($class['class_code']); ?></div>
-                                                <div class="class-meta">
-                                                    Year <?php echo $class['year_level']; ?> • <?php echo $class['semester']; ?> Semester • <?php echo $class['academic_year']; ?>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="class-stats">
-                                            <div class="class-stat">
-                                                <div class="class-stat-number"><?php echo $class['total_subjects']; ?></div>
-                                                <div class="class-stat-label">Subjects</div>
-                                            </div>
-                                            <div class="class-stat">
-                                                <div class="class-stat-number"><?php echo $class['assigned_faculty']; ?></div>
-                                                <div class="class-stat-label">Faculty</div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="class-details-overlay">
-                                        <div class="overlay-header">
-                                            <h4>Schedule</h4>
-                                        </div>
-                                        <div class="overlay-body">
-                                            <?php if (!empty($class_schedules[$class['class_id']])): ?>
-                                                <div class="schedule-preview">
-                                                    <?php foreach ($class_schedules[$class['class_id']] as $schedule): ?>
-                                                        <div class="schedule-item">
-                                                            <div class="schedule-course-info">
-                                                                <div class="schedule-course"><?php echo htmlspecialchars($schedule['course_code']); ?></div>
-                                                                <div style="font-size: 0.75rem; color: #888;">
-                                                                    <?php echo htmlspecialchars($schedule['faculty_name']); ?>
-                                                                </div>
-                                                            </div>
-                                                            <div class="schedule-time">
-                                                                <strong><?php echo strtoupper($schedule['days']); ?></strong><br>
-                                                                <?php echo formatTime($schedule['time_start']); ?>-<?php echo formatTime($schedule['time_end']); ?>
-                                                                <?php if (!empty($schedule['room'])): ?>
-                                                                    <br><span style="color: #666; font-size: 0.75rem;">Room: <?php echo htmlspecialchars($schedule['room']); ?></span>
-                                                                <?php endif; ?>
-                                                            </div>
-                                                        </div>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                            <?php else: ?>
-                                                <div class="no-data" style="padding: 20px; text-align: center;">
-                                                    <div style="font-size: 2rem; margin-bottom: 10px;">
-                                                        <svg class="feather feather-xl"><use href="#calendar"></use></svg>
-                                                    </div>
-                                                    <p style="color: #666; margin: 0;">No schedules assigned yet</p>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
+                    <!-- Class cards will be generated by JavaScript using createClassCard() function -->
+                    <script>
+                    // Class data for JavaScript processing (same pattern as faculty)
+                    window.classesData = <?php echo json_encode($classes_data); ?>;
+                    
+                    // Generate class cards using the same function for initial load and dynamic updates
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const classGrid = document.querySelector('.class-grid');
+                        const classesData = window.classesData || [];
+                        
+                        if (classesData.length === 0) {
+                            classGrid.innerHTML = `
+                                <div class="no-data">
+                                    <h3>No classes assigned</h3>
+                                    <p>No classes are currently under your supervision</p>
+                                </div>
+                            `;
+                        } else {
+                            // Use the same createClassCard function for consistency
+                            classesData.forEach(classItem => {
+                                const cardHTML = window.livePollingManager ? 
+                                    window.livePollingManager.createClassCard(classItem) :
+                                    createClassCardFallback(classItem);
+                                classGrid.insertAdjacentHTML('beforeend', cardHTML);
+                            });
+                        }
+                    });
+                    
+                    // Fallback function in case live polling manager isn't loaded yet
+                    function createClassCardFallback(classData) {
+                        const nameParts = (classData.class_name || '').split(' ');
+                        const initials = nameParts.map(part => part.charAt(0)).join('').substring(0, 2);
+                        
+                        return `
+                            <div class="class-card" data-class-name="${escapeHtml(classData.class_name)}">
+                                <div class="class-avatar">${initials}</div>
+                                <div class="class-name">${escapeHtml(classData.class_name)}</div>   
+                                <div class="class-code-display">${escapeHtml(classData.class_code)}</div>
+                                <div class="class-info">
+                                    <div class="class-details">
+                                        <p><strong>Year Level:</strong> ${classData.year_level}</p>
+                                        <p><strong>Academic Year:</strong> ${escapeHtml(classData.academic_year)}</p>
+                                        <p><strong>Subjects:</strong> ${classData.total_subjects || 0}</p>
                                     </div>
                                 </div>
-
-                                <button class="class-details-toggle" onclick="toggleClassDetailsOverlay(this)">
-                                    View Schedule Details
-                                    <span class="arrow">▼</span>
-                                </button>
+                                <div class="class-actions">
+                                    <button class="action-btn primary" onclick="viewClassSchedule(${classData.class_id})">Schedule</button>
+                                    <button class="action-btn" onclick="viewClassDetails(${classData.class_id})">Details</button>
+                                </div>
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                        `;
+                    }
+                    
+                    function escapeHtml(text) {
+                        if (!text) return '';
+                        const div = document.createElement('div');
+                        div.textContent = text;
+                        return div.innerHTML;
+                    }
+                    </script>
                 </div>
             </div>
         </div>
