@@ -15,7 +15,12 @@ try {
     $user_role = $_SESSION['role'];
     
     if ($user_role === 'campus_director') {
-        $faculty_query = "SELECT COUNT(*) as total_faculty FROM faculty WHERE is_active = TRUE";
+        $faculty_query = "
+            SELECT COUNT(*) as total_faculty 
+            FROM faculty f 
+            INNER JOIN users u ON f.user_id = u.user_id 
+            WHERE u.is_active = TRUE
+        ";
         $stmt = $pdo->prepare($faculty_query);
         $stmt->execute();
         $stats['total_faculty'] = $stmt->fetch(PDO::FETCH_ASSOC)['total_faculty'];
@@ -37,9 +42,9 @@ try {
         
         $available_faculty_query = "
             SELECT COUNT(*) as available_faculty 
-            FROM faculty 
-            WHERE is_active = 1
-            AND last_activity > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+            FROM faculty f
+            INNER JOIN users u ON f.user_id = u.user_id 
+            WHERE u.is_active = TRUE AND f.is_active = 1
         ";
         $stmt = $pdo->prepare($available_faculty_query);
         $stmt->execute();
@@ -58,8 +63,9 @@ try {
             
             $program_faculty_query = "
                 SELECT COUNT(*) as program_faculty 
-                FROM faculty 
-                WHERE program = ? AND is_active = TRUE
+                FROM faculty f
+                INNER JOIN users u ON f.user_id = u.user_id 
+                WHERE f.program = ? AND u.is_active = TRUE
             ";
             $stmt = $pdo->prepare($program_faculty_query);
             $stmt->execute([$program]);

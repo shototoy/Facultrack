@@ -144,8 +144,14 @@ async function deleteEntity(action, id) {
         const result = await response.json();
 
         if (result.success) {
+            // Remove both the main row and its expansion row (if it exists)
+            const expansionRow = row.nextElementSibling;
+            if (expansionRow && expansionRow.classList.contains('expansion-row')) {
+                expansionRow.remove();
+            }
             row.remove();
-            updateStatistics();
+            
+            // No updateStatistics() call - let live polling handle it
             showNotification(`${capitalize(label)} deleted successfully`, 'success');
         } else {
             throw new Error(result.message || `Failed to delete ${label}`);

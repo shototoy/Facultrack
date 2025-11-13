@@ -29,13 +29,12 @@ function getAllFaculty($pdo) {
             f.current_location,
             f.last_location_update,
             CASE 
-                WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN 'Available'
-                WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN 'Busy'
+                WHEN f.is_active = 1 THEN 'Available'
                 ELSE 'Offline'
             END as status
         FROM faculty f
         JOIN users u ON f.user_id = u.user_id
-        WHERE f.is_active = TRUE
+        WHERE u.is_active = TRUE
         ORDER BY u.full_name
     ";
     $stmt = $pdo->prepare($faculty_query);

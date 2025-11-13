@@ -8,7 +8,7 @@ $current_date = date('Y-m-d');
 $current_day = date('w');
 
 function getFacultyInfo($pdo, $user_id) {
-    $faculty_query = "SELECT f.*, u.full_name FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.user_id = ? AND f.is_active = TRUE";
+    $faculty_query = "SELECT f.*, u.full_name FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.user_id = ? AND u.is_active = TRUE";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute([$user_id]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -204,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $update_location_query = "UPDATE faculty 
                                   SET current_location = ?, 
                                       last_location_update = NOW() 
-                                  WHERE faculty_id = ? AND is_active = TRUE";
+                                  WHERE faculty_id = ?";
         $stmt = $pdo->prepare($update_location_query);
         $stmt->execute([$location, $faculty_id]);
         
@@ -260,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $update_query = "UPDATE faculty 
                         SET current_location = ?, 
                             last_location_update = NOW() 
-                        WHERE user_id = ? AND is_active = TRUE";
+                        WHERE user_id = ?";
         $stmt = $pdo->prepare($update_query);
         $stmt->execute([$location, $user_id]);
         
@@ -319,7 +319,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $user_id = $_SESSION['user_id'];
     
     try {
-        $status_query = "SELECT last_location_update FROM faculty WHERE user_id = ? AND is_active = TRUE";
+        $status_query = "SELECT last_location_update FROM faculty WHERE user_id = ?";
         $stmt = $pdo->prepare($status_query);
         $stmt->execute([$user_id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -357,6 +357,14 @@ $faculty_info = getFacultyInfo($pdo, $user_id);
 
 if (!$faculty_info) {
     die("Faculty information not found");
+}
+
+try {
+    $set_online_query = "UPDATE faculty SET is_active = 1, last_location_update = NOW() WHERE user_id = ?";
+    $stmt = $pdo->prepare($set_online_query);
+    $stmt->execute([$user_id]);
+} catch (Exception $e) {
+    error_log("Failed to set faculty online status: " . $e->getMessage());
 }
 
 $today_schedule = getTodaySchedule($pdo, $faculty_info['faculty_id']);
