@@ -1190,6 +1190,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
         window.userRole = 'program_chair';
     </script>
     <script src="assets/js/live_polling.js"></script>
+    <script src="assets/js/shared_functions.js"></script>
     <script src="assets/js/program.js"></script>
     <script>
         const facultySchedules = <?php echo json_encode($faculty_schedules); ?>;

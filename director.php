@@ -426,6 +426,7 @@ function getProgramChairs($pdo) {
         window.userRole = 'campus_director';
     </script>
     <script src="assets/js/live_polling.js"></script>
+    <script src="assets/js/shared_functions.js"></script>
     <script src="assets/js/director.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
