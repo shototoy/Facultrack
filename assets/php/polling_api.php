@@ -665,7 +665,10 @@ switch ($action) {
                         $response_data['courses_data'] = getAllCourses($pdo);
                         break;
                     case 'announcements':
-                        $response_data['announcements_data'] = getAllAnnouncements($pdo);
+                        $announcements_data = getAllAnnouncements($pdo);
+                        $response_data['announcements_data'] = $announcements_data;
+                        $response_data['count'] = count($announcements_data);
+                        $response_data['announcements'] = array_slice($announcements_data, 0, 10);
                         break;
                     case 'all':
                         $response_data['faculty_data'] = getAllFaculty($pdo);

@@ -1,15 +1,3 @@
-function updateStatistics() {
-    fetch('assets/php/get_statistics.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('totalFaculty').textContent = data.statistics.total_faculty || '0';
-                document.getElementById('totalClasses').textContent = data.statistics.total_classes || '0';
-                document.getElementById('totalCourses').textContent = data.statistics.total_courses || '0';
-                document.getElementById('totalAnnouncements').textContent = data.statistics.total_announcements || '0';
-            }
-        });
-}
 
 function createSearchResultActions() {
     if (document.querySelector('#searchInput')) {

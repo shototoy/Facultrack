@@ -651,7 +651,7 @@ class LivePollingManager {
             return;
         }
         try {
-            const response = await fetch('assets/php/get_announcements.php', {
+            const response = await fetch('assets/php/polling_api.php?action=get_dashboard_data&tab=announcements', {
                 method: 'GET',
                 credentials: 'same-origin'
             });
