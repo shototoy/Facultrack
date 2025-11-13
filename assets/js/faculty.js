@@ -255,11 +255,7 @@ document.addEventListener('visibilitychange', function() {
     }
 });
 
-setInterval(function() {
-    if (document.visibilityState === 'visible') {
-        updateLocationStatus();
-    }
-}, 300000);
+// Location polling now handled by live_polling.js
 
 // FACULTY PHONE ANIMATION HANDLER
 let lastScrollTop = 0;

@@ -38,8 +38,8 @@ try {
         $available_faculty_query = "
             SELECT COUNT(*) as available_faculty 
             FROM faculty 
-            WHERE is_active = TRUE 
-            AND last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+            WHERE is_active = 1
+            AND last_activity > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
         ";
         $stmt = $pdo->prepare($available_faculty_query);
         $stmt->execute();
