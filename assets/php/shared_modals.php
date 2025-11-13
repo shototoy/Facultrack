@@ -331,3 +331,61 @@ $role = $_SESSION['role'] ?? '';
         </div>
     </div>
 </div>
+
+<div class="modal-overlay" id="updateSemesterModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Update Semester</h3>
+            <button type="button" class="modal-close" onclick="closeModal('updateSemesterModal')">&times;</button>
+        </div>
+        <form id="updateSemesterForm" onsubmit="event.preventDefault(); updateSemester(this);" class="modal-form">
+            <div class="form-group">
+                <label class="form-label">Select Semester to Update *</label>
+                <select name="semester" class="form-select" required onchange="loadClassesForSemester(this.value)">
+                    <option value="">Select Semester</option>
+                    <option value="1st">1st Semester</option>
+                    <option value="2nd">2nd Semester</option>
+                    <option value="Summer">Summer</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Academic Year *</label>
+                <select name="academic_year" class="form-select" required onchange="loadClassesForSemester(document.querySelector('[name=semester]').value)">
+                    <option value="">Select Academic Year</option>
+                    <?php 
+                    $current_year = date('Y');
+                    for ($i = $current_year - 2; $i <= $current_year + 2; $i++) {
+                        $ay = $i . '-' . ($i + 1);
+                        $selected = ($ay === $current_year . '-' . ($current_year + 1)) ? 'selected' : '';
+                        echo "<option value='$ay' $selected>$ay</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+
+            <div id="classesPreview" class="form-group" style="display: none;">
+                <label class="form-label">Classes to Update</label>
+                <div id="classesPreviewContent" class="preview-content">
+                    <!-- Classes will be loaded here -->
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="warning-box" style="background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                    <strong>⚠️ Warning:</strong> This will:
+                    <ul style="margin: 10px 0 0 20px;">
+                        <li>Add ALL courses from the curriculum to selected classes</li>
+                        <li>Reset ALL existing faculty assignments for those classes</li>
+                        <li>This action cannot be undone</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('updateSemesterModal')">Cancel</button>
+                <button type="button" class="btn-primary" id="updateSemesterBtn" onclick="alert('Button clicked directly!'); window.updateSemester(document.getElementById('updateSemesterForm'));">Update Semester</button>
+            </div>
+        </form>
+    </div>
+</div>

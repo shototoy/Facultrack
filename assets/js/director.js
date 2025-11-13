@@ -790,3 +790,186 @@ function toggleRowExpansion(row) {
         }
     }
 }
+
+// UPDATE SEMESTER FUNCTIONALITY - Make functions globally available
+window.loadClassesForSemester = async function(semester) {
+    const academicYearSelect = document.querySelector('[name="academic_year"]');
+    const academicYear = academicYearSelect.value;
+    const previewDiv = document.getElementById('classesPreview');
+    const previewContent = document.getElementById('classesPreviewContent');
+    const updateBtn = document.getElementById('updateSemesterBtn');
+    
+    // Reset state
+    previewDiv.style.display = 'none';
+    // updateBtn.disabled = true; // COMMENTED OUT - Don't disable the button
+    
+    if (!semester || !academicYear) {
+        return;
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.set('action', 'get_classes_for_semester');
+        formData.set('semester', semester);
+        formData.set('academic_year', academicYear);
+        
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            if (result.classes.length > 0) {
+                // Show classes preview
+                let html = '<div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; padding: 10px;">';
+                result.classes.forEach(classItem => {
+                    html += `
+                        <div style="display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee;">
+                            <div>
+                                <strong>${escapeHtml(classItem.class_name)}</strong> (${escapeHtml(classItem.class_code)})<br>
+                                <small>Year ${classItem.year_level} • ${escapeHtml(classItem.program_chair_name || 'No Program Chair')}</small><br>
+                                <small style="color: #888;">Currently: ${escapeHtml(classItem.current_semester || 'N/A')} ${escapeHtml(classItem.current_academic_year || 'N/A')}</small>
+                            </div>
+                            <div style="text-align: right; color: #666;">
+                                <small>Current subjects: ${classItem.current_subjects || 0}</small>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                previewContent.innerHTML = html;
+                previewDiv.style.display = 'block';
+                // updateBtn.disabled = false; // Keep button enabled
+            } else {
+                previewContent.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">No classes found for this semester and academic year.</div>';
+                previewDiv.style.display = 'block';
+                // updateBtn.disabled = true; // Keep button enabled for testing
+            }
+        } else {
+            if (typeof showNotification === 'function') {
+                showNotification('Error loading classes: ' + result.message, 'error');
+            } else {
+                console.error('Error loading classes:', result.message);
+            }
+        }
+    } catch (error) {
+        if (typeof showNotification === 'function') {
+            showNotification('Error loading classes: ' + error.message, 'error');
+        } else {
+            console.error('Error loading classes:', error.message);
+        }
+    }
+}
+
+window.updateSemester = async function(form) {
+    alert('updateSemester function called! Form: ' + (form ? 'Found' : 'NULL'));
+    
+    const submitBtn = document.getElementById('updateSemesterBtn');
+    const originalText = submitBtn ? submitBtn.textContent : 'BUTTON NOT FOUND';
+    
+    alert('Submit button: ' + (submitBtn ? 'Found' : 'NOT FOUND') + ', Text: ' + originalText);
+    
+    if (!confirm('Are you sure you want to update the semester? This will:\n• Add ALL curriculum courses to selected classes\n• Reset ALL faculty assignments\n• This action cannot be undone!')) {
+        alert('User cancelled confirmation');
+        return;
+    }
+    
+    alert('User confirmed, proceeding with update');
+    
+    try {
+        console.log('Starting form submission...');
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Updating...';
+        
+        const formData = new FormData(form);
+        formData.set('action', 'update_semester');
+        
+        console.log('FormData created:');
+        for (let pair of formData.entries()) {
+            console.log('- ' + pair[0] + ': ' + pair[1]);
+        }
+        
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        console.log('Response status:', response.status);
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+        
+        const result = JSON.parse(responseText);
+        console.log('Parsed result:', result);
+        
+        if (result.success) {
+            // Use the global notification system
+            if (typeof showNotification === 'function') {
+                showNotification(result.message, 'success');
+            } else if (typeof window.showNotification === 'function') {
+                window.showNotification(result.message, 'success');
+            } else {
+                alert('Success: ' + result.message);
+            }
+            
+            // Close modal using the global function
+            if (typeof closeModal === 'function') {
+                closeModal('updateSemesterModal');
+            } else if (typeof window.closeModal === 'function') {
+                window.closeModal('updateSemesterModal');
+            } else {
+                document.getElementById('updateSemesterModal').classList.remove('show');
+            }
+            
+            form.reset();
+            
+            // Reset modal state
+            const previewDiv = document.getElementById('classesPreview');
+            if (previewDiv) previewDiv.style.display = 'none';
+            submitBtn.disabled = true;
+            
+            // Refresh classes tab if it's currently active
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab && activeTab.id === 'classes-content') {
+                // Trigger a refresh of the classes data
+                setTimeout(() => {
+                    window.location.reload(); // Simple refresh for now
+                }, 1500);
+            }
+        } else {
+            throw new Error(result.message || 'Failed to update semester');
+        }
+    } catch (error) {
+        // Use the global notification system for errors too
+        if (typeof showNotification === 'function') {
+            showNotification('Error updating semester: ' + error.message, 'error');
+        } else if (typeof window.showNotification === 'function') {
+            window.showNotification('Error updating semester: ' + error.message, 'error');
+        } else {
+            alert('Error updating semester: ' + error.message);
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+}
+
+// Add direct event listener for Update Semester form when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        const updateForm = document.getElementById('updateSemesterForm');
+        if (updateForm) {
+            console.log('Found updateSemesterForm, adding event listener');
+            updateForm.addEventListener('submit', function(e) {
+                alert('Form submit event fired!');
+                e.preventDefault();
+                window.updateSemester(this);
+            });
+        } else {
+            console.log('updateSemesterForm NOT FOUND');
+        }
+    }, 1000); // Wait for modal to be ready
+});

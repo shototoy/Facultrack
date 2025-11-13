@@ -262,6 +262,9 @@ function getProgramChairs($pdo) {
                         <button class="export-btn" onclick="exportData('classes')" title="Export Classes Data">
                             <svg class="feather feather-sm"><use href="#download"></use></svg> Export
                         </button>
+                        <button class="add-btn" data-modal="updateSemesterModal" style="background-color: #4CAF50;">
+                            <svg class="feather feather-sm"><use href="#refresh-cw"></use></svg> Update Semester
+                        </button>
                         <button class="add-btn" data-modal="addClassModal">
                             <svg class="feather feather-sm"><use href="#plus"></use></svg> Add Class
                         </button>

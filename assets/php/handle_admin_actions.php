@@ -63,7 +63,7 @@ function handleAdd($pdo, $data, $user_id, $user_role) {
             'unique' => ['users.username', 'classes.class_code'],
             'user' => ['role' => 'class'],
             'table' => 'classes',
-            'fields' => ['class_code', 'class_name', 'year_level', 'semester', 'academic_year', 'program_chair_id']
+            'fields' => ['class_code', 'class_name', 'year_level', 'semester', 'academic_year']
         ],
         'add_announcement' => [
             'required' => ['title', 'content', 'priority', 'target_audience'],
@@ -140,7 +140,16 @@ function handleAdd($pdo, $data, $user_id, $user_role) {
         }
 
         if ($action === 'add_class') {
-            $insert_data['program_chair_id'] = $user_role === 'program_chair' ? $user_id : ($data['program_chair_id'] ?? null);
+            // Program chair ID is always required - use session user_id for program chairs, or provided value for campus directors
+            if ($user_role === 'program_chair') {
+                $insert_data['program_chair_id'] = $user_id;
+            } else {
+                // For campus directors, ensure program_chair_id is provided and not null
+                $insert_data['program_chair_id'] = $data['program_chair_id'] ?? null;
+                if (!$insert_data['program_chair_id']) {
+                    throw new Exception('Program Chair ID is required for class creation');
+                }
+            }
         }
 
         if ($action === 'add_announcement') {

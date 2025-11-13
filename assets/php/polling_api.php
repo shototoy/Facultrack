@@ -835,6 +835,146 @@ switch ($action) {
         }
         break;
         
+    // UPDATE SEMESTER ENDPOINTS
+    case 'get_classes_for_semester':
+        validateUserSession('campus_director');
+        try {
+            $semester = $_POST['semester'] ?? '';
+            $academic_year = $_POST['academic_year'] ?? '';
+            
+            if (empty($semester) || empty($academic_year)) {
+                sendJsonResponse(['success' => false, 'message' => 'Semester and academic year are required']);
+                break;
+            }
+            
+            $classes_query = "
+                SELECT c.class_id, c.class_code, c.class_name, c.year_level, 
+                       u.full_name as program_chair_name,
+                       COUNT(s.schedule_id) as current_subjects,
+                       c.semester as current_semester,
+                       c.academic_year as current_academic_year
+                FROM classes c
+                LEFT JOIN faculty f ON c.program_chair_id = f.user_id
+                LEFT JOIN users u ON f.user_id = u.user_id
+                LEFT JOIN schedules s ON c.class_id = s.class_id AND s.is_active = TRUE
+                WHERE c.is_active = TRUE
+                GROUP BY c.class_id
+                ORDER BY c.year_level, c.class_name";
+            
+            $stmt = $pdo->prepare($classes_query);
+            $stmt->execute();
+            $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            sendJsonResponse([
+                'success' => true,
+                'classes' => $classes
+            ]);
+            
+        } catch (Exception $e) {
+            sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+        break;
+        
+    case 'update_semester':
+        validateUserSession('campus_director');
+        try {
+            $semester = $_POST['semester'] ?? '';
+            $academic_year = $_POST['academic_year'] ?? '';
+            
+            if (empty($semester) || empty($academic_year)) {
+                sendJsonResponse(['success' => false, 'message' => 'Semester and academic year are required']);
+                break;
+            }
+            
+            $pdo->beginTransaction();
+            
+            // Step 1: Get ALL active classes (we'll update them to the new semester/academic year)
+            $classes_query = "
+                SELECT c.class_id, c.year_level, c.program_chair_id 
+                FROM classes c
+                WHERE c.is_active = TRUE";
+            
+            $stmt = $pdo->prepare($classes_query);
+            $stmt->execute();
+            $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (empty($classes)) {
+                $pdo->rollback();
+                sendJsonResponse(['success' => false, 'message' => 'No classes found for the selected semester']);
+                break;
+            }
+            
+            // Step 1.5: Update classes to current semester/academic year if needed
+            $update_classes_query = "
+                UPDATE classes 
+                SET semester = ?, academic_year = ?, updated_at = NOW()
+                WHERE class_id IN (" . implode(',', array_column($classes, 'class_id')) . ")";
+            $stmt = $pdo->prepare($update_classes_query);
+            $stmt->execute([$semester, $academic_year]);
+            
+            $updated_classes = 0;
+            $total_schedules_added = 0;
+            
+            foreach ($classes as $class) {
+                $class_id = $class['class_id'];
+                $year_level = $class['year_level'];
+                $program_chair_id = $class['program_chair_id'];
+                
+                // Step 2: Reset all faculty assignments for this class (delete all schedules)
+                $delete_schedules = "DELETE FROM schedules WHERE class_id = ?";
+                $stmt = $pdo->prepare($delete_schedules);
+                $stmt->execute([$class_id]);
+                
+                // Step 3: Get all courses from curriculum for this year level and semester
+                $curriculum_query = "
+                    SELECT curr.course_code 
+                    FROM curriculum curr
+                    WHERE curr.year_level = ? 
+                    AND curr.semester = ? 
+                    AND curr.academic_year = ?
+                    AND curr.program_chair_id = ?
+                    AND curr.is_active = TRUE";
+                
+                $stmt = $pdo->prepare($curriculum_query);
+                $stmt->execute([$year_level, $semester, $academic_year, $program_chair_id]);
+                $curriculum_courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Step 4: Add all curriculum courses as unassigned schedules (no faculty assigned yet)
+                foreach ($curriculum_courses as $course) {
+                    $insert_schedule = "
+                        INSERT INTO schedules (course_code, class_id, faculty_id, section, days, time_start, time_end, 
+                                             room, semester, academic_year, is_active, created_at, updated_at) 
+                        VALUES (?, ?, 0, 'TBA', 'TBA', '00:00:00', '00:00:00', 'TBA', ?, ?, TRUE, NOW(), NOW())";
+                    
+                    $stmt = $pdo->prepare($insert_schedule);
+                    $stmt->execute([
+                        $course['course_code'],
+                        $class_id,
+                        $semester,
+                        $academic_year
+                    ]);
+                    
+                    $total_schedules_added++;
+                }
+                
+                $updated_classes++;
+            }
+            
+            $pdo->commit();
+            
+            sendJsonResponse([
+                'success' => true,
+                'message' => "Successfully updated {$updated_classes} classes with {$total_schedules_added} courses from curriculum. All faculty assignments have been reset."
+            ]);
+            
+        } catch (Exception $e) {
+            if (isset($pdo)) {
+                $pdo->rollback();
+            }
+            sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+        break;
+        
     default:
         error_log("Unknown action received: " . $action);
         sendJsonResponse(['success' => false, 'message' => 'Unknown action: ' . $action], 400);
