@@ -20,8 +20,6 @@ try {
     error_log("DIRECT DELETE: Attempting to delete course_id: " . $course_id);
     
     $pdo->beginTransaction();
-    
-    // Get course code first
     $stmt = $pdo->prepare("SELECT course_code FROM courses WHERE course_id = ?");
     $stmt->execute([$course_id]);
     $course_code = $stmt->fetchColumn();
