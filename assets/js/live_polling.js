@@ -24,14 +24,19 @@ class LivePollingManager {
             courses: 3000,
             classes: 3000
         };
+        this.maxPollingInterval = 10000;
+        this.minPollingInterval = 2000;
+        this.consecutiveNoChanges = 0;
+        this.lastUpdateTime = '1970-01-01 00:00:00';
+        this.optimizedMode = true;
         this.visibilityObserver = null;
         this.currentTab = this.detectInitialTab();
         this.visibleElements = new Set();
         this.heartbeatInterval = null;
         this.pageType = this.detectPageType();
         this.observableElements = this.getObservableElementsForPage();
-        this.lastStatusCheck = {};  // Track last known status for each faculty
-        this.initialized = false;   // Track if this is initial load
+        this.lastStatusCheck = {};
+        this.initialized = false;
         this.setupVisibilityHandling();
         this.setupNetworkHandling();
         this.setupIntersectionObserver();
@@ -352,7 +357,8 @@ class LivePollingManager {
     }
     startTablePolling() {
         this.intervals.tables = setInterval(() => {
-            if (this.isElementVisible(`${this.currentTab}-content`)) {
+            const activeTab = this.getActiveTab();
+            if (this.hasVisibleElement('tables') && this.isTabObservable(activeTab)) {
                 this.fetchTableUpdates();
             }
         }, this.defaultIntervals.tables);
@@ -430,29 +436,198 @@ class LivePollingManager {
             this.queueUpdate('tables', { action: 'fetch_tables', tab: this.currentTab });
             return;
         }
-        try {
-            let params = new URLSearchParams();
-            params.append('action', 'get_dashboard_data');
-            if (this.pageType === 'director') {
-                params.append('tab', this.currentTab);
+        
+        const observableElements = this.getObservableElementsStatus();
+        const activeElements = Object.keys(observableElements).filter(key => observableElements[key]);
+        
+        if (activeElements.length === 0) {
+            return;
+        }
+        
+        const pollingTargets = this.getPollingTargetsFromObservable(activeElements);
+        
+        for (const target of pollingTargets) {
+            try {
+                let params = new URLSearchParams();
+                params.append('action', 'get_dashboard_data');
+                if (this.pageType === 'director') {
+                    params.append('tab', target);
+                }
+                if (this.optimizedMode) {
+                    params.append('optimized', 'true');
+                    params.append('last_update', this.getLastUpdateForTab(target));
+                }
+                const response = await fetch(`assets/php/polling_api.php?${params}`, {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    if (data.optimized) {
+                        this.handleOptimizedResponse(data);
+                    } else {
+                        this.detectAndLogChanges(data);
+                        if (data.changes) {
+                            this.handleDynamicChanges(data.changes);
+                        }
+                        if (data.current_entities) {
+                            this.handleStatusUpdates(data.current_entities);
+                        }
+                        this.updateStatisticsFromTableData(data);
+                    }
+                    this.adjustPollingInterval(data.has_changes || false);
+                    this.setLastUpdateForTab(target, data.timestamp);
+                }
+            } catch (error) {
+                this.handlePollingError('tables', error);
             }
-            const response = await fetch(`assets/php/polling_api.php?${params}`, {
-                method: 'GET',
-                credentials: 'same-origin'
+        }
+    }
+    getActiveTab() {
+        const activeTabElement = document.querySelector('.tab-content.active');
+        if (activeTabElement) {
+            return activeTabElement.id.replace('-content', '');
+        }
+        return this.currentTab;
+    }
+    isTabObservable(tab) {
+        const tabElementKey = `${tab}_tab`;
+        const tableElementKey = `${tab}_table`;
+        
+        const tabElement = this.observableElements[tabElementKey];
+        const tableElement = this.observableElements[tableElementKey];
+        
+        if (tabElement && tabElement.condition) {
+            return tabElement.condition();
+        }
+        if (tableElement && tableElement.condition) {
+            return tableElement.condition();
+        }
+        
+        return this.isElementVisible(`${tab}-content`);
+    }
+    getLastUpdateForTab(tab) {
+        if (!this.lastUpdateTimes) {
+            this.lastUpdateTimes = {};
+        }
+        return this.lastUpdateTimes[tab] || '1970-01-01 00:00:00';
+    }
+    setLastUpdateForTab(tab, timestamp) {
+        if (!this.lastUpdateTimes) {
+            this.lastUpdateTimes = {};
+        }
+        if (timestamp) {
+            this.lastUpdateTimes[tab] = timestamp;
+        }
+    }
+    getObservableElementsStatus() {
+        const observableStatus = {};
+        Object.keys(this.observableElements).forEach(elementKey => {
+            const element = this.observableElements[elementKey];
+            let isObservable = false;
+            
+            if (element.condition) {
+                isObservable = element.condition();
+            } else {
+                const domElement = document.querySelector(element.selector);
+                isObservable = domElement ? this.isElementVisible(domElement) : false;
+            }
+            
+            observableStatus[elementKey] = isObservable;
+        });
+        return observableStatus;
+    }
+    getPollingTargetsFromObservable(activeElements) {
+        const targets = new Set();
+        
+        activeElements.forEach(elementKey => {
+            const element = this.observableElements[elementKey];
+            if (element.polling === 'tables' || element.polling === 'cards') {
+                if (elementKey.includes('_tab') || elementKey.includes('_table')) {
+                    const tabName = elementKey.replace('_tab', '').replace('_table', '');
+                    targets.add(tabName);
+                }
+            }
+        });
+        
+        if (targets.size === 0 && this.pageType === 'director') {
+            const activeTab = this.getActiveTab();
+            if (activeTab) {
+                targets.add(activeTab);
+            }
+        }
+        
+        return Array.from(targets);
+    }
+    handleOptimizedResponse(data) {
+        if (data.has_changes && data.updates && data.updates.length > 0) {
+            this.lastUpdateTime = data.timestamp;
+            data.updates.forEach(update => {
+                if (this.pageType === 'director') {
+                    this.addToTable(data.tab, update);
+                } else if (this.pageType === 'program') {
+                    this.addToCards(data.tab, update);
+                }
             });
-            const data = await response.json();
-            if (data.success) {
-                this.detectAndLogChanges(data);
-                if (data.changes) {
-                    this.handleDynamicChanges(data.changes);
-                }
-                if (data.current_entities) {
-                    this.handleStatusUpdates(data.current_entities);
-                }
-                this.updateStatisticsFromTableData(data);
+            this.updateCounts(data.tab, data.updates.length);
+            console.log(`${data.tab}: ${data.updates.length} new updates received`);
+        } else {
+            console.log(`${data.tab}: No changes detected`);
+        }
+        if (data.total_count !== undefined) {
+            this.updateTotalCount(data.tab, data.total_count);
+        }
+    }
+    adjustPollingInterval(hasChanges) {
+        const currentInterval = this.defaultIntervals.tables;
+        if (hasChanges) {
+            this.consecutiveNoChanges = 0;
+            if (currentInterval > this.minPollingInterval) {
+                this.defaultIntervals.tables = Math.max(this.minPollingInterval, currentInterval - 1000);
+                this.restartTablePolling();
             }
-        } catch (error) {
-            this.handlePollingError('tables', error);
+        } else {
+            this.consecutiveNoChanges++;
+            if (this.consecutiveNoChanges >= 3) {
+                if (currentInterval < this.maxPollingInterval) {
+                    this.defaultIntervals.tables = Math.min(this.maxPollingInterval, currentInterval + 1000);
+                    this.restartTablePolling();
+                }
+            }
+        }
+    }
+    restartTablePolling() {
+        if (this.intervals.tables) {
+            clearInterval(this.intervals.tables);
+            this.intervals.tables = setInterval(() => {
+                const activeTab = this.getActiveTab();
+                if (this.hasVisibleElement('tables') && this.isTabObservable(activeTab)) {
+                    this.fetchTableUpdates();
+                }
+            }, this.defaultIntervals.tables);
+        }
+    }
+    updateTotalCount(tab, totalCount) {
+        const statLabels = {
+            'faculty': 'Faculty',
+            'classes': 'Classes',
+            'courses': 'Courses',
+            'announcements': 'Announcements'
+        };
+        const label = statLabels[tab];
+        if (label) {
+            const statElements = document.querySelectorAll('.header-stat-label');
+            statElements.forEach(statElement => {
+                if (statElement.textContent.trim() === label) {
+                    const numberElement = statElement.parentElement.querySelector('.header-stat-number');
+                    if (numberElement) {
+                        const currentValue = parseInt(numberElement.textContent) || 0;
+                        if (currentValue !== totalCount) {
+                            this.animateValueChange(numberElement, currentValue, totalCount);
+                        }
+                    }
+                }
+            });
         }
     }
     detectAndLogChanges(data) {
@@ -591,7 +766,25 @@ class LivePollingManager {
     }
     logCurrentStatus() {
         const pageName = document.title.split(' - ')[1] || 'Dashboard';
-        console.log(`${this.currentTab}: Polling active`);
+        const activeTab = this.getActiveTab();
+        
+        console.log('Observable elements:');
+        const observableStatus = this.getObservableElementsStatus();
+        Object.keys(observableStatus).forEach(elementKey => {
+            console.log(`${elementKey}: ${observableStatus[elementKey]}`);
+        });
+        
+        const activeElements = Object.keys(observableStatus).filter(key => observableStatus[key]);
+        const pollingTargets = this.getPollingTargetsFromObservable(activeElements);
+        
+        console.log(`Active polling targets: ${pollingTargets.length > 0 ? pollingTargets.join(', ') : 'none'}`);
+        
+        if (this.optimizedMode && pollingTargets.length > 0) {
+            pollingTargets.forEach(target => {
+                const lastUpdate = this.getLastUpdateForTab(target);
+                console.log(`${target}: Optimized mode, last update: ${lastUpdate}`);
+            });
+        }
     }
     logChanges(type, changeInfo) {
         const pageName = document.title.split(' - ')[1] || 'Dashboard';
