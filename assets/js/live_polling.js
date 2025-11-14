@@ -28,7 +28,6 @@ class LivePollingManager {
         this.minPollingInterval = 2000;
         this.consecutiveNoChanges = 0;
         this.lastUpdateTime = '1970-01-01 00:00:00';
-        this.optimizedMode = true;
         this.visibilityObserver = null;
         this.currentTab = this.detectInitialTab();
         this.visibleElements = new Set();
@@ -348,12 +347,6 @@ class LivePollingManager {
         return false;
     }
     startStatisticsPolling() {
-        this.intervals.statistics = setInterval(() => {
-            if (this.isElementVisible('header-stat') || this.visibleElements.size > 0) {
-                this.fetchTableUpdates();
-            }
-        }, this.defaultIntervals.statistics);
-        this.fetchTableUpdates();
     }
     startTablePolling() {
         this.intervals.tables = setInterval(() => {
@@ -453,28 +446,22 @@ class LivePollingManager {
                 if (this.pageType === 'director') {
                     params.append('tab', target);
                 }
-                if (this.optimizedMode) {
-                    params.append('optimized', 'true');
-                    params.append('last_update', this.getLastUpdateForTab(target));
-                }
+                params.append('optimized', 'true');
+                params.append('last_update', this.getLastUpdateForTab(target));
                 const response = await fetch(`assets/php/polling_api.php?${params}`, {
                     method: 'GET',
                     credentials: 'same-origin'
                 });
                 const data = await response.json();
                 if (data.success) {
-                    if (data.optimized) {
-                        this.handleOptimizedResponse(data);
-                    } else {
-                        this.detectAndLogChanges(data);
-                        if (data.changes) {
-                            this.handleDynamicChanges(data.changes);
-                        }
-                        if (data.current_entities) {
-                            this.handleStatusUpdates(data.current_entities);
-                        }
-                        this.updateStatisticsFromTableData(data);
+                    this.detectAndLogChanges(data);
+                    if (data.changes) {
+                        this.handleDynamicChanges(data.changes);
                     }
+                    if (data.current_entities) {
+                        this.handleStatusUpdates(data.current_entities);
+                    }
+                    this.updateStatisticsFromTableData(data);
                     this.adjustPollingInterval(data.has_changes || false);
                     this.setLastUpdateForTab(target, data.timestamp);
                 }
@@ -561,7 +548,6 @@ class LivePollingManager {
     }
     handleOptimizedResponse(data) {
         if (data.has_changes && data.updates && data.updates.length > 0) {
-            this.lastUpdateTime = data.timestamp;
             data.updates.forEach(update => {
                 if (this.pageType === 'director') {
                     this.addToTable(data.tab, update);
@@ -779,7 +765,7 @@ class LivePollingManager {
         
         console.log(`Active polling targets: ${pollingTargets.length > 0 ? pollingTargets.join(', ') : 'none'}`);
         
-        if (this.optimizedMode && pollingTargets.length > 0) {
+        if (pollingTargets.length > 0) {
             pollingTargets.forEach(target => {
                 const lastUpdate = this.getLastUpdateForTab(target);
                 console.log(`${target}: Optimized mode, last update: ${lastUpdate}`);

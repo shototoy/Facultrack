@@ -645,13 +645,17 @@ switch ($action) {
     case 'get_dashboard_data':
         $tab = $_GET['tab'] ?? 'faculty';
         $role = $_SESSION['role'];
+            $last_update = $_GET['last_update'] ?? '1970-01-01 00:00:00';
+        
         if (!in_array($role, ['campus_director', 'program_chair', 'class'])) {
             sendJsonResponse(['success' => false, 'message' => 'Unauthorized access'], 403);
         }
         try {
             $response_data = [
                 'success' => true,
-                'timestamp' => date('Y-m-d H:i:s')
+                'timestamp' => date('Y-m-d H:i:s'),
+                'has_changes' => true,
+                'optimized' => true
             ];
             if ($role === 'campus_director') {
                 switch ($tab) {
