@@ -117,7 +117,7 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
         FROM schedules s
         JOIN courses c ON s.course_code = c.course_code
         JOIN classes cl ON s.class_id = cl.class_id
-        WHERE s.faculty_id = ? AND s.is_active = TRUE 
+        WHERE s.faculty_id = ? AND s.is_active = TRUE AND s.faculty_id IS NOT NULL
         AND (s.days = ? OR 
             (s.days = 'MW' AND ? IN ('M', 'W', 'MW')) OR
             (s.days = 'MF' AND ? IN ('M', 'F', 'MF')) OR
@@ -274,7 +274,8 @@ function getClassFaculty($pdo, $user_id) {
         JOIN schedules s ON f.faculty_id = s.faculty_id
         WHERE f.is_active = TRUE 
         AND s.is_active = TRUE 
-        AND s.class_id = ?";
+        AND s.class_id = ?
+        AND s.faculty_id IS NOT NULL";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute([$class_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -811,7 +812,7 @@ switch ($action) {
                         FROM faculty f
                         JOIN users u ON f.user_id = u.user_id
                         JOIN schedules s ON f.faculty_id = s.faculty_id
-                        WHERE f.is_active = TRUE AND s.is_active = TRUE AND s.class_id = ?
+                        WHERE f.is_active = TRUE AND s.is_active = TRUE AND s.class_id = ? AND s.faculty_id IS NOT NULL
                         GROUP BY f.faculty_id
                         ORDER BY u.full_name";
                     
@@ -853,7 +854,7 @@ switch ($action) {
                     FROM schedules s
                     JOIN courses c ON s.course_code = c.course_code
                     JOIN classes cl ON s.class_id = cl.class_id
-                    WHERE s.faculty_id = ? AND s.is_active = TRUE
+                    WHERE s.faculty_id = ? AND s.is_active = TRUE AND s.faculty_id IS NOT NULL
                     ORDER BY s.time_start";
                 $stmt = $pdo->prepare($schedule_query);
                 $stmt->execute([$faculty_info['faculty_id']]);
@@ -1000,7 +1001,7 @@ switch ($action) {
                     $insert_schedule = "
                         INSERT INTO schedules (course_code, class_id, faculty_id, section, days, time_start, time_end, 
                                              room, semester, academic_year, is_active, created_at, updated_at) 
-                        VALUES (?, ?, 0, 'TBA', 'TBA', '00:00:00', '00:00:00', 'TBA', ?, ?, TRUE, NOW(), NOW())";
+                        VALUES (?, ?, NULL, 'TBA', 'TBA', '00:00:00', '00:00:00', 'TBA', ?, ?, TRUE, NOW(), NOW())";
                     $stmt = $pdo->prepare($insert_schedule);
                     $stmt->execute([
                         $course['course_code'],
