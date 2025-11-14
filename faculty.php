@@ -109,48 +109,9 @@ function getScheduleTabs($pdo, $faculty_id) {
     return array_unique($schedule_days);
 }
 
-function getScheduleStatus($status) {
-    switch ($status) {
-        case 'ongoing': return ['text' => 'In Progress', 'class' => 'ongoing'];
-        case 'upcoming': return ['text' => 'Upcoming', 'class' => 'upcoming'];
-        case 'finished': return ['text' => 'Completed', 'class' => 'finished'];
-        default: return ['text' => 'Unknown', 'class' => 'unknown'];
-    }
-}
+// getScheduleStatus function moved to polling_api.php
 
-function generateScheduleHTML($schedule_data) {
-    $html = '';
-    foreach ($schedule_data as $schedule) {
-        $status_info = getScheduleStatus($schedule['status']);
-        $start = strtotime($schedule['time_start']);
-        $end = strtotime($schedule['time_end']);
-        $duration = ($end - $start) / 3600;
-        
-        $html .= '<div class="schedule-item ' . $status_info['class'] . '">';
-        $html .= '<div class="schedule-time">';
-        $html .= '<div class="time-display">' . formatTime($schedule['time_start']) . '</div>';
-        $html .= '<div class="time-duration">' . $duration . 'hr</div>';
-        $html .= '</div>';
-        $html .= '<div class="schedule-details">';
-        $html .= '<div class="schedule-course">';
-        $html .= '<div class="course-code">' . htmlspecialchars($schedule['course_code']) . '</div>';
-        $html .= '<div class="course-name">' . htmlspecialchars($schedule['course_description']) . '</div>';
-        $html .= '</div>';
-        $html .= '<div class="schedule-info">';
-        $html .= '<span class="class-info">' . htmlspecialchars($schedule['class_name']) . '</span>';
-        $html .= '<span class="room-info">Room: ' . htmlspecialchars($schedule['room'] ?: 'TBA') . '</span>';
-        $html .= '</div>';
-        $html .= '</div>';
-        $html .= '<div class="schedule-status">';
-        $html .= '<span class="status-badge status-' . $status_info['class'] . '">' . $status_info['text'] . '</span>';
-        if ($schedule['status'] === 'ongoing') {
-            $html .= '<button class="btn-small btn-primary" onclick="markAttendance(' . $schedule['schedule_id'] . ')">Mark Present</button>';
-        }
-        $html .= '</div>';
-        $html .= '</div>';
-    }
-    return $html;
-}
+// generateScheduleHTML function moved to polling_api.php
 
 // Attendance and location update endpoints moved to assets/php/polling_api.php
 // Polling endpoints moved to assets/php/polling_api.php
@@ -1234,6 +1195,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
     <script>
         window.userRole = 'faculty';
     </script>
+    <script src="assets/js/shared_functions.js"></script>
     <script src="assets/js/live_polling.js"></script>
     <script src="assets/js/faculty.js"></script>
     

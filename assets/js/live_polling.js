@@ -130,11 +130,20 @@ class LivePollingManager {
                 polling: 'location'
             };
         }
-        const scheduleElements = document.querySelectorAll('.schedule-container, .schedule-section');
+        const scheduleElements = document.querySelectorAll('.schedule-container, .schedule-section, .schedule-list');
         if (scheduleElements.length > 0) {
             elements.schedules = {
-                selector: '.schedule-container, .schedule-section',
+                selector: '.schedule-container, .schedule-section, .schedule-list',
                 description: 'Schedule',
+                polling: 'schedules'
+            };
+        }
+        // Add schedule items polling for dynamic status updates
+        const scheduleItems = document.querySelectorAll('.schedule-item');
+        if (scheduleItems.length > 0) {
+            elements.schedule_items = {
+                selector: '.schedule-item',
+                description: 'Schedule Items',
                 polling: 'schedules'
             };
         }
@@ -295,12 +304,13 @@ class LivePollingManager {
                 this.startTablePolling(); // This handles both tables and cards
                 break;
             case 'faculty':
-                this.startLocationPolling();
+                this.startLocationPolling(); // Still needed for faculty's own location
                 this.startAnnouncementsPolling();
+                this.startSchedulePolling(); // Add schedule polling for faculty
                 this.startTablePolling();
                 break;
             case 'class':
-                this.startLocationPolling();
+                this.startLocationPolling(); // Still needed for class viewing faculty
                 this.startAnnouncementsPolling();
                 this.startTablePolling();
                 break;
@@ -358,12 +368,28 @@ class LivePollingManager {
         this.fetchTableUpdates();
     }
     startLocationPolling() {
+        if (this.intervals.location) return;
         this.intervals.location = setInterval(() => {
-            if (this.isElementVisible('faculty-location') || this.isElementVisible('current-location-display')) {
+            if (this.hasVisibleElement('location') || this.hasLocationElements()) {
                 this.fetchLocationUpdates();
             }
         }, this.defaultIntervals.location);
-        this.fetchLocationUpdates();
+        if (this.hasLocationElements()) {
+            this.fetchLocationUpdates();
+        }
+    }
+    
+    hasLocationElements() {
+        if (this.pageType === 'director') {
+            return this.isElementVisible('faculty-content') && document.querySelector('#faculty-content .status-badge');
+        } else if (this.pageType === 'program') {
+            return this.isElementVisible('faculty-content') && document.querySelector('.faculty-grid .status-dot');
+        } else if (this.pageType === 'faculty') {
+            return this.isElementVisible('faculty-location') || this.isElementVisible('current-location-display');
+        } else if (this.pageType === 'class') {
+            return this.isElementVisible('facultyGrid') && document.querySelector('#facultyGrid .status-dot');
+        }
+        return false;
     }
     startAnnouncementsPolling() {
         this.intervals.announcements = setInterval(() => {
@@ -390,7 +416,7 @@ class LivePollingManager {
     }
     updateScheduleDisplay(data) {
         if (data.schedules) {
-            const scheduleContainers = document.querySelectorAll('.schedule-container, .schedule-section');
+            const scheduleContainers = document.querySelectorAll('.schedule-container, .schedule-section, .schedule-list');
             scheduleContainers.forEach(container => {
                 if (container.querySelector('.schedule-item')) {
                     this.updateScheduleItems(container, data.schedules);
@@ -401,15 +427,21 @@ class LivePollingManager {
     updateScheduleItems(container, schedules) {
         const scheduleItems = container.querySelectorAll('.schedule-item');
         scheduleItems.forEach(item => {
-            const courseCode = item.querySelector('.course-code')?.textContent;
-            const schedule = schedules.find(s => s.course_code === courseCode);
-            if (schedule && schedule.status) {
-                const statusBadge = item.querySelector('.status-badge');
-                if (statusBadge) {
-                    statusBadge.className = `status-badge status-${schedule.status}`;
-                    statusBadge.textContent = this.getStatusText(schedule.status);
+            const courseCode = item.querySelector('.course-code')?.textContent?.trim();
+            if (courseCode) {
+                const schedule = schedules.find(s => s.course_code === courseCode);
+                if (schedule && schedule.status) {
+                    const statusBadge = item.querySelector('.status-badge');
+                    if (statusBadge) {
+                        // Remove existing status classes and add new one
+                        statusBadge.className = statusBadge.className.replace(/status-\w+/g, '');
+                        statusBadge.className = `status-badge status-${schedule.status}`;
+                        statusBadge.textContent = this.getStatusText(schedule.status);
+                    }
+                    // Update the entire item's status class
+                    item.className = item.className.replace(/(ongoing|upcoming|finished)/g, '');
+                    item.classList.add(schedule.status);
                 }
-                item.className = `schedule-item ${schedule.status}`;
             }
         });
     }
@@ -903,6 +935,12 @@ class LivePollingManager {
     handleStatusUpdates(currentEntities) {
         if (!this.initialized) {
             this.initialized = true;
+        }
+        
+        if (currentEntities && currentEntities.faculty) {
+            currentEntities.faculty.forEach(faculty => {
+                this.updateEntityStatus('faculty', faculty);
+            });
         }
     }
     updateEntityStatus(entityType, entityData) {
@@ -1502,6 +1540,214 @@ class LivePollingManager {
         if (data.last_updated && lastUpdatedElement) {
             lastUpdatedElement.textContent = data.last_updated;
         }
+    }
+    updateLocationDisplay(data) {
+        if (this.pageType === 'faculty' || this.pageType === 'class') {
+            if (data.faculty && Array.isArray(data.faculty)) {
+                this.updateFacultyList(data.faculty);
+            }
+            if (data.current_location !== undefined) {
+                this.updateCurrentLocation(data.current_location, data.status, data.last_updated);
+            }
+        } else if (this.pageType === 'director') {
+            if (data.faculty && Array.isArray(data.faculty)) {
+                this.updateDirectorFacultyStatus(data.faculty);
+            }
+        } else if (this.pageType === 'program') {
+            if (data.faculty && Array.isArray(data.faculty)) {
+                this.updateProgramFacultyStatus(data.faculty);
+            }
+        } else if (this.pageType === 'class') {
+            if (data.faculty && Array.isArray(data.faculty)) {
+                this.updateClassFacultyStatus(data.faculty);
+            }
+        }
+    }
+    
+    updateDirectorFacultyStatus(facultyData) {
+        const facultyTableBody = document.querySelector('#faculty-content .data-table tbody');
+        if (!facultyTableBody) return;
+        
+        facultyData.forEach(faculty => {
+            const row = facultyTableBody.querySelector(`tr[data-faculty-id="${faculty.faculty_id}"]`);
+            if (row) {
+                const statusBadge = row.querySelector('.status-indicator, .status-badge');
+                const locationCell = row.querySelector('td:nth-child(4)');
+                
+                if (statusBadge) {
+                    const oldStatus = statusBadge.textContent.trim().toLowerCase();
+                    const newStatus = faculty.status || 'offline';
+                    
+                    if (oldStatus !== newStatus.toLowerCase()) {
+                        statusBadge.className = statusBadge.className.replace(/status-\w+/, `status-${newStatus.toLowerCase()}`);
+                        statusBadge.textContent = newStatus;
+                        statusBadge.style.animation = 'statusPulse 0.6s ease';
+                    }
+                }
+                
+                if (locationCell && faculty.current_location) {
+                    const oldLocation = locationCell.textContent.trim();
+                    const newLocation = faculty.current_location || 'Not Available';
+                    
+                    if (oldLocation !== newLocation) {
+                        locationCell.textContent = newLocation;
+                        locationCell.style.color = '#2ecc71';
+                        locationCell.style.fontWeight = 'bold';
+                        setTimeout(() => {
+                            locationCell.style.color = '';
+                            locationCell.style.fontWeight = '';
+                        }, 2000);
+                    }
+                }
+            }
+        });
+    }
+    
+    updateProgramFacultyStatus(facultyData) {
+        const facultyGrid = document.querySelector('.faculty-grid');
+        if (!facultyGrid) return;
+        
+        facultyData.forEach(faculty => {
+            const card = facultyGrid.querySelector(`.faculty-card[data-faculty-id="${faculty.faculty_id}"]`) ||
+                        facultyGrid.querySelector(`.faculty-card[data-name*="${faculty.faculty_name}"]`);
+            
+            if (card) {
+                const statusDot = card.querySelector('.status-dot, .status-indicator');
+                const locationText = card.querySelector('.location-text, .status-text');
+                const locationDiv = card.querySelector('.current-location, .location-info p:last-child');
+                
+                if (statusDot) {
+                    const oldStatus = statusDot.className;
+                    const newStatus = faculty.status || 'offline';
+                    const statusClass = newStatus.toLowerCase() === 'available' ? 'available' : 'offline';
+                    const newStatusClass = `status-dot status-${statusClass}`;
+                    
+                    if (oldStatus !== newStatusClass) {
+                        statusDot.className = newStatusClass;
+                        if (locationText) locationText.textContent = newStatus;
+                        
+                        statusDot.style.transform = 'scale(1.3)';
+                        statusDot.style.boxShadow = '0 0 15px rgba(46, 204, 113, 0.6)';
+                        setTimeout(() => {
+                            statusDot.style.transform = 'scale(1)';
+                            statusDot.style.boxShadow = '';
+                        }, 500);
+                    }
+                }
+                
+                if (locationDiv && faculty.current_location) {
+                    const oldLocation = locationDiv.textContent.trim();
+                    const newLocation = faculty.current_location;
+                    
+                    if (oldLocation !== newLocation) {
+                        locationDiv.textContent = newLocation;
+                        locationDiv.style.color = '#2ecc71';
+                        locationDiv.style.fontWeight = 'bold';
+                        setTimeout(() => {
+                            locationDiv.style.color = '';
+                            locationDiv.style.fontWeight = '';
+                        }, 2000);
+                    }
+                }
+                
+                const timeInfo = card.querySelector('.time-info, .last-updated');
+                if (timeInfo && faculty.last_updated) {
+                    timeInfo.textContent = faculty.last_updated;
+                }
+            }
+        });
+    }
+    
+    updateClassFacultyStatus(facultyData) {
+        const facultyGrid = document.querySelector('#facultyGrid');
+        if (!facultyGrid) return;
+        
+        facultyData.forEach(faculty => {
+            const card = facultyGrid.querySelector(`.faculty-card[data-faculty-id="${faculty.faculty_id}"]`);
+            if (card) {
+                const statusDot = card.querySelector('.status-dot');
+                const locationText = card.querySelector('.location-text');
+                const currentLocationDiv = card.querySelector('.location-info div:nth-child(2)');
+                const timeInfo = card.querySelector('.time-info');
+                
+                if (statusDot) {
+                    const oldStatus = statusDot.className.replace('status-dot ', '');
+                    const newStatus = faculty.status || 'offline';
+                    const newStatusClass = `status-dot status-${newStatus}`;
+                    
+                    if (statusDot.className !== newStatusClass) {
+                        statusDot.className = newStatusClass;
+                        
+                        statusDot.style.transition = 'all 0.5s ease';
+                        statusDot.style.transform = 'scale(1.3)';
+                        
+                        if (newStatus === 'available') {
+                            statusDot.style.boxShadow = '0 0 15px rgba(46, 204, 113, 0.8)';
+                        } else if (newStatus === 'busy') {
+                            statusDot.style.boxShadow = '0 0 15px rgba(255, 193, 7, 0.8)';
+                        } else {
+                            statusDot.style.boxShadow = '0 0 15px rgba(108, 117, 125, 0.8)';
+                        }
+                        
+                        setTimeout(() => {
+                            statusDot.style.transform = 'scale(1)';
+                            statusDot.style.boxShadow = '';
+                        }, 500);
+                    }
+                }
+                
+                if (locationText) {
+                    const statusLabels = {
+                        'available': 'Available',
+                        'busy': 'In Meeting',
+                        'offline': 'Offline'
+                    };
+                    const newStatusText = statusLabels[faculty.status] || 'Unknown';
+                    
+                    if (locationText.textContent.trim() !== newStatusText) {
+                        locationText.textContent = newStatusText;
+                        locationText.style.color = '#2ecc71';
+                        locationText.style.fontWeight = 'bold';
+                        setTimeout(() => {
+                            locationText.style.color = '';
+                            locationText.style.fontWeight = '';
+                        }, 2000);
+                    }
+                }
+                
+                if (currentLocationDiv && faculty.current_location) {
+                    const oldLocation = currentLocationDiv.textContent.trim();
+                    const newLocation = faculty.current_location || 'Unknown Location';
+                    
+                    if (oldLocation !== newLocation) {
+                        currentLocationDiv.textContent = newLocation;
+                        currentLocationDiv.style.transition = 'all 0.4s ease';
+                        currentLocationDiv.style.color = '#2ecc71';
+                        currentLocationDiv.style.fontWeight = 'bold';
+                        currentLocationDiv.style.transform = 'translateX(3px)';
+                        
+                        setTimeout(() => {
+                            currentLocationDiv.style.color = '#333';
+                            currentLocationDiv.style.fontWeight = '500';
+                            currentLocationDiv.style.transform = '';
+                        }, 3000);
+                    }
+                }
+                
+                if (timeInfo && faculty.last_updated) {
+                    const updateText = `Last updated: ${faculty.last_updated}`;
+                    if (timeInfo.textContent !== updateText) {
+                        timeInfo.textContent = updateText;
+                        timeInfo.style.color = '#3498db';
+                        timeInfo.style.fontWeight = 'bold';
+                        setTimeout(() => {
+                            timeInfo.style.color = '';
+                            timeInfo.style.fontWeight = '';
+                        }, 2000);
+                    }
+                }
+            }
+        });
     }
     updateAnnouncementsDisplay(data) {
         const announcementsContainer = document.getElementById('announcementsContainer');

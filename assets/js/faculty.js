@@ -124,27 +124,7 @@ async function markAttendance(scheduleId) {
     }
 }
 
-function showNotification(message, type = 'info') {
-    const existingNotifications = document.querySelectorAll('.notification');
-    existingNotifications.forEach(notification => notification.remove());
-    
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            <span class="notification-message">${message}</span>
-            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.remove();
-        }
-    }, 3000);
-}
+// showNotification function moved to shared_functions.js
 
 async function switchScheduleTab(days, tabElement) {
     document.querySelectorAll('.schedule-tab').forEach(tab => tab.classList.remove('active'));
@@ -177,20 +157,7 @@ async function switchScheduleTab(days, tabElement) {
         }
 }
 
-async function updateLocationStatus() {
-    try {
-        const response = await fetch('assets/php/polling_api.php?action=get_status');
-        const result = await response.json();
-        
-        if (result.success) {
-            const locationUpdated = document.querySelector('.location-updated');
-            if (locationUpdated) {
-                locationUpdated.textContent = `Last updated: ${result.last_updated}`;
-            }
-        }
-    } catch (error) {
-        }
-}
+// updateLocationStatus function removed - now handled by live_polling.js
 
 document.addEventListener('DOMContentLoaded', function() {
     const locationSelect = document.getElementById('locationSelect');
@@ -249,11 +216,7 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') {
-        updateLocationStatus();
-    }
-});
+// Visibility change polling now handled by live_polling.js
 
 // Location polling now handled by live_polling.js
 
