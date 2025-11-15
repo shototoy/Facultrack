@@ -101,7 +101,6 @@ CREATE TABLE `curriculum` (
   `course_code` varchar(20) NOT NULL,
   `year_level` int(11) NOT NULL,
   `semester` enum('1st','2nd','Summer') NOT NULL,
-  `academic_year` varchar(10) NOT NULL,
   `program_chair_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -159,8 +158,8 @@ INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `curre
 (3, 4, 'EMP-002', 'Information Technology', 'Room 201 - IT Building', NOW(), NOW(), '10:00 AM - 5:00 PM', 'john.santos@sksu.edu.ph', '09123456791', NOW(), NOW(), 1);
 
 INSERT INTO `classes` VALUES 
-(1, 5, 'IT-1A', 'Information Technology 1A', 1, '1st', '2024-2025', 2, NOW(), NOW(), 1),
-(2, 6, 'IT-1B', 'Information Technology 1B', 1, '1st', '2024-2025', 2, NOW(), NOW(), 1);
+(1, 5, 'IT-1A', 'Information Technology 2024-2025', 1, '1st', '2024-25', 2, NOW(), NOW(), 1),
+(2, 6, 'IT-1B', 'Information Technology 2024-2025', 1, '1st', '2024-25', 2, NOW(), NOW(), 1);
 
 INSERT INTO `courses` VALUES 
 (1, 'CC111', 'Introduction to Computing', 3.00, NOW(), NOW(), 1),
@@ -171,12 +170,12 @@ INSERT INTO `courses` VALUES
 (6, 'CC114', 'Data Structures and Algorithm', 3.00, NOW(), NOW(), 1);
 
 INSERT INTO `curriculum` VALUES 
-(1, 'CC111', 1, '1st', '2024-2025', 2, NOW(), NOW(), 1),
-(2, 'CC112', 1, '1st', '2024-2025', 2, NOW(), NOW(), 1),
-(3, 'IT111', 1, '1st', '2024-2025', 2, NOW(), NOW(), 1),
-(4, 'CC113', 1, '2nd', '2024-2025', 2, NOW(), NOW(), 1),
-(5, 'IT121', 2, '1st', '2024-2025', 2, NOW(), NOW(), 1),
-(6, 'CC114', 2, '1st', '2024-2025', 2, NOW(), NOW(), 1);
+(1, 'CC111', 1, '1st', 2, NOW(), NOW(), 1),
+(2, 'CC112', 1, '1st', 2, NOW(), NOW(), 1),
+(3, 'IT111', 1, '1st', 2, NOW(), NOW(), 1),
+(4, 'CC113', 1, '2nd', 2, NOW(), NOW(), 1),
+(5, 'IT121', 2, '1st', 2, NOW(), NOW(), 1),
+(6, 'CC114', 2, '1st', 2, NOW(), NOW(), 1);
 
 INSERT INTO `announcements` VALUES 
 (1, 'Welcome to FaculTrack System', 'The new FaculTrack system is now live. All users can access their respective dashboards using their assigned credentials.', 'medium', 'all', 1, NOW(), NOW(), 1),

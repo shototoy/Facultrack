@@ -1359,15 +1359,6 @@ function generateCurriculumAssignmentForm(courseCode, existingAssignments) {
                     </select>
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Academic Year:</label>
-                <select name="academic_year" class="form-select" required>
-                    <option value="">Select Academic Year</option>
-                    <option value="2024-2025">2024-2025</option>
-                    <option value="2025-2026">2025-2026</option>
-                    <option value="2026-2027">2026-2027</option>
-                </select>
-            </div>
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" onclick="closeModal('curriculumAssignModal')">Cancel</button>
                 <button type="submit" class="btn-primary">Add to Curriculum</button>
@@ -1484,7 +1475,7 @@ function loadCourseAssignments(courseCode, overlay) {
                                     ${assignment.class_names || 'No Classes Yet'}
                                 </div>
                                 <div style="font-size: 0.8rem; color: #666;">
-                                    Year ${assignment.year_level} • ${assignment.semester} • ${assignment.academic_year}
+                                    Year ${assignment.year_level} • ${assignment.semester} Semester
                                 </div>
                             </div>
                             <button class="btn-danger small" onclick="removeCurriculumAssignment('${courseCode}', ${assignment.curriculum_id})">Remove</button>
@@ -2379,7 +2370,7 @@ function loadCourseAssignments(courseCode, overlay) {
                         <div class="assignment-item">
                             <div class="assignment-info">
                                 <strong>Year ${assignment.year_level} - ${assignment.semester} Semester</strong><br>
-                                <span style="color: #666;">Academic Year: ${assignment.academic_year}</span>
+                                <span style="color: #666;">Year Level: ${assignment.year_level} • Semester: ${assignment.semester}</span>
                                 ${assignment.class_names ? `<br><span style="color: #2e7d32;">Classes: ${assignment.class_names}</span>` : ''}
                             </div>
                             <button class="remove-assignment-btn" onclick="removeCurriculumAssignment(${assignment.curriculum_id}, '${courseCode}')">

@@ -99,7 +99,10 @@ function setupAcademicYear() {
     const input = document.getElementById('academic_year');
     if (input && !input.value) {
         const y = new Date().getFullYear();
-        input.value = `${y}-${y + 1}`;
+        input.value = `${y}-${(y + 1).toString().slice(-2)}`;
+        input.style.backgroundColor = '#f8f9fa';
+        input.title = 'Auto-generated based on current year (for new classes only)';
+        input.readOnly = true;  // Make it non-editable since it's auto-generated
     }
 }
 document.addEventListener('DOMContentLoaded', () => {

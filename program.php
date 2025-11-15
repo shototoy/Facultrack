@@ -52,7 +52,6 @@ function getProgramClasses($pdo, $user_id) {
         JOIN users u ON c.user_id = u.user_id
         LEFT JOIN curriculum curr ON c.year_level = curr.year_level 
                                   AND c.semester = curr.semester 
-                                  AND c.academic_year = curr.academic_year
                                   AND curr.is_active = TRUE
         LEFT JOIN schedules s ON c.class_id = s.class_id AND s.is_active = TRUE
         WHERE c.program_chair_id = ? AND c.is_active = TRUE
@@ -209,11 +208,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
             }
         } else {
             // Insert new schedule
+            // Auto-generate academic year
+            $current_year = date('Y');
+            $academic_year = $current_year . '-' . substr($current_year + 1, -2);
+            
             $insert_query = "INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, semester, academic_year, is_active) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, '1st', '2024-2025', TRUE)";
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)";
             $stmt = $pdo->prepare($insert_query);
             
-            if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room])) {
+            if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room, '1st', $academic_year])) {
                 echo json_encode(['success' => true, 'message' => 'Course assigned successfully']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to assign course']);
@@ -229,7 +232,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
     try {
         $course_code = $_POST['course_code'];
         $curriculum_query = "
-            SELECT curriculum_id, year_level, semester, academic_year
+            SELECT curriculum_id, year_level, semester
             FROM curriculum 
             WHERE course_code = ? AND is_active = TRUE
             ORDER BY year_level, semester";
@@ -251,15 +254,14 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
     try {
         $course_code = $_POST['course_code'];
         $curriculum_query = "
-            SELECT cur.curriculum_id, cur.year_level, cur.semester, cur.academic_year,
+            SELECT cur.curriculum_id, cur.year_level, cur.semester,
                    GROUP_CONCAT(DISTINCT c.class_code SEPARATOR ', ') as class_names
             FROM curriculum cur
             LEFT JOIN classes c ON c.year_level = cur.year_level 
                                 AND c.semester = cur.semester 
-                                AND c.academic_year = cur.academic_year
                                 AND c.is_active = TRUE
             WHERE cur.course_code = ? AND cur.is_active = TRUE
-            GROUP BY cur.curriculum_id, cur.year_level, cur.semester, cur.academic_year
+            GROUP BY cur.curriculum_id, cur.year_level, cur.semester
             ORDER BY cur.year_level, cur.semester";
         $stmt = $pdo->prepare($curriculum_query);
         $stmt->execute([$course_code]);
@@ -280,11 +282,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum
         $course_code = $_POST['course_code'];
         $year_level = $_POST['year_level'];
         $semester = $_POST['semester'];
-        $academic_year = $_POST['academic_year'];
         $check_query = "SELECT COUNT(*) as count FROM curriculum 
-                       WHERE course_code = ? AND year_level = ? AND semester = ? AND academic_year = ? AND is_active = TRUE";
+                       WHERE course_code = ? AND year_level = ? AND semester = ? AND is_active = TRUE";
         $check_stmt = $pdo->prepare($check_query);
-        $check_stmt->execute([$course_code, $year_level, $semester, $academic_year]);
+        $check_stmt->execute([$course_code, $year_level, $semester]);
         $exists = $check_stmt->fetch(PDO::FETCH_ASSOC)['count'] > 0;
         
         if ($exists) {
@@ -292,11 +293,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum
             exit;
         }
         
-        $insert_query = "INSERT INTO curriculum (course_code, year_level, semester, academic_year, program_chair_id, is_active) 
-                        VALUES (?, ?, ?, ?, ?, TRUE)";
+        $insert_query = "INSERT INTO curriculum (course_code, year_level, semester, program_chair_id, is_active) 
+                        VALUES (?, ?, ?, ?, TRUE)";
         $stmt = $pdo->prepare($insert_query);
         
-        if ($stmt->execute([$course_code, $year_level, $semester, $academic_year, $user_id])) {
+        if ($stmt->execute([$course_code, $year_level, $semester, $user_id])) {
             echo json_encode(['success' => true, 'message' => 'Course assigned to curriculum successfully']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to assign course to curriculum']);
@@ -352,8 +353,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_classes_for_course') {
             SELECT DISTINCT c.class_id, c.class_code, c.class_name, c.year_level, c.semester
             FROM classes c
             JOIN curriculum cur ON c.year_level = cur.year_level 
-                                AND c.semester = cur.semester 
-                                AND c.academic_year = cur.academic_year
+                                AND c.semester = cur.semester
             WHERE cur.course_code = ? AND cur.is_active = TRUE AND c.is_active = TRUE 
             AND c.program_chair_id = ?
             ORDER BY c.year_level, c.class_name";
@@ -667,8 +667,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
             $classes_query = "SELECT DISTINCT cl.class_id, cl.class_code, cl.class_name, cl.year_level
                              FROM classes cl
                              JOIN curriculum cur ON cl.year_level = cur.year_level 
-                                                AND cl.semester = cur.semester 
-                                                AND cl.academic_year = cur.academic_year
+                                                AND cl.semester = cur.semester
                              WHERE cur.course_code = ? AND cur.is_active = TRUE 
                              AND cl.is_active = TRUE AND cl.program_chair_id = ?
                              ORDER BY cl.year_level, cl.class_name";
@@ -1157,7 +1156,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                                                 <div class="class-name">${escapeHtml(classData.class_name)}</div>
                                                 <div class="class-code">${escapeHtml(classData.class_code)}</div>
                                                 <div class="class-meta">
-                                                    Year ${classData.year_level} • ${escapeHtml(classData.semester)} Semester • ${escapeHtml(classData.academic_year)}
+                                                    Year ${classData.year_level} • ${escapeHtml(classData.semester)} Semester
                                                 </div>
                                             </div>
                                         </div>

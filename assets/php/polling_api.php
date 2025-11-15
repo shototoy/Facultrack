@@ -991,11 +991,10 @@ switch ($action) {
                     FROM curriculum curr
                     WHERE curr.year_level = ? 
                     AND curr.semester = ? 
-                    AND curr.academic_year = ?
                     AND curr.program_chair_id = ?
                     AND curr.is_active = TRUE";
                 $stmt = $pdo->prepare($curriculum_query);
-                $stmt->execute([$year_level, $semester, $academic_year, $program_chair_id]);
+                $stmt->execute([$year_level, $semester, $program_chair_id]);
                 $curriculum_courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($curriculum_courses as $course) {
                     $insert_schedule = "
