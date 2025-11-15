@@ -21,28 +21,19 @@ body {
     }
     
     .header-left {
-        flex: 0 0 30%;
+        flex: 1;
         display: flex;
         align-items: center;
         padding-right: 20px;
         gap: 0;
     }
     
-    .avatar-container {
-        flex: 0 0 30%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-    }
-    
     .user-info-container {
-        flex: 0 0 70%;
+        width: 100%;
         display: flex;
         align-items: center;
         justify-content: flex-start;
         height: 100%;
-        padding-left: 15px;
     }
     
     .header-middle {
@@ -1243,7 +1234,7 @@ body:has(.table-container) .tab-content.active {
     background: linear-gradient(145deg, #ffffff, #f8f9fa);
     border-radius: 0px 0px 12px 12px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(46, 125, 50, 0.08);
-    overflow: auto;
+    overflow: visible;
     border: 1px solid rgba(222, 226, 230, 0.3);
     backdrop-filter: blur(10px);
     position: relative;
@@ -1253,7 +1244,12 @@ body:has(.table-container) .tab-content.active {
 @media (max-width: 768px) {
     .table-container {
         max-height: 70vh;
-        overflow-y: auto;
+        overflow: visible;
+    }
+    
+    .data-table {
+        table-layout: auto;
+        overflow: visible;
     }
 }
 
@@ -1271,7 +1267,7 @@ body:has(.table-container) .tab-content.active {
 
 .table-content {
     flex: 1;
-    overflow-y: auto;
+    overflow: visible;
     min-height: 0;
 }
 
@@ -1323,9 +1319,13 @@ body:has(.table-container) .tab-content.active {
     position: relative;
 }
 
+.data-table tr {
+    transform: scale(0.98);
+}
+
 .data-table tr:hover {
     background: linear-gradient(90deg, rgba(248, 249, 250, 0.8), rgba(233, 236, 239, 0.8));
-    transform: translateX(2px);
+    transform: scale(1);
     box-shadow: 0 2px 8px rgba(46, 125, 50, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
@@ -1335,8 +1335,9 @@ body:has(.table-container) .tab-content.active {
 }
 
 .data-table .actions-column {
-    width: 140px;
+    width: 80px;
     text-align: center;
+    vertical-align: middle;
 }
 
 .data-table .status-column {
@@ -1418,7 +1419,7 @@ body:has(.table-container) .tab-content.active {
 }
 
 #courses-content .data-table .actions-column {
-    width: 15%;
+    width: 80px;
 }
 
 #announcements-content .data-table .name-column {
@@ -1440,6 +1441,8 @@ body:has(.table-container) .tab-content.active {
 .expandable-row {
     cursor: pointer;
     position: relative;
+    transform: scale(0.98);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .expandable-row .actions-column {
@@ -1484,6 +1487,8 @@ body:has(.table-container) .tab-content.active {
 
 .expandable-row:hover {
     background: linear-gradient(90deg, rgba(248, 249, 250, 0.9), rgba(233, 236, 239, 0.9)) !important;
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .expandable-row:hover::before {
@@ -1669,13 +1674,13 @@ body:has(.table-container) .tab-content.active {
 }
 
 .action-btn {
-    padding: 6px 12px;
+    padding: 4px 8px;
     border: 1px solid var(--action-btn-border);
     background: var(--action-btn-bg);
     color: var(--text-green-secondary);
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     transition: all 0.25s ease;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
@@ -2060,6 +2065,15 @@ body:has(.table-container) .tab-content.active {
         gap: 15px;
     }
     
+    .courses-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+    
+    .course-card {
+        min-height: 180px;
+    }
+    
     .stats-cards {
         grid-template-columns: repeat(4, 1fr);
         gap: 15px;
@@ -2275,6 +2289,16 @@ body:has(.table-container) .tab-content.active {
     .faculty-grid {
         grid-template-columns: 1fr;
         gap: 10px;
+    }
+    
+    .courses-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .course-card {
+        min-height: 220px;
     }
     
     .stats-cards {
@@ -3029,8 +3053,9 @@ body:has(.table-container) .tab-content.active {
 
 .courses-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    padding: 20px;
 }
 
 
@@ -3113,7 +3138,8 @@ body:has(.table-container) .tab-content.active {
     box-shadow: var(--faculty-card-shadow);
     transition: all 0.3s ease;
     position: relative;
-    min-height: 160px;
+    min-height: 200px;
+    width: 100%;
 }
 
 .course-card:hover {

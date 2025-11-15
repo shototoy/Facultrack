@@ -179,21 +179,15 @@ require_once 'assets/php/announcement_functions.php';
     max-height: 100%;
 }
 
-.user-avatar {
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
-}
+/* User avatar styles removed */
 
 .user-info {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    padding: 12px 16px;
+    height: 100%;
+    justify-content: center;
 }
 
 .user-name {
@@ -226,11 +220,12 @@ require_once 'assets/php/announcement_functions.php';
     }
     
     .header-left {
-        flex: 0 0 30%;
+        flex: 1;
         display: flex;
-        align-items: center;
-        gap: 1rem;
+        align-items: stretch;
+        gap: 0;
         padding-right: 15px;
+        height: 100%;
     }
     
     .user-avatar {
@@ -393,14 +388,6 @@ require_once 'assets/php/announcement_functions.php';
     }
     
     .header-content {
-        flex-direction: column;
-        align-items: center;
-        gap: 16px;
-        text-align: center;
-    }
-    
-    /* First row on phone - User info LEFT, Details RIGHT when not constrained */
-    .header-content {
         flex-direction: row;
         align-items: stretch;
         gap: 1rem;
@@ -410,8 +397,9 @@ require_once 'assets/php/announcement_functions.php';
         order: 1;
         flex: 0 0 50%;
         display: flex;
-        align-items: center;
-        gap: 0.8rem;
+        align-items: stretch;
+        gap: 0;
+        height: 100%;
     }
     
     .header-middle {
@@ -453,9 +441,12 @@ require_once 'assets/php/announcement_functions.php';
     .user-info {
         text-align: left;
         flex: 1;
+        padding: 8px 12px;
+        height: 100%;
         min-width: 0;
         display: flex;
         flex-direction: column;
+        justify-content: center;
         gap: 0.2rem;
     }
     
@@ -535,6 +526,14 @@ require_once 'assets/php/announcement_functions.php';
             flex: none;
             width: 100%;
             justify-content: center;
+            align-items: center;
+        }
+        
+        .user-info {
+            text-align: center;
+            width: 100%;
+            padding: 12px 16px;
+            align-items: center;
         }
         
         .page-title {
@@ -1219,9 +1218,6 @@ function closeSidebar() {
 <div class="page-header">
     <div class="header-content">
         <div class="header-left">
-            <div class="user-avatar">
-                <?php echo strtoupper(substr($user_name, 0, 2)); ?>
-            </div>
             <div class="user-info">
                 <div class="user-name"><?php echo htmlspecialchars($user_name); ?></div>
                 <?php if ($user_role): ?>
