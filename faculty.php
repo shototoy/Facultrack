@@ -970,7 +970,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         <h3>Schedule</h3>
                         <div class="schedule-date">
                             <?php 
-                            $display_date = $DEBUG_MODE ? date('F j, Y - l', strtotime($DEBUG_DATE)) : date('F j, Y - l');
+                            $display_date = (isset($DEBUG_MODE) && $DEBUG_MODE && isset($DEBUG_DATE)) ? date('F j, Y - l', strtotime($DEBUG_DATE)) : date('F j, Y - l');
                             echo $display_date;
                             ?>
                         </div>

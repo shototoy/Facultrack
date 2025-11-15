@@ -994,7 +994,7 @@ function generateCourseLoadForm(facultyId) {
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Select Course *</label>
-                            <select name="course_code" class="form-select" required id="courseSelect" onchange="updateCourseInfo()">
+                            <select name="course_code" class="form-select" required id="courseSelect">
                                 <option value="">Choose a course...</option>
                             </select>
                         </div>
@@ -1003,18 +1003,6 @@ function generateCourseLoadForm(facultyId) {
                             <select name="class_id" class="form-select" required id="classSelect">
                                 <option value="">Choose a class...</option>
                             </select>
-                        </div>
-                    </div>
-                    <div class="form-group" id="courseInfoDiv" style="display: none;">
-                        <div class="course-info-display">
-                            <div class="info-item">
-                                <strong>Course Description:</strong>
-                                <span id="courseDescription">-</span>
-                            </div>
-                            <div class="info-item">
-                                <strong>Units:</strong>
-                                <span id="courseUnits">-</span>
-                            </div>
                         </div>
                     </div>
                     <div class="form-row">
@@ -1043,7 +1031,9 @@ function generateCourseLoadForm(facultyId) {
                         </div>
                         <div class="form-group">
                             <label class="form-label">Room</label>
-                            <input type="text" name="room" class="form-input" placeholder="e.g., Room 101">
+                            <select name="room" class="form-select" required>
+                                <option value="">Select room...</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-group">
@@ -1127,6 +1117,9 @@ function handleTimeSlotClick(cell) {
     checkConflicts(time, group);
     updateEndTimeOptions();
     document.querySelector('.courseload-assignment-form').style.display = 'block';
+    
+    // Load room options for the faculty course load modal
+    loadRoomOptionsForCourseLoad();
     showNotification(`Time slot selected: ${day} at ${formatTime(time)}`, 'info');
 }
 function checkConflicts(selectedTime, selectedGroup) {
@@ -1889,17 +1882,8 @@ function deleteCourseAssignment() {
     });
 }
 function updateCourseInfoPage() {
-    const courseSelect = document.getElementById('courseSelectPage');
-    const selectedOption = courseSelect.options[courseSelect.selectedIndex];
-    if (selectedOption.value) {
-        const description = selectedOption.dataset.description;
-        const units = selectedOption.dataset.units;
-        document.getElementById('courseDescriptionPage').textContent = description;
-        document.getElementById('courseUnitsPage').textContent = units;
-        document.getElementById('courseInfoPageDiv').style.display = 'block';
-    } else {
-        document.getElementById('courseInfoPageDiv').style.display = 'none';
-    }
+    // Course info display removed for cleaner interface - no visual clutter
+    return;
 }
 function updateEndTimeOptionsPage(group, startTime, existingCourse = null) {
     const endTimeSelect = document.getElementById('timeEndSelectPage');
@@ -2080,18 +2064,6 @@ function loadCourseAndClassData() {
         showNotification('Failed to load courses and classes', 'error');
     });
     populateTimeOptions('default');
-}
-function updateCourseInfo() {
-    const courseSelect = document.getElementById('courseSelect');
-    const selectedOption = courseSelect.options[courseSelect.selectedIndex];
-    const courseInfoDiv = document.getElementById('courseInfoDiv');
-    if (selectedOption.value) {
-        document.getElementById('courseDescription').textContent = selectedOption.getAttribute('data-description');
-        document.getElementById('courseUnits').textContent = selectedOption.getAttribute('data-units');
-        courseInfoDiv.style.display = 'block';
-    } else {
-        courseInfoDiv.style.display = 'none';
-    }
 }
 function updateClassDropdownBasedOnCourse(courseCode, allClasses) {
     const classSelect = document.getElementById('classSelect');
@@ -2399,14 +2371,46 @@ function addNewRowToTable(type, data) {
 }
 function updateStatistics() {
 }
+function loadRoomOptionsForCourseLoad() {
+    const roomSelect = document.querySelector('.courseload-assignment-form select[name="room"]');
+    if (!roomSelect) return;
+    
+    fetch('program.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=get_room_options'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            roomSelect.innerHTML = '<option value="">Select room...</option>';
+            data.rooms.forEach(room => {
+                roomSelect.innerHTML += `<option value="${room}">${room}</option>`;
+            });
+        } else {
+            // Fallback room options
+            const defaultRooms = ['NR102', 'NR103', 'NR104', 'NR105', 'Computer Lab 1', 'Computer Lab 2', 'Library', 'Auditorium', 'TBA'];
+            roomSelect.innerHTML = '<option value="">Select room...</option>';
+            defaultRooms.forEach(room => {
+                roomSelect.innerHTML += `<option value="${room}">${room}</option>`;
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading room options:', error);
+        // Fallback room options
+        const defaultRooms = ['NR102', 'NR103', 'NR104', 'NR105', 'Computer Lab 1', 'Computer Lab 2', 'Library', 'Auditorium', 'TBA'];
+        roomSelect.innerHTML = '<option value="">Select room...</option>';
+        defaultRooms.forEach(room => {
+            roomSelect.innerHTML += `<option value="${room}">${room}</option>`;
+        });
+    });
+}
+
 function showNotification(message, type = 'info') {
     if (typeof window.showToast === 'function') {
         window.showToast(message, type);
     } else {
-        if (typeof showNotification === 'function') {
-            showNotification(message, type);
-        } else {
-            alert(message);
-        }
+        alert(message);
     }
 }
