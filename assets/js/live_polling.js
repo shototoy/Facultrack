@@ -122,20 +122,47 @@ class LivePollingManager {
         });
     }
     addFacultyElements(elements) {
-        const locationElements = document.querySelectorAll('.faculty-location, .current-location-display');
+        const locationElements = document.querySelectorAll('.location-section, .location-update-card');
         if (locationElements.length > 0) {
-            elements.location = {
-                selector: '.faculty-location, .current-location-display',
-                description: 'Location',
+            elements.location_tab = {
+                selector: '.location-section',
+                description: 'Location Tab',
                 polling: 'location'
             };
         }
-        const scheduleElements = document.querySelectorAll('.schedule-container, .schedule-section, .schedule-list');
+        const scheduleElements = document.querySelectorAll('.schedule-section, .schedule-list');
         if (scheduleElements.length > 0) {
-            elements.schedules = {
-                selector: '.schedule-container, .schedule-section, .schedule-list',
-                description: 'Schedule',
+            elements.schedule_tab = {
+                selector: '.schedule-section',
+                description: 'Schedule Tab',
                 polling: 'schedules'
+            };
+        }
+        
+        // Add individual schedule tabs (M, MW, TTH, etc.)
+        const scheduleTabs = document.querySelectorAll('.schedule-tab');
+        scheduleTabs.forEach(tab => {
+            const tabText = tab.textContent.trim();
+            if (tabText) {
+                elements[`schedule_${tabText.toLowerCase()}_tab`] = {
+                    selector: `.schedule-tab:contains('${tabText}')`,
+                    description: `${tabText} Tab`,
+                    polling: 'schedules',
+                    condition: () => {
+                        const tabElement = Array.from(document.querySelectorAll('.schedule-tab'))
+                            .find(t => t.textContent.trim() === tabText);
+                        return tabElement?.classList.contains('active') || false;
+                    }
+                };
+            }
+        });
+        
+        const actionsElements = document.querySelectorAll('.actions-section');
+        if (actionsElements.length > 0) {
+            elements.actions_tab = {
+                selector: '.actions-section',
+                description: 'Actions Tab',
+                polling: 'tables'
             };
         }
         // Add schedule items polling for dynamic status updates
@@ -220,6 +247,8 @@ class LivePollingManager {
         });
         document.addEventListener('click', (e) => {
             const tabButton = e.target.closest('.tab-button');
+            const scheduleTab = e.target.closest('.schedule-tab');
+            
             if (tabButton && tabButton.dataset.tab) {
                 const previousTab = this.currentTab;
                 this.currentTab = tabButton.dataset.tab;
@@ -228,6 +257,15 @@ class LivePollingManager {
                 console.log(`Page: ${pageName}`);
                 this.logCurrentStatus();
                 this.refreshVisibleElements();
+            } else if (scheduleTab && this.pageType === 'faculty') {
+                // Handle faculty schedule tab switching
+                setTimeout(() => {
+                    console.clear();
+                    const pageName = document.title.split(' - ')[1] || 'Dashboard';
+                    console.log(`Page: ${pageName}`);
+                    this.logCurrentStatus();
+                    this.refreshVisibleElements();
+                }, 100);
             }
         });
     }
@@ -385,7 +423,7 @@ class LivePollingManager {
         } else if (this.pageType === 'program') {
             return this.isElementVisible('faculty-content') && document.querySelector('.faculty-grid .status-dot');
         } else if (this.pageType === 'faculty') {
-            return this.isElementVisible('faculty-location') || this.isElementVisible('current-location-display');
+            return document.querySelector('.location-section') && this.isElementVisible('.location-section');
         } else if (this.pageType === 'class') {
             return this.isElementVisible('facultyGrid') && document.querySelector('#facultyGrid .status-dot');
         }

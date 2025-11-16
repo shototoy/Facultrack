@@ -52,42 +52,6 @@ function getTodaySchedule($pdo, $faculty_id) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getScheduleForDays($pdo, $faculty_id, $days) {
-    global $DEBUG_MODE, $current_time;
-    
-    $time_condition = $DEBUG_MODE ? "TIME('$current_time')" : "TIME(NOW())";
-    
-    $schedule_query = "
-        SELECT s.*, c.course_description, cl.class_name, cl.class_code,
-            CASE 
-                WHEN $time_condition BETWEEN s.time_start AND s.time_end THEN 'ongoing'
-                WHEN $time_condition < s.time_start THEN 'upcoming'
-                ELSE 'finished'
-            END as status
-        FROM schedules s
-        JOIN courses c ON s.course_code = c.course_code
-        JOIN classes cl ON s.class_id = cl.class_id
-        WHERE s.faculty_id = ? AND s.is_active = TRUE 
-        AND (s.days = ? OR 
-            (s.days = 'MW' AND ? IN ('M', 'W', 'MW')) OR
-            (s.days = 'MF' AND ? IN ('M', 'F', 'MF')) OR
-            (s.days = 'WF' AND ? IN ('W', 'F', 'WF')) OR
-            (s.days = 'MWF' AND ? IN ('M', 'W', 'F', 'MWF')) OR
-            (s.days = 'TTH' AND ? IN ('T', 'TH', 'TTH')) OR
-            (s.days = 'MTWTHF' AND ? IN ('M', 'T', 'W', 'TH', 'F', 'MTWTHF'))
-        )
-        ORDER BY 
-            CASE 
-                WHEN $time_condition > s.time_end THEN 1
-                WHEN $time_condition BETWEEN s.time_start AND s.time_end THEN 2
-                WHEN $time_condition < s.time_start THEN 3
-                ELSE 4
-            END,
-            s.time_start";
-    $stmt = $pdo->prepare($schedule_query);
-    $stmt->execute([$faculty_id, $days, $days, $days, $days, $days, $days, $days]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
 
 function getLocationHistory($pdo, $faculty_id, $limit = 10) {
     $limit = (int)$limit;
@@ -101,15 +65,102 @@ function getLocationHistory($pdo, $faculty_id, $limit = 10) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getScheduleTabs($pdo, $faculty_id) {
-    $days_query = "SELECT DISTINCT s.days FROM schedules s WHERE s.faculty_id = ? AND s.is_active = TRUE ORDER BY s.days";
-    $stmt = $pdo->prepare($days_query);
+function getSmartScheduleTabs($pdo, $faculty_id) {
+    $schedules_query = "SELECT DISTINCT days, time_start, time_end, course_code, 
+                       TIME_TO_SEC(time_end) - TIME_TO_SEC(time_start) as duration_seconds
+                       FROM schedules WHERE faculty_id = ? AND is_active = TRUE 
+                       ORDER BY days, time_start";
+    $stmt = $pdo->prepare($schedules_query);
     $stmt->execute([$faculty_id]);
-    $schedule_days = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    return array_unique($schedule_days);
+    $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    if (empty($schedules)) {
+        return [];
+    }
+    
+    // Group schedules by time constraints and patterns
+    $schedule_analysis = [];
+    foreach ($schedules as $schedule) {
+        $days = $schedule['days'];
+        $duration_hours = $schedule['duration_seconds'] / 3600;
+        
+        $schedule_analysis[] = [
+            'days' => $days,
+            'duration' => $duration_hours,
+            'start' => $schedule['time_start'],
+            'end' => $schedule['time_end'],
+            'course' => $schedule['course_code']
+        ];
+    }
+    
+    // Analyze patterns based on time constraints
+    $intelligent_tabs = [];
+    $processed_patterns = [];
+    
+    // Group 1: TTH patterns (1.5 hour duration)
+    $tth_schedules = array_filter($schedule_analysis, function($s) {
+        return $s['duration'] >= 1.4 && $s['duration'] <= 1.6; // Around 1.5 hours
+    });
+    
+    // Group 2: MWF patterns (1 hour duration) 
+    $mwf_schedules = array_filter($schedule_analysis, function($s) {
+        return $s['duration'] >= 0.9 && $s['duration'] <= 1.1; // Around 1 hour
+    });
+    
+    // Group 3: Other patterns
+    $other_schedules = array_filter($schedule_analysis, function($s) {
+        return !($s['duration'] >= 0.9 && $s['duration'] <= 1.6);
+    });
+    
+    // Process TTH schedules (can be grouped as TTH)
+    $tth_days = array_unique(array_column($tth_schedules, 'days'));
+    foreach ($tth_days as $days) {
+        if ($days === 'TTH' || $days === 'T' || $days === 'TH') {
+            if (!in_array('TTH', $intelligent_tabs)) {
+                $intelligent_tabs[] = 'TTH';
+            }
+        } else {
+            $intelligent_tabs[] = $days;
+        }
+    }
+    
+    // Process MWF schedules (respect MW+F vs MWF grouping)
+    $mwf_days = array_unique(array_column($mwf_schedules, 'days'));
+    $has_mwf = in_array('MWF', $mwf_days);
+    $has_mw = in_array('MW', $mwf_days);
+    $has_f = in_array('F', $mwf_days);
+    
+    if ($has_mwf && !($has_mw || $has_f)) {
+        // Only MWF pattern exists - group as MWF
+        $intelligent_tabs[] = 'MWF';
+    } else {
+        // Separate MW and F patterns exist - keep them separate
+        foreach ($mwf_days as $days) {
+            if (!in_array($days, $intelligent_tabs)) {
+                $intelligent_tabs[] = $days;
+            }
+        }
+    }
+    
+    // Process other schedules (keep as-is)
+    $other_days = array_unique(array_column($other_schedules, 'days'));
+    foreach ($other_days as $days) {
+        if (!in_array($days, $intelligent_tabs)) {
+            $intelligent_tabs[] = $days;
+        }
+    }
+    
+    return array_unique($intelligent_tabs);
 }
 
-// getScheduleStatus function moved to polling_api.php
+function getScheduleStatus($status) {
+    switch ($status) {
+        case 'ongoing': return ['text' => 'In Progress', 'class' => 'ongoing'];
+        case 'upcoming': return ['text' => 'Upcoming', 'class' => 'upcoming'];
+        case 'finished': return ['text' => 'Completed', 'class' => 'finished'];
+        default: return ['text' => 'Unknown', 'class' => 'unknown'];
+    }
+}
 
 // generateScheduleHTML function moved to polling_api.php
 
@@ -136,7 +187,7 @@ try {
 
 $today_schedule = getTodaySchedule($pdo, $faculty_info['faculty_id']);
 $location_history = getLocationHistory($pdo, $faculty_info['faculty_id'], 10);
-$schedule_tabs = getScheduleTabs($pdo, $faculty_info['faculty_id']);
+$schedule_tabs = getSmartScheduleTabs($pdo, $faculty_info['faculty_id']);
 
 require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
@@ -900,6 +951,24 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             font-size: 0.95rem;
         }
 
+        .loading-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 1rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
 </style>
 </head>
 <body class="faculty-page">
@@ -988,65 +1057,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         </div>
                         
                         <div class="schedule-list" id="scheduleList">
-                            <?php if (!empty($schedule_tabs)): ?>
-                                <?php $first_tab_schedule = getScheduleForDays($pdo, $faculty_info['faculty_id'], $schedule_tabs[0]); ?>
-                                <?php if (empty($first_tab_schedule)): ?>
-                                <div class="no-schedule">
-                                    <div class="no-schedule-icon">
-                                        <svg class="feather feather-xl"><use href="#calendar"></use></svg>
-                                    </div>
-                                    <div class="no-schedule-text">No classes scheduled</div>
-                                    <div class="no-schedule-subtitle">for <?php echo $schedule_tabs[0]; ?></div>
-                                </div>
-                                <?php else: ?>
-                                    <?php foreach ($first_tab_schedule as $schedule): ?>
-                                    <?php $status_info = getScheduleStatus($schedule['status']); ?>
-                                    <div class="schedule-item <?php echo $status_info['class']; ?>">
-                                        <div class="schedule-time">
-                                            <div class="time-display"><?php echo formatTime($schedule['time_start']); ?></div>
-                                            <div class="time-duration">
-                                                <?php 
-                                                $start = strtotime($schedule['time_start']);
-                                                $end = strtotime($schedule['time_end']);
-                                                $duration = ($end - $start) / 3600;
-                                                echo $duration . 'hr';
-                                                ?>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="schedule-details">
-                                            <div class="schedule-course">
-                                                <div class="course-code"><?php echo htmlspecialchars($schedule['course_code']); ?></div>
-                                                <div class="course-name"><?php echo htmlspecialchars($schedule['course_description']); ?></div>
-                                            </div>
-                                            <div class="schedule-info">
-                                                <span class="class-info"><?php echo htmlspecialchars($schedule['class_name']); ?></span>
-                                                <span class="room-info">Room: <?php echo htmlspecialchars($schedule['room'] ?: 'TBA'); ?></span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="schedule-status">
-                                            <span class="status-badge status-<?php echo $status_info['class']; ?>">
-                                                <?php echo $status_info['text']; ?>
-                                            </span>
-                                            <?php if ($schedule['status'] === 'ongoing'): ?>
-                                            <button class="btn-small btn-primary" onclick="markAttendance(<?php echo $schedule['schedule_id']; ?>)">
-                                                Mark Present
-                                            </button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            <?php else: ?>
-                            <div class="no-schedule">
-                                <div class="no-schedule-icon">
-                                    <svg class="feather feather-xl"><use href="#calendar"></use></svg>
-                                </div>
-                                <div class="no-schedule-text">No schedules found</div>
-                                <div class="no-schedule-subtitle">No classes assigned</div>
-                            </div>
-                            <?php endif; ?>
+                            <div class="loading-state">Loading schedule...</div>
                         </div>
                     </div>
                 </div>

@@ -130,6 +130,9 @@ async function switchScheduleTab(days, tabElement) {
     document.querySelectorAll('.schedule-tab').forEach(tab => tab.classList.remove('active'));
     tabElement.classList.add('active');
     
+    const scheduleList = document.getElementById('scheduleList');
+    scheduleList.innerHTML = '<div class="loading-state">Loading schedule...</div>';
+    
     try {
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
@@ -140,10 +143,10 @@ async function switchScheduleTab(days, tabElement) {
         });
 
         const result = await response.json();
-        const scheduleList = document.getElementById('scheduleList');
         
-        if (result.success) {
-            scheduleList.innerHTML = result.html;
+        if (result.success && result.schedules) {
+            // Generate HTML client-side using the schedule data
+            scheduleList.innerHTML = generateScheduleHTML(result.schedules);
         } else {
             scheduleList.innerHTML = `
                 <div class="no-schedule">
@@ -154,7 +157,94 @@ async function switchScheduleTab(days, tabElement) {
             `;
         }
     } catch (error) {
-        }
+        console.error('Error fetching schedule:', error);
+        scheduleList.innerHTML = `
+            <div class="error-state">
+                <div class="error-icon">⚠️</div>
+                <div class="error-text">Failed to load schedule</div>
+                <div class="error-subtitle">Please try again</div>
+            </div>
+        `;
+    }
+}
+
+// Client-side HTML generation for schedule items
+function generateScheduleHTML(schedules) {
+    if (!schedules || schedules.length === 0) {
+        return '';
+    }
+    
+    let html = '';
+    schedules.forEach(schedule => {
+        const statusInfo = getScheduleStatusClient(schedule.status);
+        const duration = calculateDuration(schedule.time_start, schedule.time_end);
+        
+        html += `
+            <div class="schedule-item ${statusInfo.class}">
+                <div class="schedule-time">
+                    <div class="time-display">${formatTimeClient(schedule.time_start)}</div>
+                    <div class="time-duration">${duration}hr</div>
+                </div>
+                
+                <div class="schedule-details">
+                    <div class="schedule-course">
+                        <div class="course-code">${escapeHtml(schedule.course_code)}</div>
+                        <div class="course-name">${escapeHtml(schedule.course_description)}</div>
+                    </div>
+                    <div class="schedule-info">
+                        <span class="class-info">${escapeHtml(schedule.class_name)}</span>
+                        <span class="room-info">Room: ${escapeHtml(schedule.room || 'TBA')}</span>
+                    </div>
+                </div>
+                
+                <div class="schedule-status">
+                    <span class="status-badge status-${statusInfo.class}">
+                        ${statusInfo.text}
+                    </span>
+                    ${schedule.status === 'ongoing' ? 
+                        `<button class="btn-small btn-primary" onclick="markAttendance(${schedule.schedule_id})">
+                            Mark Present
+                        </button>` : ''
+                    }
+                </div>
+            </div>
+        `;
+    });
+    
+    return html;
+}
+
+// Helper functions for client-side rendering
+function getScheduleStatusClient(status) {
+    switch (status) {
+        case 'ongoing': return {text: 'In Progress', class: 'ongoing'};
+        case 'upcoming': return {text: 'Upcoming', class: 'upcoming'};
+        case 'finished': return {text: 'Completed', class: 'finished'};
+        default: return {text: 'Unknown', class: 'unknown'};
+    }
+}
+
+function calculateDuration(timeStart, timeEnd) {
+    const start = new Date(`1970-01-01 ${timeStart}`);
+    const end = new Date(`1970-01-01 ${timeEnd}`);
+    const diffMs = end - start;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    return diffHours.toFixed(1);
+}
+
+function formatTimeClient(time) {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const hour12 = hours % 12 || 12;
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${minutes} ${ampm}`;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // updateLocationStatus function removed - now handled by live_polling.js
@@ -177,9 +267,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    const ongoingClasses = document.querySelectorAll('.schedule-item.ongoing');
-    if (ongoingClasses.length > 0) {
-        showNotification(`You have ${ongoingClasses.length} ongoing class(es)`, 'info');
+    // Automatically load the first active tab's content
+    const activeTab = document.querySelector('.schedule-tab.active');
+    if (activeTab) {
+        const days = activeTab.textContent.trim();
+        switchScheduleTab(days, activeTab);
     }
 });
 
