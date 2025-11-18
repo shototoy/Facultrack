@@ -221,6 +221,7 @@ function getScheduleStatusClient(status) {
         case 'upcoming': return {text: 'Upcoming', class: 'upcoming'};
         case 'finished': return {text: 'Completed', class: 'finished'};
         case 'pending': return {text: 'Loading...', class: 'pending'};
+        case 'not-today': return {text: 'Not Today', class: 'not-today'};
         default: return {text: 'Unknown', class: 'unknown'};
     }
 }

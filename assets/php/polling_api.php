@@ -119,59 +119,69 @@ function getFacultyInfo($pdo, $user_id) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 function getScheduleForDays($pdo, $faculty_id, $days) {
-    $current_time = date('H:i:s');
     $current_day = date('w'); // 0=Sunday, 1=Monday, etc.
     $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
     $today_code = $day_mapping[$current_day];
-    $time_condition = "TIME(NOW())";
+    $viewing_day = $days; // The day tab being viewed (M, T, W, TH, F, S)
     
     $schedule_query = "
         SELECT s.*, c.course_description, cl.class_name, cl.class_code,
             CASE 
-                WHEN $time_condition BETWEEN s.time_start AND s.time_end 
-                     AND (
-                         (s.days = '$today_code') OR
-                         (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
-                         (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
-                         (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
-                         (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
-                         (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
-                         (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
-                     ) THEN 'ongoing'
-                WHEN $time_condition < s.time_start 
-                     AND (
-                         (s.days = '$today_code') OR
-                         (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
-                         (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
-                         (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
-                         (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
-                         (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
-                         (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
-                     ) THEN 'upcoming'
-                ELSE 'finished'
+                -- If viewing today's tab
+                WHEN '$viewing_day' = '$today_code' THEN
+                    CASE 
+                        WHEN TIME(NOW()) > s.time_end THEN 'finished'
+                        WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 'ongoing'
+                        WHEN TIME(NOW()) < s.time_start THEN 'upcoming'
+                        ELSE 'finished'
+                    END
+                -- If viewing a day before today (using day numbers: M=1, T=2, W=3, TH=4, F=5, S=6)
+                WHEN (
+                    ('$viewing_day' = 'M' AND '$today_code' IN ('T', 'W', 'TH', 'F', 'S')) OR
+                    ('$viewing_day' = 'T' AND '$today_code' IN ('W', 'TH', 'F', 'S')) OR
+                    ('$viewing_day' = 'W' AND '$today_code' IN ('TH', 'F', 'S')) OR
+                    ('$viewing_day' = 'TH' AND '$today_code' IN ('F', 'S')) OR
+                    ('$viewing_day' = 'F' AND '$today_code' = 'S') OR
+                    ('$viewing_day' = 'S' AND '$today_code' = 'M')  -- Sunday to Monday (week wrap)
+                ) THEN 'finished'
+                -- If viewing a day after today
+                WHEN (
+                    ('$viewing_day' = 'T' AND '$today_code' = 'M') OR
+                    ('$viewing_day' = 'W' AND '$today_code' IN ('M', 'T')) OR
+                    ('$viewing_day' = 'TH' AND '$today_code' IN ('M', 'T', 'W')) OR
+                    ('$viewing_day' = 'F' AND '$today_code' IN ('M', 'T', 'W', 'TH')) OR
+                    ('$viewing_day' = 'S' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F')) OR
+                    ('$viewing_day' = 'M' AND '$today_code' = 'S')  -- Monday after Sunday (week wrap)
+                ) THEN 'not-today'
+                ELSE 'not-today'
             END as status
         FROM schedules s
         JOIN courses c ON s.course_code = c.course_code
         JOIN classes cl ON s.class_id = cl.class_id
         WHERE s.faculty_id = ? AND s.is_active = TRUE AND s.faculty_id IS NOT NULL
-        AND (s.days = ? OR 
-            (s.days = 'MW' AND ? IN ('M', 'W', 'MW')) OR
-            (s.days = 'MF' AND ? IN ('M', 'F', 'MF')) OR
-            (s.days = 'WF' AND ? IN ('W', 'F', 'WF')) OR
-            (s.days = 'MWF' AND ? IN ('M', 'W', 'F', 'MWF')) OR
-            (s.days = 'TTH' AND ? IN ('T', 'TH', 'TTH')) OR
-            (s.days = 'MTWTHF' AND ? IN ('M', 'T', 'W', 'TH', 'F', 'MTWTHF'))
+        AND (
+            (s.days = '$viewing_day') OR 
+            (s.days = 'MW' AND '$viewing_day' IN ('M', 'W')) OR
+            (s.days = 'MF' AND '$viewing_day' IN ('M', 'F')) OR
+            (s.days = 'WF' AND '$viewing_day' IN ('W', 'F')) OR
+            (s.days = 'MWF' AND '$viewing_day' IN ('M', 'W', 'F')) OR
+            (s.days = 'TTH' AND '$viewing_day' IN ('T', 'TH')) OR
+            (s.days = 'MTWTHF' AND '$viewing_day' IN ('M', 'T', 'W', 'TH', 'F'))
         )
         ORDER BY 
             CASE 
-                WHEN $time_condition > s.time_end THEN 1
-                WHEN $time_condition BETWEEN s.time_start AND s.time_end THEN 2
-                WHEN $time_condition < s.time_start THEN 3
-                ELSE 4
+                WHEN '$viewing_day' = '$today_code' THEN
+                    CASE 
+                        WHEN TIME(NOW()) > s.time_end THEN 1
+                        WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 2
+                        WHEN TIME(NOW()) < s.time_start THEN 3
+                        ELSE 4
+                    END
+                ELSE 5
             END,
             s.time_start";
     $stmt = $pdo->prepare($schedule_query);
-    $stmt->execute([$faculty_id, $days, $days, $days, $days, $days, $days, $days]);
+    $stmt->execute([$faculty_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 function generateScheduleHTML($schedule_data) {
@@ -206,6 +216,7 @@ function getScheduleStatus($status) {
         case 'ongoing': return ['text' => 'In Progress', 'class' => 'ongoing'];
         case 'upcoming': return ['text' => 'Upcoming', 'class' => 'upcoming'];
         case 'finished': return ['text' => 'Completed', 'class' => 'finished'];
+        case 'not-today': return ['text' => 'Not Today', 'class' => 'not-today'];
         default: return ['text' => 'Unknown', 'class' => 'unknown'];
     }
 }
