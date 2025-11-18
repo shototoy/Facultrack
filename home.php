@@ -13,7 +13,7 @@ if (!$class_info) {
 }
 $class_id = $class_info['class_id'];
 $announcements = getClassAnnouncements($pdo);
-$faculty_data = getClassFaculty($pdo, $class_id);
+$faculty_data = getClassFacultyHome($pdo, $class_id);
 $faculty_courses = [];
 
 // Debug: Check if we found faculty
@@ -56,21 +56,7 @@ function getClassAnnouncements($pdo) {
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-function getClassFaculty($pdo, $class_id) {
-    // Debug: Check faculty status first
-    $status_query = "SELECT f.faculty_id, u.full_name, f.is_active as faculty_active, u.is_active as user_active 
-                     FROM schedules s 
-                     JOIN faculty f ON s.faculty_id = f.faculty_id 
-                     JOIN users u ON f.user_id = u.user_id 
-                     WHERE s.class_id = ? AND s.is_active = TRUE";
-    $status_stmt = $pdo->prepare($status_query);
-    $status_stmt->execute([$class_id]);
-    $status_result = $status_stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    foreach($status_result as $faculty) {
-        error_log("Faculty {$faculty['full_name']}: faculty_active={$faculty['faculty_active']}, user_active={$faculty['user_active']}");
-    }
-    
+function getClassFacultyHome($pdo, $class_id) {
     $faculty_query = "
         SELECT DISTINCT f.faculty_id, u.full_name as faculty_name, f.program, f.current_location, f.last_location_update,
                f.office_hours, f.contact_email, f.contact_phone,
@@ -83,20 +69,7 @@ function getClassFaculty($pdo, $class_id) {
         ORDER BY u.full_name";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute([$class_id]);
-    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Debug the query
-    error_log("Faculty query executed with class_id: $class_id");
-    error_log("Query result count: " . count($result));
-    
-    // Debug: Check what schedules exist for this class
-    $debug_query = "SELECT COUNT(*) as total_schedules, COUNT(DISTINCT faculty_id) as unique_faculty FROM schedules WHERE class_id = ? AND is_active = TRUE";
-    $debug_stmt = $pdo->prepare($debug_query);
-    $debug_stmt->execute([$class_id]);
-    $debug_result = $debug_stmt->fetch(PDO::FETCH_ASSOC);
-    error_log("Schedules for class_id $class_id: " . $debug_result['total_schedules'] . " schedules, " . $debug_result['unique_faculty'] . " faculty");
-    
-    return $result;
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function getFacultyCourses($pdo, $faculty_id, $class_id) {

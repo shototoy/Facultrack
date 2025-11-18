@@ -26,7 +26,8 @@ $class_schedules = [];
 $courses_data = [];
 $faculty_schedules = [];
 if (!empty($class_ids)) {
-    $faculty_data = getAllFaculty($pdo);
+    // Use local getAllFaculty() function - restored to avoid API execution
+    $faculty_data = getAllFacultyProgram($pdo);
     foreach ($faculty_data as $faculty) {
         $faculty_schedules[$faculty['faculty_id']] = getFacultySchedules($pdo, $faculty['faculty_id']);
     }
@@ -91,7 +92,7 @@ function getProgramClasses($pdo, $user_id) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getAllFaculty($pdo) {
+function getAllFacultyProgram($pdo) {
     $faculty_query = "
         SELECT 
             f.faculty_id,
@@ -104,22 +105,9 @@ function getAllFaculty($pdo) {
             f.current_location,
             f.last_location_update,
             CASE 
-                WHEN f.is_active = 1 THEN 'available'
-                ELSE 'offline'
-            END as status,
-            COALESCE(
-                (SELECT CASE 
-                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
-                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
-                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
-                    ELSE 'Over a week ago'
-                END
-                FROM location_history lh 
-                WHERE lh.faculty_id = f.faculty_id 
-                ORDER BY lh.time_set DESC 
-                LIMIT 1),
-                'No location history'
-            ) as last_updated
+                WHEN f.is_active = 1 THEN 'Available'
+                ELSE 'Offline'
+            END as status
         FROM faculty f
         JOIN users u ON f.user_id = u.user_id
         ORDER BY u.full_name";

@@ -429,14 +429,12 @@ class LivePollingManager {
     }
     startLocationPolling() {
         if (this.intervals.location) return;
+        // Simplified location polling - always poll for all page types that need location data
         this.intervals.location = setInterval(() => {
-            if (this.hasVisibleElement('location') || this.hasLocationElements()) {
-                this.fetchLocationUpdates();
-            }
-        }, this.defaultIntervals.location);
-        if (this.hasLocationElements()) {
             this.fetchLocationUpdates();
-        }
+        }, this.defaultIntervals.location);
+        // Initial fetch
+        this.fetchLocationUpdates();
     }
     
     hasLocationElements() {
@@ -958,10 +956,6 @@ class LivePollingManager {
         }
     }
     async fetchLocationUpdates() {
-        if (this.pageType === 'class') {
-            console.log('Location polling triggered for class dashboard');
-        }
-        
         if (!this.isOnline) {
             this.queueUpdate('location', { action: 'get_location_updates' });
             return;
@@ -972,22 +966,14 @@ class LivePollingManager {
                 credentials: 'same-origin'
             });
             const data = await response.json();
-            if (this.pageType === 'class') {
-                console.log('Location API response:', data);
-            }
+            
             if (data.success) {
                 this.updateLocationDisplay(data);
                 
-                // Add class dashboard debug logging after location updates  
+                // Debug logging for class dashboard only
                 if (this.pageType === 'class') {
                     console.clear();
                     this.logCurrentStatus();
-                    console.log('Faculty with schedules:');
-                    this.logActualScheduleItems();
-                }
-            } else {
-                if (this.pageType === 'class') {
-                    console.log('Location update FAILED:', data.message || 'Unknown error');
                 }
             }
         } catch (error) {
