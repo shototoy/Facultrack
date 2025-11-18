@@ -2,6 +2,9 @@
 require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
+
+// Set database timezone to match polling_api.php  
+$pdo->exec("SET time_zone = '+08:00'");
 validateUserSession('program_chair');
 $user_id = $_SESSION['user_id'];
 $program_chair_name = $_SESSION['full_name'];
@@ -101,9 +104,22 @@ function getAllFaculty($pdo) {
             f.current_location,
             f.last_location_update,
             CASE 
-                WHEN f.is_active = 1 THEN 'Available'
-                ELSE 'Offline'
-            END as status
+                WHEN f.is_active = 1 THEN 'available'
+                ELSE 'offline'
+            END as status,
+            COALESCE(
+                (SELECT CASE 
+                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
+                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
+                    ELSE 'Over a week ago'
+                END
+                FROM location_history lh 
+                WHERE lh.faculty_id = f.faculty_id 
+                ORDER BY lh.time_set DESC 
+                LIMIT 1),
+                'No location history'
+            ) as last_updated
         FROM faculty f
         JOIN users u ON f.user_id = u.user_id
         ORDER BY u.full_name";

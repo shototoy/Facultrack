@@ -60,11 +60,19 @@ function getFacultyStatusSQL() {
 }
 
 function getTimeAgoSQL() {
-    return "CASE 
-        WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, f.last_location_update, NOW()), ' minutes ago')
-        WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, f.last_location_update, NOW()), ' hours ago')
-        ELSE CONCAT(TIMESTAMPDIFF(DAY, f.last_location_update, NOW()), ' days ago')
-    END as last_updated";
+    return "COALESCE(
+        (SELECT CASE 
+            WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+            WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
+            WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
+            ELSE 'Over a week ago'
+        END
+        FROM location_history lh 
+        WHERE lh.faculty_id = f.faculty_id 
+        ORDER BY lh.time_set DESC 
+        LIMIT 1),
+        'No location history'
+    ) as last_updated";
 }
 
 function getTimeAgo($timestamp) {

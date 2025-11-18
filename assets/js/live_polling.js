@@ -355,8 +355,9 @@ class LivePollingManager {
             case 'program_chair':
             case 'campus_director':
                 this.startStatisticsPolling();
+                this.startLocationPolling(); // Add location polling for faculty cards
                 this.startAnnouncementsPolling();
-                this.startTablePolling(); // This handles both tables and cards
+                // Remove conflicting table polling for program dashboard
                 break;
             case 'faculty':
                 this.startLocationPolling(); // Still needed for faculty's own location
@@ -1643,31 +1644,6 @@ class LivePollingManager {
             }
         });
     }
-    updateLocationDisplay(data) {
-        if (window.userRole === 'class') {
-            const facultyData = data.faculty || [];
-            facultyData.forEach(faculty => {
-                const facultyElements = document.querySelectorAll(`[data-faculty-id="${faculty.faculty_id}"]`);
-                facultyElements.forEach(element => {
-                    const locationElement = element.querySelector('.faculty-location');
-                    const statusElement = element.querySelector('.faculty-status');
-                    const lastUpdatedElement = element.querySelector('.last-updated');
-                    if (locationElement) {
-                        locationElement.textContent = faculty.current_location || 'Location not set';
-                    }
-                    if (statusElement) {
-                        statusElement.className = `faculty-status status-${faculty.status}`;
-                        statusElement.textContent = faculty.status.charAt(0).toUpperCase() + faculty.status.slice(1);
-                    }
-                    if (lastUpdatedElement) {
-                        lastUpdatedElement.textContent = faculty.last_updated;
-                    }
-                });
-            });
-        } else if (window.userRole === 'faculty') {
-            this.updateFacultyOwnLocation(data);
-        }
-    }
     updateFacultyOwnLocation(data) {
         const currentLocationElement = document.querySelector('.current-location-display');
         const lastUpdatedElement = document.querySelector('.location-last-updated');
@@ -1686,13 +1662,14 @@ class LivePollingManager {
             if (data.current_location !== undefined) {
                 this.updateCurrentLocation(data.current_location, data.status, data.last_updated);
             }
+        } else if (this.pageType === 'program') {
+            // Comment out the problematic function call to work like class dashboard
+            // if (data.faculty && Array.isArray(data.faculty)) {
+            //     this.updateProgramFacultyStatus(data.faculty);
+            // }
         } else if (this.pageType === 'director') {
             if (data.faculty && Array.isArray(data.faculty)) {
                 this.updateDirectorFacultyStatus(data.faculty);
-            }
-        } else if (this.pageType === 'program') {
-            if (data.faculty && Array.isArray(data.faculty)) {
-                this.updateProgramFacultyStatus(data.faculty);
             }
         } else if (this.pageType === 'class') {
             if (data.faculty && Array.isArray(data.faculty)) {
@@ -1709,7 +1686,7 @@ class LivePollingManager {
             const row = facultyTableBody.querySelector(`tr[data-faculty-id="${faculty.faculty_id}"]`);
             if (row) {
                 const statusBadge = row.querySelector('.status-indicator, .status-badge');
-                const locationCell = row.querySelector('td:nth-child(4)');
+                const locationCell = row.querySelector('td:nth-child(5)');
                 
                 if (statusBadge) {
                     const oldStatus = statusBadge.textContent.trim().toLowerCase();
@@ -1820,8 +1797,6 @@ class LivePollingManager {
                         
                         if (newStatus === 'available') {
                             statusDot.style.boxShadow = '0 0 15px rgba(46, 204, 113, 0.8)';
-                        } else if (newStatus === 'busy') {
-                            statusDot.style.boxShadow = '0 0 15px rgba(255, 193, 7, 0.8)';
                         } else {
                             statusDot.style.boxShadow = '0 0 15px rgba(108, 117, 125, 0.8)';
                         }
@@ -1836,7 +1811,6 @@ class LivePollingManager {
                 if (locationText) {
                     const statusLabels = {
                         'available': 'Available',
-                        'busy': 'In Meeting',
                         'offline': 'Offline'
                     };
                     const newStatusText = statusLabels[faculty.status] || 'Unknown';

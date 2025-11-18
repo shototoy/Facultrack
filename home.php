@@ -2,6 +2,9 @@
 require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
+
+// Set database timezone to match polling_api.php
+$pdo->exec("SET time_zone = '+08:00'");
 validateUserSession('class');
 $user_id = $_SESSION['user_id'];
 $class_info = getClassInfo($pdo, $user_id);
@@ -227,7 +230,6 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                                 <?php 
                                     switch($faculty['status']) {
                                         case 'available': echo 'Available'; break;
-                                        case 'busy': echo 'In Meeting'; break;
                                         case 'offline': echo 'Offline'; break;
                                         default: echo 'Unknown';
                                     }

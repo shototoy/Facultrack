@@ -676,20 +676,26 @@ switch ($action) {
                         u.full_name as faculty_name,
                         f.current_location,
                         CASE 
-                            WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN 'available'
-                            WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN 'busy'
+                            WHEN f.is_active = 1 THEN 'available'
                             ELSE 'offline'
                         END as status,
-                        CASE 
-                            WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, f.last_location_update, NOW()), ' minutes ago')
-                            WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, f.last_location_update, NOW()), ' hours ago')
-                            ELSE CONCAT(TIMESTAMPDIFF(DAY, f.last_location_update, NOW()), ' days ago')
-                        END as last_updated
+                        COALESCE(
+                            (SELECT CASE 
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
+                                ELSE 'Over a week ago'
+                            END
+                            FROM location_history lh 
+                            WHERE lh.faculty_id = f.faculty_id 
+                            ORDER BY lh.time_set DESC 
+                            LIMIT 1),
+                            'No location history'
+                        ) as last_updated
                     FROM faculty f
                     JOIN users u ON f.user_id = u.user_id
                     JOIN schedules s ON f.faculty_id = s.faculty_id
-                    WHERE f.is_active = TRUE 
-                    AND s.is_active = TRUE 
+                    WHERE s.is_active = TRUE 
                     AND s.class_id = ?
                 ";
                 
@@ -709,17 +715,24 @@ switch ($action) {
                         f.current_location,
                         f.last_location_update,
                         CASE 
-                            WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN 'available'
-                            WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN 'busy'
+                            WHEN f.is_active = 1 THEN 'available'
                             ELSE 'offline'
                         END as status,
-                        CASE 
-                            WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, f.last_location_update, NOW()), ' minutes ago')
-                            WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, f.last_location_update, NOW()), ' hours ago')
-                            ELSE CONCAT(TIMESTAMPDIFF(DAY, f.last_location_update, NOW()), ' days ago')
-                        END as last_updated
+                        COALESCE(
+                            (SELECT CASE 
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
+                                ELSE 'Over a week ago'
+                            END
+                            FROM location_history lh 
+                            WHERE lh.faculty_id = f.faculty_id 
+                            ORDER BY lh.time_set DESC 
+                            LIMIT 1),
+                            'No location history'
+                        ) as last_updated
                     FROM faculty f
-                    WHERE f.user_id = ? AND f.is_active = TRUE
+                    WHERE f.user_id = ?
                 ";
                 
                 $stmt = $pdo->prepare($faculty_query);
@@ -737,6 +750,82 @@ switch ($action) {
                 } else {
                     sendJsonResponse(['success' => false, 'message' => 'Faculty not found'], 404);
                 }
+                
+            } elseif ($user_role === 'program_chair') {
+                // Program chair can see all faculty in their program
+                $faculty_query = "
+                    SELECT DISTINCT
+                        f.faculty_id,
+                        u.full_name as faculty_name,
+                        f.current_location,
+                        CASE 
+                            WHEN f.is_active = 1 THEN 'available'
+                            ELSE 'offline'
+                        END as status,
+                        COALESCE(
+                            (SELECT CASE 
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
+                                ELSE 'Over a week ago'
+                            END
+                            FROM location_history lh 
+                            WHERE lh.faculty_id = f.faculty_id 
+                            ORDER BY lh.time_set DESC 
+                            LIMIT 1),
+                            'No location history'
+                        ) as last_updated
+                    FROM faculty f
+                    JOIN users u ON f.user_id = u.user_id
+                ";
+                
+                $stmt = $pdo->prepare($faculty_query);
+                $stmt->execute();
+                $faculty_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                sendJsonResponse([
+                    'success' => true,
+                    'faculty' => $faculty_data,
+                    'timestamp' => date('Y-m-d H:i:s')
+                ]);
+                
+            } elseif ($user_role === 'campus_director') {
+                // Campus director can see all faculty
+                $faculty_query = "
+                    SELECT DISTINCT
+                        f.faculty_id,
+                        u.full_name as faculty_name,
+                        f.current_location,
+                        CASE 
+                            WHEN f.is_active = 1 THEN 'available'
+                            ELSE 'offline'
+                        END as status,
+                        COALESCE(
+                            (SELECT CASE 
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
+                                ELSE 'Over a week ago'
+                            END
+                            FROM location_history lh 
+                            WHERE lh.faculty_id = f.faculty_id 
+                            ORDER BY lh.time_set DESC 
+                            LIMIT 1),
+                            'No location history'
+                        ) as last_updated
+                    FROM faculty f
+                    JOIN users u ON f.user_id = u.user_id
+                ";
+                
+                $stmt = $pdo->prepare($faculty_query);
+                $stmt->execute();
+                $faculty_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                sendJsonResponse([
+                    'success' => true,
+                    'faculty' => $faculty_data,
+                    'timestamp' => date('Y-m-d H:i:s')
+                ]);
                 
             } else {
                 sendJsonResponse(['success' => false, 'message' => 'Unauthorized role'], 403);
@@ -868,20 +957,26 @@ switch ($action) {
                         SELECT f.faculty_id, u.full_name as faculty_name, f.program, f.current_location, f.last_location_update,
                                f.office_hours, f.contact_email, f.contact_phone, f.is_active,
                                CASE 
-                                   WHEN f.is_active = 1 AND f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN 'available'
-                                   WHEN f.is_active = 1 AND f.last_location_update > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN 'busy'
+                                   WHEN f.is_active = 1 THEN 'available'
                                    ELSE 'offline'
                                END as status,
-                               CASE 
-                                   WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, f.last_location_update, NOW()), ' minutes ago')
-                                   WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, f.last_location_update, NOW()), ' hours ago')
-                                   WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, f.last_location_update, NOW()), ' days ago')
-                                   ELSE '1 week ago'
-                               END as last_updated
+                               COALESCE(
+                                   (SELECT CASE 
+                                       WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+                                       WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
+                                       WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
+                                       ELSE 'Over a week ago'
+                                   END
+                                   FROM location_history lh 
+                                   WHERE lh.faculty_id = f.faculty_id 
+                                   ORDER BY lh.time_set DESC 
+                                   LIMIT 1),
+                                   'No location history'
+                               ) as last_updated
                         FROM faculty f
                         JOIN users u ON f.user_id = u.user_id
                         JOIN schedules s ON f.faculty_id = s.faculty_id
-                        WHERE f.is_active = TRUE AND s.is_active = TRUE AND s.class_id = ? AND s.faculty_id IS NOT NULL
+                        WHERE s.is_active = TRUE AND s.class_id = ? AND s.faculty_id IS NOT NULL
                         GROUP BY f.faculty_id
                         ORDER BY u.full_name";
                     
