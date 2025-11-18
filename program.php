@@ -2,14 +2,10 @@
 require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
-
-// Set database timezone to match polling_api.php  
 $pdo->exec("SET time_zone = '+08:00'");
 validateUserSession('program_chair');
 $user_id = $_SESSION['user_id'];
 $program_chair_name = $_SESSION['full_name'];
-
-// Keep program chair online while on the page (heartbeat)
 try {
     $set_online_query = "UPDATE faculty SET is_active = 1, last_location_update = NOW() WHERE user_id = ?";
     $stmt = $pdo->prepare($set_online_query);
@@ -26,11 +22,9 @@ $class_schedules = [];
 $courses_data = [];
 $faculty_schedules = [];
 if (!empty($class_ids)) {
-    // Use local getAllFaculty() function - restored to avoid API execution
     $faculty_data = getAllFacultyProgram($pdo);
     foreach ($faculty_data as $faculty) {
-        // Faculty schedules will be loaded via live polling - use empty array for initial load
-        $faculty_schedules[$faculty['faculty_id']] = [];
+        $faculty_schedules[$faculty['faculty_id']] = getFacultySchedulesProgram($pdo, $faculty['faculty_id']);
     }
     $courses_data = getProgramCourses($pdo, $class_ids);
     foreach ($classes_data as $class) {
@@ -39,40 +33,29 @@ if (!empty($class_ids)) {
 }
 require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
-
-// Helper functions for validation
 function checkDayOverlap($days1, $days2) {
     $days1 = strtoupper($days1);
     $days2 = strtoupper($days2);
-    
-    // Convert day codes to individual days
     $expand = ['MW' => 'M,W', 'TTH' => 'T,TH', 'MWF' => 'M,W,F', 'MTWTHF' => 'M,T,W,TH,F'];
-    
     if (isset($expand[$days1])) $days1 = $expand[$days1];
     if (isset($expand[$days2])) $days2 = $expand[$days2];
-    
     $arr1 = explode(',', str_replace(['MW', 'TTH', 'MWF'], ['M,W', 'T,TH', 'M,W,F'], $days1));
     $arr2 = explode(',', str_replace(['MW', 'TTH', 'MWF'], ['M,W', 'T,TH', 'M,W,F'], $days2));
-    
     return count(array_intersect($arr1, $arr2)) > 0;
 }
-
 function checkTimeOverlap($start1, $end1, $start2, $end2) {
     $start1_time = strtotime($start1);
     $end1_time = strtotime($end1);
     $start2_time = strtotime($start2);
     $end2_time = strtotime($end2);
-    
     return !($end1_time <= $start2_time || $start1_time >= $end2_time);
 }
-
 function getProgramChairInfo($pdo, $user_id) {
     $chair_program_query = "SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE";
     $stmt = $pdo->prepare($chair_program_query);
     $stmt->execute([$user_id]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
-
 function getProgramClasses($pdo, $user_id) {
     $classes_query = "
         SELECT c.class_id, c.class_code, c.class_name, c.year_level, c.semester, c.academic_year,
@@ -92,7 +75,6 @@ function getProgramClasses($pdo, $user_id) {
     $stmt->execute([$user_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getAllFacultyProgram($pdo) {
     $faculty_query = "
         SELECT 
@@ -116,9 +98,19 @@ function getAllFacultyProgram($pdo) {
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
-// Removed duplicate getFacultySchedules() - using polling_api.php version instead
-
+function getFacultySchedulesProgram($pdo, $faculty_id) {
+    $schedule_query = "
+        SELECT s.course_code, c.course_description, c.units, s.days, s.time_start, s.time_end, s.room,
+               cl.class_name, cl.class_code
+        FROM schedules s
+        JOIN courses c ON s.course_code = c.course_code
+        JOIN classes cl ON s.class_id = cl.class_id
+        WHERE s.faculty_id = ? AND s.is_active = TRUE
+        ORDER BY s.time_start";
+    $stmt = $pdo->prepare($schedule_query);
+    $stmt->execute([$faculty_id]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 function getProgramCourses($pdo, $class_ids) {
     $in_clause = buildInClause($class_ids);
     $course_query = "
@@ -131,7 +123,6 @@ function getProgramCourses($pdo, $class_ids) {
     $stmt->execute($in_clause['values']);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getClassSchedules($pdo, $class_id) {
     $schedule_query = "
         SELECT s.course_code, c.course_description, s.days, s.time_start, s.time_end, s.room,
@@ -146,19 +137,16 @@ function getClassSchedules($pdo, $class_id) {
     $stmt->execute([$class_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 if (isset($_POST['action']) && $_POST['action'] === 'get_courses_and_classes') {
     try {
         $courses_query = "SELECT course_code, course_description, units FROM courses WHERE is_active = TRUE ORDER BY course_code";
         $courses_stmt = $pdo->prepare($courses_query);
         $courses_stmt->execute();
         $courses = $courses_stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         $classes_query = "SELECT class_id, class_code, class_name, year_level FROM classes WHERE program_chair_id = ? AND is_active = TRUE ORDER BY year_level, class_name";
         $classes_stmt = $pdo->prepare($classes_query);
         $classes_stmt->execute([$user_id]);
         $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         echo json_encode([
             'success' => true,
             'courses' => $courses,
@@ -172,8 +160,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_courses_and_classes') {
     }
     exit;
 }
-
-
 if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
     try {
         $faculty_id = $_POST['faculty_id'];
@@ -184,29 +170,21 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
         $time_end = $_POST['time_end'];
         $room = $_POST['room'] ?? null;
         $is_edit = isset($_POST['is_edit_mode']) && $_POST['is_edit_mode'] === 'true';
-        
-        // For edit mode, get original values to exclude from conflict check
         $original_course = $is_edit ? ($_POST['original_course_code'] ?? '') : '';
         $original_time_start = $is_edit ? ($_POST['original_time_start'] ?? '') : '';
         $original_days = $is_edit ? ($_POST['original_days'] ?? '') : '';
-        
-        // VALIDATION 1: Check if course is valid for the selected class via curriculum
         $curriculum_check = "SELECT COUNT(*) as valid FROM curriculum cur
                            JOIN classes cl ON cur.year_level = cl.year_level AND cur.semester = cl.semester
                            WHERE cur.course_code = ? AND cl.class_id = ? AND cur.is_active = TRUE";
         $curriculum_stmt = $pdo->prepare($curriculum_check);
         $curriculum_stmt->execute([$course_code, $class_id]);
         $is_course_valid = $curriculum_stmt->fetch(PDO::FETCH_ASSOC)['valid'] > 0;
-        
         if (!$is_course_valid) {
             echo json_encode(['success' => false, 'message' => 'Course not assigned to this class curriculum']);
             exit;
         }
-        
-        // VALIDATION 2: Check faculty time conflicts
         $faculty_conflict_query = "SELECT course_code, time_start, time_end, days FROM schedules 
                                  WHERE faculty_id = ? AND is_active = TRUE";
-        
         if ($is_edit) {
             $faculty_conflict_query .= " AND NOT (course_code = ? AND time_start = ? AND days = ?)";
             $faculty_stmt = $pdo->prepare($faculty_conflict_query);
@@ -215,24 +193,17 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
             $faculty_stmt = $pdo->prepare($faculty_conflict_query);
             $faculty_stmt->execute([$faculty_id]);
         }
-        
         $faculty_schedules = $faculty_stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         foreach ($faculty_schedules as $schedule) {
-            // Check if days overlap
             if (checkDayOverlap($days, $schedule['days'])) {
-                // Check if time overlaps
                 if (checkTimeOverlap($time_start, $time_end, $schedule['time_start'], $schedule['time_end'])) {
                     echo json_encode(['success' => false, 'message' => "Faculty has conflict with {$schedule['course_code']} at {$schedule['time_start']}-{$schedule['time_end']} on {$schedule['days']}"]);
                     exit;
                 }
             }
         }
-        
-        // VALIDATION 3: Check room conflicts
         $room_conflict_query = "SELECT course_code, time_start, time_end, days FROM schedules 
                               WHERE room = ? AND is_active = TRUE";
-        
         if ($is_edit) {
             $room_conflict_query .= " AND NOT (course_code = ? AND time_start = ? AND days = ?)";
             $room_stmt = $pdo->prepare($room_conflict_query);
@@ -241,28 +212,21 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
             $room_stmt = $pdo->prepare($room_conflict_query);
             $room_stmt->execute([$room]);
         }
-        
         $room_schedules = $room_stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         foreach ($room_schedules as $schedule) {
-            // Check if days overlap
             if (checkDayOverlap($days, $schedule['days'])) {
-                // Check if time overlaps
                 if (checkTimeOverlap($time_start, $time_end, $schedule['time_start'], $schedule['time_end'])) {
                     echo json_encode(['success' => false, 'message' => "Room conflict with {$schedule['course_code']} at {$schedule['time_start']}-{$schedule['time_end']} on {$schedule['days']}"]);
                     exit;
                 }
             }
         }
-        
         if ($is_edit) {
-            // Update existing schedule
             $update_query = "UPDATE schedules 
                             SET faculty_id = ?, course_code = ?, class_id = ?, days = ?, 
                                 time_start = ?, time_end = ?, room = ?
                             WHERE course_code = ? AND time_start = ? AND days = ? AND is_active = TRUE";
             $stmt = $pdo->prepare($update_query);
-            
             if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room, 
                                $original_course, $original_time_start, $original_days])) {
                 echo json_encode(['success' => true, 'message' => 'Course assignment updated successfully']);
@@ -270,15 +234,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
                 echo json_encode(['success' => false, 'message' => 'Failed to update course assignment']);
             }
         } else {
-            // Insert new schedule
-            // Auto-generate academic year
             $current_year = date('Y');
             $academic_year = $current_year . '-' . substr($current_year + 1, -2);
-            
             $insert_query = "INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, semester, academic_year, is_active) 
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)";
             $stmt = $pdo->prepare($insert_query);
-            
             if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room, '1st', $academic_year])) {
                 echo json_encode(['success' => true, 'message' => 'Course assigned successfully']);
             } else {
@@ -290,7 +250,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
     }
     exit;
 }
-
 if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_data') {
     try {
         $course_code = $_POST['course_code'];
@@ -302,7 +261,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
         $stmt = $pdo->prepare($curriculum_query);
         $stmt->execute([$course_code]);
         $existingAssignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         echo json_encode([
             'success' => true,
             'existingAssignments' => $existingAssignments
@@ -312,7 +270,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
     }
     exit;
 }
-
 if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_data_with_classes') {
     try {
         $course_code = $_POST['course_code'];
@@ -329,7 +286,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
         $stmt = $pdo->prepare($curriculum_query);
         $stmt->execute([$course_code]);
         $existingAssignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         echo json_encode([
             'success' => true,
             'existingAssignments' => $existingAssignments
@@ -339,7 +295,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
     }
     exit;
 }
-
 if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum') {
     try {
         $course_code = $_POST['course_code'];
@@ -350,16 +305,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum
         $check_stmt = $pdo->prepare($check_query);
         $check_stmt->execute([$course_code, $year_level, $semester]);
         $exists = $check_stmt->fetch(PDO::FETCH_ASSOC)['count'] > 0;
-        
         if ($exists) {
             echo json_encode(['success' => false, 'message' => 'This course is already assigned to that year level and semester']);
             exit;
         }
-        
         $insert_query = "INSERT INTO curriculum (course_code, year_level, semester, program_chair_id, is_active) 
                         VALUES (?, ?, ?, ?, TRUE)";
         $stmt = $pdo->prepare($insert_query);
-        
         if ($stmt->execute([$course_code, $year_level, $semester, $user_id])) {
             echo json_encode(['success' => true, 'message' => 'Course assigned to curriculum successfully']);
         } else {
@@ -370,14 +322,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum
     }
     exit;
 }
-
 if (isset($_POST['action']) && $_POST['action'] === 'remove_curriculum_assignment') {
     try {
         $curriculum_id = $_POST['curriculum_id'];
-        
         $delete_query = "DELETE FROM curriculum WHERE curriculum_id = ?";
         $stmt = $pdo->prepare($delete_query);
-        
         if ($stmt->execute([$curriculum_id])) {
             echo json_encode(['success' => true, 'message' => 'Course removed from curriculum successfully']);
         } else {
@@ -388,16 +337,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'remove_curriculum_assignmen
     }
     exit;
 }
-
-// Get courses and classes data for faculty course load assignment
 if (isset($_POST['action']) && $_POST['action'] === 'get_courses_and_classes') {
     try {
-        // Get courses for this program chair's classes
         $courses = getProgramCourses($pdo, $class_ids);
-        
-        // Get classes for this program chair
         $classes = getProgramClasses($pdo, $user_id);
-        
         echo json_encode([
             'success' => true,
             'courses' => $courses,
@@ -408,7 +351,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_courses_and_classes') {
     }
     exit;
 }
-
 if (isset($_POST['action']) && $_POST['action'] === 'get_classes_for_course') {
     try {
         $course_code = $_POST['course_code'];
@@ -423,7 +365,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_classes_for_course') {
         $stmt = $pdo->prepare($classes_query);
         $stmt->execute([$course_code, $user_id]);
         $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         echo json_encode([
             'success' => true,
             'classes' => $classes
@@ -433,24 +374,17 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_classes_for_course') {
     }
     exit;
 }
-
-// Manual delete endpoint removed - now uses consolidated polling_api.php
-
 if (isset($_POST['action']) && $_POST['action'] === 'get_faculty_schedules') {
     try {
-        // Get all faculty schedules for the current program chair
-        $faculty_data = getAllFaculty($pdo);
+        $faculty_data = getAllFacultyProgram($pdo);
         $faculty_schedules = [];
-        
         foreach ($faculty_data as $faculty) {
-            $faculty_schedules[$faculty['faculty_id']] = getFacultySchedules($pdo, $faculty['faculty_id']);
+            $faculty_schedules[$faculty['faculty_id']] = getFacultySchedulesProgram($pdo, $faculty['faculty_id']);
         }
-        
         echo json_encode([
             'success' => true,
             'faculty_schedules' => $faculty_schedules
         ]);
-        
     } catch (Exception $e) {
         echo json_encode([
             'success' => false, 
@@ -459,7 +393,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_faculty_schedules') {
     }
     exit;
 }
-
 if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
     try {
         $faculty_id = $_POST['faculty_id'];
@@ -469,53 +402,39 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
         $time_end = $_POST['time_end'];
         $days = $_POST['days'];
         $is_edit = isset($_POST['is_edit']) && $_POST['is_edit'] === 'true';
-        
-        // For edit mode, get original values to exclude
         $original_course = $is_edit ? $_POST['original_course'] : '';
         $original_time_start = $is_edit ? $_POST['original_time_start'] : '';
         $original_days = $is_edit ? $_POST['original_days'] : '';
-        
         $conflicts = [];
-        
-        // 1. Check Faculty Schedule Conflicts
         $faculty_check = "SELECT s.course_code, s.time_start, s.time_end, s.days, s.room 
                          FROM schedules s
                          JOIN courses c ON s.course_code = c.course_code
                          WHERE s.faculty_id = ? AND s.is_active = TRUE";
-        
         if ($is_edit) {
             $faculty_check .= " AND NOT (s.course_code = ? AND s.time_start = ? AND s.days = ?)";
         }
-        
         $stmt = $pdo->prepare($faculty_check);
         if ($is_edit) {
             $stmt->execute([$faculty_id, $original_course, $original_time_start, $original_days]);
         } else {
             $stmt->execute([$faculty_id]);
         }
-        
         $faculty_schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         foreach ($faculty_schedules as $schedule) {
-            // Check day overlap
             $schedule_days = strtoupper($schedule['days']);
             $new_days = strtoupper($days);
             $has_day_overlap = false;
-            
             for ($i = 0; $i < strlen($new_days); $i++) {
                 if (strpos($schedule_days, $new_days[$i]) !== false) {
                     $has_day_overlap = true;
                     break;
                 }
             }
-            
             if ($has_day_overlap) {
-                // Check time overlap
                 $schedule_start = strtotime($schedule['time_start']);
                 $schedule_end = strtotime($schedule['time_end']);
                 $new_start = strtotime($time_start);
                 $new_end = strtotime($time_end);
-                
                 if (($new_start < $schedule_end) && ($new_end > $schedule_start)) {
                     $conflicts[] = "Faculty conflict: Already teaching {$schedule['course_code']} at " . 
                                  date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) . 
@@ -523,47 +442,36 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
                 }
             }
         }
-        
-        // 2. Check Class Schedule Conflicts
         $class_check = "SELECT s.course_code, s.time_start, s.time_end, s.days, u.full_name as faculty_name
                        FROM schedules s
                        JOIN faculty f ON s.faculty_id = f.faculty_id
                        JOIN users u ON f.user_id = u.user_id
                        WHERE s.class_id = ? AND s.is_active = TRUE";
-        
         if ($is_edit) {
             $class_check .= " AND NOT (s.course_code = ? AND s.time_start = ? AND s.days = ?)";
         }
-        
         $stmt = $pdo->prepare($class_check);
         if ($is_edit) {
             $stmt->execute([$class_id, $original_course, $original_time_start, $original_days]);
         } else {
             $stmt->execute([$class_id]);
         }
-        
         $class_schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         foreach ($class_schedules as $schedule) {
-            // Check day overlap
             $schedule_days = strtoupper($schedule['days']);
             $new_days = strtoupper($days);
             $has_day_overlap = false;
-            
             for ($i = 0; $i < strlen($new_days); $i++) {
                 if (strpos($schedule_days, $new_days[$i]) !== false) {
                     $has_day_overlap = true;
                     break;
                 }
             }
-            
             if ($has_day_overlap) {
-                // Check time overlap
                 $schedule_start = strtotime($schedule['time_start']);
                 $schedule_end = strtotime($schedule['time_end']);
                 $new_start = strtotime($time_start);
                 $new_end = strtotime($time_end);
-                
                 if (($new_start < $schedule_end) && ($new_end > $schedule_start)) {
                     $conflicts[] = "Class conflict: {$schedule['course_code']} already scheduled with {$schedule['faculty_name']} at " . 
                                  date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) . 
@@ -571,8 +479,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
                 }
             }
         }
-        
-        // 3. Check Room Conflicts (if room is specified)
         if (isset($_POST['room']) && !empty($_POST['room'])) {
             $room = $_POST['room'];
             $room_check = "SELECT s.course_code, s.time_start, s.time_end, s.days, u.full_name as faculty_name
@@ -580,40 +486,31 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
                           JOIN faculty f ON s.faculty_id = f.faculty_id
                           JOIN users u ON f.user_id = u.user_id
                           WHERE s.room = ? AND s.is_active = TRUE";
-            
             if ($is_edit) {
                 $room_check .= " AND NOT (s.course_code = ? AND s.time_start = ? AND s.days = ?)";
             }
-            
             $stmt = $pdo->prepare($room_check);
             if ($is_edit) {
                 $stmt->execute([$room, $original_course, $original_time_start, $original_days]);
             } else {
                 $stmt->execute([$room]);
             }
-            
             $room_schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
             foreach ($room_schedules as $schedule) {
-                // Check day overlap
                 $schedule_days = strtoupper($schedule['days']);
                 $new_days = strtoupper($days);
                 $has_day_overlap = false;
-                
                 for ($i = 0; $i < strlen($new_days); $i++) {
                     if (strpos($schedule_days, $new_days[$i]) !== false) {
                         $has_day_overlap = true;
                         break;
                     }
                 }
-                
                 if ($has_day_overlap) {
-                    // Check time overlap
                     $schedule_start = strtotime($schedule['time_start']);
                     $schedule_end = strtotime($schedule['time_end']);
                     $new_start = strtotime($time_start);
                     $new_end = strtotime($time_end);
-                    
                     if (($new_start < $schedule_end) && ($new_end > $schedule_start)) {
                         $conflicts[] = "Room conflict: {$room} already booked for {$schedule['course_code']} with {$schedule['faculty_name']} at " . 
                                      date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) . 
@@ -622,14 +519,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
                 }
             }
         }
-        
         echo json_encode([
             'success' => count($conflicts) === 0,
             'conflicts' => $conflicts,
             'has_conflicts' => count($conflicts) > 0,
             'message' => count($conflicts) > 0 ? implode('; ', $conflicts) : 'No conflicts detected'
         ]);
-        
     } catch (Exception $e) {
         echo json_encode([
             'success' => false,
@@ -638,25 +533,20 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
     }
     exit;
 }
-
 if (isset($_POST['action']) && $_POST['action'] === 'get_course_curriculum') {
     try {
         $course_code = $_POST['course_code'];
-        
         $curriculum_query = "SELECT DISTINCT year_level, semester 
                            FROM curriculum 
                            WHERE course_code = ? AND is_active = TRUE
                            ORDER BY year_level, semester";
-        
         $stmt = $pdo->prepare($curriculum_query);
         $stmt->execute([$course_code]);
         $curriculum = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         echo json_encode([
             'success' => true,
             'curriculum' => $curriculum
         ]);
-        
     } catch (Exception $e) {
         echo json_encode([
             'success' => false,
@@ -665,20 +555,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_course_curriculum') {
     }
     exit;
 }
-
 if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
     try {
-        // Get unique rooms from existing schedules + predefined rooms
         $room_query = "SELECT DISTINCT room 
                       FROM schedules 
                       WHERE room IS NOT NULL AND room != '' AND is_active = TRUE
                       ORDER BY room";
-        
         $stmt = $pdo->prepare($room_query);
         $stmt->execute();
         $existing_rooms = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        // Predefined room options
         $predefined_rooms = [
             'Room 101', 'Room 102', 'Room 103', 'Room 104', 'Room 105',
             'Room 201', 'Room 202', 'Room 203', 'Room 204', 'Room 205',
@@ -686,16 +571,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
             'Computer Lab 1', 'Computer Lab 2', 'Physics Lab', 'Chemistry Lab',
             'Library', 'Auditorium', 'Conference Room', 'TBA'
         ];
-        
-        // Combine and remove duplicates
         $all_rooms = array_unique(array_merge($existing_rooms, $predefined_rooms));
         sort($all_rooms);
-        
         echo json_encode([
             'success' => true,
             'rooms' => $all_rooms
         ]);
-        
     } catch (Exception $e) {
         echo json_encode([
             'success' => false,
@@ -704,19 +585,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
     }
     exit;
 }
-
 if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
     try {
         $selected_course = $_POST['selected_course'] ?? null;
-        
         $response = [
             'success' => true,
             'courses' => [],
             'classes' => [],
             'rooms' => []
         ];
-        
-        // COURSE OPTIONS: Check curriculum (all active courses)
         $courses_query = "SELECT DISTINCT c.course_code, c.course_description, c.units 
                          FROM courses c 
                          WHERE c.is_active = TRUE
@@ -724,8 +601,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
         $courses_stmt = $pdo->prepare($courses_query);
         $courses_stmt->execute();
         $response['courses'] = $courses_stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // CLASS OPTIONS: Check if course covers class year level via curriculum
         if ($selected_course) {
             $classes_query = "SELECT DISTINCT cl.class_id, cl.class_code, cl.class_name, cl.year_level
                              FROM classes cl
@@ -745,17 +620,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
             $classes_stmt->execute([$user_id]);
         }
         $response['classes'] = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // ROOM OPTIONS: All available rooms
         $room_query = "SELECT DISTINCT room 
                       FROM schedules 
                       WHERE room IS NOT NULL AND room != '' AND is_active = TRUE
                       ORDER BY room";
-        
         $stmt = $pdo->prepare($room_query);
         $stmt->execute();
         $existing_rooms = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
         $predefined_rooms = [
             'Room 101', 'Room 102', 'Room 103', 'Room 104', 'Room 105',
             'Room 201', 'Room 202', 'Room 203', 'Room 204', 'Room 205',
@@ -763,13 +634,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
             'Computer Lab 1', 'Computer Lab 2', 'Physics Lab', 'Chemistry Lab',
             'Library', 'Auditorium', 'Conference Room', 'TBA'
         ];
-        
         $all_rooms = array_unique(array_merge($existing_rooms, $predefined_rooms));
         sort($all_rooms);
         $response['rooms'] = $all_rooms;
-        
         echo json_encode($response);
-        
     } catch (Exception $e) {
         echo json_encode([
             'success' => false,
@@ -778,29 +646,22 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
     }
     exit;
 }
-
 if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
-    // Get all unique rooms from existing schedules + predefined rooms
     $rooms_query = "SELECT DISTINCT room FROM schedules WHERE room IS NOT NULL AND room != '' ORDER BY room";
     $rooms_stmt = $pdo->prepare($rooms_query);
     $rooms_stmt->execute();
     $existing_rooms = $rooms_stmt->fetchAll(PDO::FETCH_COLUMN);
-    
-    // Add predefined rooms
     $predefined_rooms = ['NR102', 'NR103', 'NR104', 'NR105', 'NR106', 'NR107', 'NR108', 'NR109',
                        'NR202', 'NR203', 'NR204', 'NR205', 'NR206', 'NR207', 'CL208', 'CL209',
                        'NR302', 'NR303', 'NR304', 'NR305', 'NR306', 'NR307', 'CL308', 'CL309',
                        'Computer Lab 1', 'Computer Lab 2', 'Physics Lab', 'Chemistry Lab',
                        'Gymnasium', 'Auditorium', 'Library', 'Conference Room', 'TBA'];
-    
     $all_rooms = array_unique(array_merge($existing_rooms, $predefined_rooms));
     sort($all_rooms);
-    
     echo json_encode(['success' => true, 'rooms' => $all_rooms]);
     exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -811,13 +672,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/scheduling.css">
     <style>
-        
         .course-card,
         .class-card {
             position: relative;
             overflow: hidden;
         }
-        
         .course-details-overlay,
         .class-details-overlay {
             position: absolute;
@@ -833,34 +692,28 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             overflow-y: auto;
         }
-        
         .course-details-overlay.overlay-visible,
         .class-details-overlay.overlay-visible {
             opacity: 1;
             transform: translateY(0);
         }
-        
         .overlay-header {
             padding: 12px 16px 8px 16px;
             border-bottom: 1px solid rgba(224, 224, 224, 0.3);
             background: rgba(46, 125, 50, 0.05);
         }
-        
         .overlay-header h4 {
             margin: 0;
             color: var(--primary-green);
             font-size: 0.9rem;
             font-weight: 600;
         }
-        
         .overlay-body {
             padding: 0;
         }
-        
         .assignments-preview {
             padding: 12px;
         }
-        
         .assignment-item {
             display: flex;
             justify-content: space-between;
@@ -872,22 +725,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
             border-radius: 8px;
             transition: all 0.2s ease;
         }
-        
         .assignment-item:hover {
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             border-color: var(--primary-green-light);
         }
-        
         .assignment-item:last-child {
             margin-bottom: 0;
         }
-        
         .assignment-info {
             flex: 1;
             font-size: 0.85rem;
             line-height: 1.4;
         }
-        
         .remove-assignment-btn {
             background: rgba(220, 53, 69, 0.1);
             color: #dc3545;
@@ -899,18 +748,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
             transition: all 0.2s ease;
             margin-left: 12px;
         }
-        
         .remove-assignment-btn:hover {
             background: #dc3545;
             color: white;
             border-color: #dc3545;
         }
-        
         .schedule-preview {
             max-height: 250px;
             overflow-y: auto;
         }
-        
         .schedule-item {
             display: flex;
             justify-content: space-between;
@@ -922,34 +768,28 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
             border-radius: 6px;
             transition: background-color 0.2s ease;
         }
-        
         .schedule-item:hover {
             background: rgba(46, 125, 50, 0.05);
         }
-        
         .schedule-item:last-child {
             border-bottom: none;
             margin-bottom: 0;
         }
-        
         .schedule-course-info {
             flex: 1;
         }
-        
         .schedule-course {
             font-weight: 600;
             color: var(--primary-green);
             font-size: 0.85rem;
             margin-bottom: 2px;
         }
-        
         .schedule-time {
             text-align: right;
             font-size: 0.8rem;
             color: #666;
             line-height: 1.3;
         }
-        
         .course-details-toggle,
         .class-details-toggle {
             width: 100%;
@@ -968,43 +808,36 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
             gap: 6px;
             margin-top: auto;
         }
-        
         .course-details-toggle:hover,
         .class-details-toggle:hover {
             background: rgba(46, 125, 50, 0.15);
             border-color: rgba(46, 125, 50, 0.3);
             transform: translateY(-1px);
         }
-        
         .course-details-toggle .arrow,
         .class-details-toggle .arrow {
             font-size: 0.7rem;
             transition: transform 0.3s ease;
         }
-        
         .loading-assignments {
             text-align: center;
             color: #666;
             font-style: italic;
             padding: 20px;
         }
-        
         .no-data {
             text-align: center;
             color: #666;
             padding: 20px;
         }
-        
         .no-data svg {
             color: #ccc;
         }
     </style>
-
 </head>
 <body>
     <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
-
         <div class="content-wrapper" id="contentWrapper">
             <?php 
             $online_count = array_reduce($faculty_data, function($count, $faculty) {
@@ -1013,7 +846,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
             $total_schedules = array_reduce($classes_data, function($count, $class) {
                 return $count + $class['total_subjects'];
             }, 0);
-            
             $header_config = [
                 'page_title' => 'FaculTrack - Program Chair',
                 'page_subtitle' => 'Sultan Kudarat State University - Isulan Campus',
@@ -1061,14 +893,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                     </div>
                     <!-- Faculty cards will be generated by JavaScript using createFacultyCard() function -->
                     <script>
-                    // Faculty data for JavaScript processing (same pattern as courses)
                     window.facultyData = <?php echo json_encode($faculty_data); ?>;
-                    
-                    // Generate faculty cards using the same function for initial load and dynamic updates
                     document.addEventListener('DOMContentLoaded', function() {
                         const facultyGrid = document.querySelector('.faculty-grid');
                         const facultyData = window.facultyData || [];
-                        
                         if (facultyData.length === 0) {
                             facultyGrid.innerHTML = `
                                 <div class="empty-state">
@@ -1077,11 +905,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                                 </div>
                             `;
                         } else {
-                            // Use the same createFacultyCard function for consistency
                             facultyData.forEach(faculty => {
-                                // Convert PHP field names to match JavaScript expectations
-                                // Field name already matches - no conversion needed
-                                
                                 const cardHTML = window.livePollingManager ? 
                                     window.livePollingManager.createFacultyCard(faculty) :
                                     createFacultyCardFallback(faculty);
@@ -1089,14 +913,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                             });
                         }
                     });
-                    
-                    // Fallback function in case live polling manager isn't loaded yet
                     function createFacultyCardFallback(faculty) {
                         const status = faculty.status || 'Offline';
                         const statusClass = status.toLowerCase() === 'available' ? 'available' : 'offline';
                         const nameParts = (faculty.full_name || '').split(' ');
                         const initials = nameParts.map(part => part.charAt(0)).join('').substring(0, 2);
-                        
                         return `
                             <div class="faculty-card" data-name="${escapeHtml(faculty.full_name)}">
                                 <div class="faculty-avatar">${initials}</div>
@@ -1123,7 +944,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                             </div>
                         `;
                     }
-                    
                     function escapeHtml(text) {
                         if (!text) return '';
                         const div = document.createElement('div');
@@ -1133,7 +953,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                     </script>
                 </div>
             </div>
-
             <div class="tab-content" id="courses-content">
                 <?php if (empty($courses_data)): ?>
                     <div class="empty-state">
@@ -1160,7 +979,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                                         <div class="course-description">
                                             <?php echo htmlspecialchars($course['course_description']); ?>
                                         </div>
-                                        
                                         <div class="course-actions">
                                             <button class="action-btn primary" onclick="assignCourseToYearLevel('<?php echo htmlspecialchars($course['course_code']); ?>')">
                                                 Assign to Year Level
@@ -1170,7 +988,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                                             </button>
                                         </div>
                                     </div>
-
                                     <div class="course-details-overlay">
                                         <div class="overlay-header">
                                             <h4>Current Assignments</h4>
@@ -1182,7 +999,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                                         </div>
                                     </div>
                                 </div>
-
                                 <button class="course-details-toggle" onclick="toggleCourseDetailsOverlay(this, '<?php echo htmlspecialchars($course['course_code']); ?>')">
                                     View Assignments
                                     <span class="arrow">▼</span>
@@ -1191,9 +1007,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
-                
             </div>
-
             <div class="tab-content" id="classes-content">
                 <div class="classes-grid" id="classesGrid">
                     <div class="add-card add-card-first" data-modal="addClassModal">
@@ -1205,14 +1019,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                     </div>
                     <!-- Class cards will be generated by JavaScript using createClassCard() function -->
                     <script>
-                    // Class data for JavaScript processing (same pattern as faculty)
                     window.classesData = <?php echo json_encode($classes_data); ?>;
-                    
-                    // Generate class cards using the same function for initial load and dynamic updates
                     document.addEventListener('DOMContentLoaded', function() {
                         const classGrid = document.querySelector('.classes-grid');
                         const classesData = window.classesData || [];
-                        
                         if (classesData.length === 0) {
                             classGrid.innerHTML = `
                                 <div class="no-data">
@@ -1221,15 +1031,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                                 </div>
                             `;
                         } else {
-                            // Use the sophisticated createClassCard layout for consistency with dynamic updates
                             classesData.forEach(classItem => {
                                 const cardHTML = createSophisticatedClassCard(classItem);
                                 classGrid.insertAdjacentHTML('beforeend', cardHTML);
                             });
                         }
                     });
-                    
-                    // Sophisticated class card function that matches dynamic updates layout
                     function createSophisticatedClassCard(classData) {
                         return `
                             <div class="class-card" data-name="${escapeHtml(classData.class_name)}" data-code="${escapeHtml(classData.class_code)}">
@@ -1244,7 +1051,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                                                 </div>
                                             </div>
                                         </div>
-
                                         <div class="class-stats">
                                             <div class="class-stat">
                                                 <div class="class-stat-number">${classData.total_subjects || 0}</div>
@@ -1256,7 +1062,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                                             </div>
                                         </div>
                                     </div>
-
                                     <div class="class-details-overlay">
                                         <div class="overlay-header">
                                             <h4>Schedule</h4>
@@ -1271,7 +1076,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                                         </div>
                                     </div>
                                 </div>
-
                                 <button class="class-details-toggle" onclick="toggleClassDetailsOverlay(this)">
                                     View Schedule Details
                                     <span class="arrow">▼</span>
@@ -1279,7 +1083,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
                             </div>
                         `;
                     }
-                    
                     function escapeHtml(text) {
                         if (!text) return '';
                         const div = document.createElement('div');
@@ -1302,17 +1105,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
     <script>
         const facultySchedules = <?php echo json_encode($faculty_schedules); ?>;
         const facultyNames = <?php echo json_encode(array_column($faculty_data, 'full_name', 'faculty_id')); ?>;
-        
-        // Ensure toggleSearch is available immediately
         if (typeof window.toggleSearch !== 'function') {
             window.toggleSearch = function() {
                 const container = document.getElementById('searchContainer');
                 const searchInput = document.getElementById('searchInput');
-                
                 if (!container || !searchInput) {
                     return;
                 }
-                
                 if (container.classList.contains('collapsed')) {
                     container.classList.remove('collapsed');
                     container.classList.add('expanded');
@@ -1326,5 +1125,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
         }
     </script>
     <script src="assets/js/polling_config.js"></script>
+    <script src="assets/js/toast_manager.js"></script>
 </body>
 </html>

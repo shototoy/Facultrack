@@ -1,7 +1,6 @@
 <?php
 $role = $_SESSION['role'] ?? '';
 ?>
-
 <div class="modal-overlay" id="addFacultyModal">
     <div class="modal">
         <div class="modal-header">
@@ -15,7 +14,6 @@ $role = $_SESSION['role'] ?? '';
                     <input type="text" name="full_name" class="form-input" required>
                 </div>
             </div>
-
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Username *</label>
@@ -26,7 +24,6 @@ $role = $_SESSION['role'] ?? '';
                     <input type="password" name="password" class="form-input" required>
                 </div>
             </div>
-
             <?php if ($role === 'campus_director'): ?>
             <div class="form-group">
                 <label class="form-label">
@@ -34,7 +31,6 @@ $role = $_SESSION['role'] ?? '';
                     Assign as Program Chair
                 </label>
             </div>
-
             <div class="form-group" id="programField" style="display:none;">
                 <label class="form-label">Program *</label>
                 <select name="program" class="form-select">
@@ -47,7 +43,6 @@ $role = $_SESSION['role'] ?? '';
                 </select>
             </div>
             <?php endif; ?>
-
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Contact Email</label>
@@ -58,13 +53,11 @@ $role = $_SESSION['role'] ?? '';
                     <input type="text" name="contact_phone" class="form-input">
                 </div>
             </div>
-
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" onclick="closeModal('addFacultyModal')">Cancel</button>
                 <button type="submit" class="btn-primary">Add Faculty</button>
             </div>
         </form>
-
         <script>
         function toggleProgramField(checkbox) {
             const field = document.getElementById('programField');
@@ -73,7 +66,6 @@ $role = $_SESSION['role'] ?? '';
         </script>
     </div>
 </div>
-
 <div class="modal-overlay" id="addCourseModal">
     <div class="modal">
         <div class="modal-header">
@@ -107,7 +99,6 @@ $role = $_SESSION['role'] ?? '';
         </form>
     </div>
 </div>
-
 <div class="modal-overlay" id="addClassModal">
     <div class="modal">
         <div class="modal-header">
@@ -174,7 +165,6 @@ $role = $_SESSION['role'] ?? '';
         </form>
     </div>
 </div>
-
 <?php if ($role === 'campus_director'): ?>
 <div class="modal-overlay" id="addAnnouncementModal">
     <div class="modal">
@@ -218,14 +208,12 @@ $role = $_SESSION['role'] ?? '';
     </div>
 </div>
 <?php endif; ?>
-
 <div class="modal-overlay" id="facultyScheduleModal">
     <div class="modal large-modal">
         <div class="modal-header">
             <h3 class="modal-title" id="scheduleModalTitle">Faculty Schedule</h3>
             <button type="button" class="modal-close" onclick="closeModal('facultyScheduleModal')">&times;</button>
         </div>
-
         <div class="modal-body">
             <!-- Mobile pagination navigation -->
             <div class="mobile-pagination-nav">
@@ -233,7 +221,6 @@ $role = $_SESSION['role'] ?? '';
                 <button class="pagination-btn" onclick="showMobilePage(2)" data-page="2">TTH Schedule</button>
                 <button class="pagination-btn" onclick="showMobilePage(3)" data-page="3">Summary</button>
             </div>
-            
             <!-- Content area with both mobile pages and desktop grid -->
             <div id="scheduleContent">
                 <!-- Mobile paginated content -->
@@ -256,7 +243,6 @@ $role = $_SESSION['role'] ?? '';
                         </div>
                     </div>
                 </div>
-                
                 <!-- Desktop/tablet grid content -->
                 <div class="desktop-grid-content">
                     <div class="loading">Loading schedule...</div>
@@ -265,22 +251,18 @@ $role = $_SESSION['role'] ?? '';
         </div>
     </div>
 </div>
-
-
 <div class="modal-overlay" id="facultyCourseLoadModal">
     <div class="modal large-modal">
         <div class="modal-header">
             <h3 class="modal-title" id="courseLoadModalTitle">Faculty Course Load</h3>
             <button type="button" class="modal-close" onclick="closeModal('facultyCourseLoadModal')">&times;</button>
         </div>
-
         <div class="modal-body">
             <!-- Mobile pagination navigation - 2 pages for course load -->
             <div class="mobile-pagination-nav">
                 <button class="pagination-btn active" onclick="showCourseLoadPage(1)" data-page="1">MWF Schedule</button>
                 <button class="pagination-btn" onclick="showCourseLoadPage(2)" data-page="2">TTH Schedule</button>
             </div>
-            
             <!-- Content area -->
             <div id="courseLoadContent">
                 <!-- Mobile paginated content -->
@@ -296,12 +278,10 @@ $role = $_SESSION['role'] ?? '';
                         </div>
                     </div>
                 </div>
-                
                 <!-- Desktop/tablet grid content -->
                 <div class="desktop-grid-content">
                     <div class="loading">Loading course load...</div>
                 </div>
-                
                 <!-- Assignment panel at bottom -->
                 <div id="assignmentPanel" class="assignment-panel" style="display: none;">
                     <div class="assignment-header">
@@ -316,14 +296,12 @@ $role = $_SESSION['role'] ?? '';
         </div>
     </div>
 </div>
-
 <div class="modal-overlay" id="curriculumAssignModal">
     <div class="modal large-modal">
         <div class="modal-header">
             <h3 class="modal-title" id="curriculumModalTitle">Assign Course to Curriculum</h3>
             <button type="button" class="modal-close" onclick="closeModal('curriculumAssignModal')">&times;</button>
         </div>
-
         <div class="modal-body">
             <div id="curriculumAssignContent">
                 <div class="loading">Loading...</div>
@@ -331,7 +309,6 @@ $role = $_SESSION['role'] ?? '';
         </div>
     </div>
 </div>
-
 <div class="modal-overlay" id="updateSemesterModal">
     <div class="modal">
         <div class="modal-header">
@@ -348,7 +325,6 @@ $role = $_SESSION['role'] ?? '';
                     <option value="Summer">Summer</option>
                 </select>
             </div>
-
             <div class="form-group">
                 <label class="form-label">Academic Year *</label>
                 <select name="academic_year" class="form-select" required onchange="loadClassesForSemester(document.querySelector('[name=semester]').value)">
@@ -363,14 +339,12 @@ $role = $_SESSION['role'] ?? '';
                     ?>
                 </select>
             </div>
-
             <div id="classesPreview" class="form-group" style="display: none;">
                 <label class="form-label">Classes to Update</label>
                 <div id="classesPreviewContent" class="preview-content">
                     <!-- Classes will be loaded here -->
                 </div>
             </div>
-
             <div class="form-group">
                 <div class="warning-box" style="background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 5px; margin: 10px 0;">
                     <strong>⚠️ Warning:</strong> This will:
@@ -381,7 +355,6 @@ $role = $_SESSION['role'] ?? '';
                     </ul>
                 </div>
             </div>
-
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" onclick="closeModal('updateSemesterModal')">Cancel</button>
                 <button type="button" class="btn-primary" id="updateSemesterBtn" onclick="window.updateSemester(document.getElementById('updateSemesterForm'));">Update Semester</button>

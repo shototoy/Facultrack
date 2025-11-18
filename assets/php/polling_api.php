@@ -4,12 +4,8 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 require_once 'common_utilities.php';
 initializeSession();
-header('Content-Type: application/json');
 $pdo = initializeDatabase();
-
-// Set database timezone to match PHP timezone
 $php_timezone = date_default_timezone_get();
-// Convert PHP timezone to MySQL format (for common Philippine timezones)
 $mysql_timezone_map = [
     'Asia/Manila' => '+08:00',
     'Europe/Berlin' => '+01:00',
@@ -17,10 +13,14 @@ $mysql_timezone_map = [
     'America/New_York' => '-05:00',
     'America/Los_Angeles' => '-08:00'
 ];
-// Force Philippine timezone since browser shows local Philippine time
-$mysql_timezone = '+08:00'; // Philippine time (UTC+8)
+$mysql_timezone = '+08:00';
 $pdo->exec("SET time_zone = '$mysql_timezone'");
 $action = $_GET['action'] ?? $_POST['action'] ?? $_POST['admin_action'] ?? '';
+if (basename($_SERVER['PHP_SELF']) === 'polling_api.php') {
+    header('Content-Type: application/json');
+} else {
+    return;
+}
 function getAllFaculty($pdo) {
     $faculty_query = "
         SELECT 
@@ -119,11 +119,10 @@ function getFacultyInfo($pdo, $user_id) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 function getScheduleForDays($pdo, $faculty_id, $days) {
-    $current_day = date('w'); // 0=Sunday, 1=Monday, etc.
+    $current_day = date('w');
     $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
     $today_code = $day_mapping[$current_day];
-    $viewing_day = $days; // The day tab being viewed (M, T, W, TH, F, S)
-    
+    $viewing_day = $days;
     $schedule_query = "
         SELECT s.*, c.course_description, cl.class_name, cl.class_code,
             CASE 
@@ -335,10 +334,9 @@ function getFacultyCoursesForClass($pdo, $user_id) {
     if (!$class_info) return [];
     $class_id = $class_info['class_id'];
     $faculty_courses = [];
-    $current_day = date('w'); // 0=Sunday, 1=Monday, etc.
+    $current_day = date('w');
     $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
     $today_code = $day_mapping[$current_day];
-    
     $courses_query = "
         SELECT s.faculty_id, s.course_code, c.course_description, s.time_start, s.time_end, s.room,
             CASE 
@@ -653,23 +651,18 @@ switch ($action) {
         if (!isset($_SESSION['user_id'])) {
             sendJsonResponse(['success' => false, 'message' => 'Unauthorized access'], 401);
         }
-        
         $user_id = $_SESSION['user_id'];
         $user_role = $_SESSION['role'];
-        
         try {
             if ($user_role === 'class') {
                 $class_query = "SELECT class_id FROM classes WHERE user_id = ? AND is_active = TRUE";
                 $stmt = $pdo->prepare($class_query);
                 $stmt->execute([$user_id]);
                 $class_info = $stmt->fetch(PDO::FETCH_ASSOC);
-                
                 if (!$class_info) {
                     sendJsonResponse(['success' => false, 'message' => 'Class not found'], 404);
                 }
-                
                 $class_id = $class_info['class_id'];
-                
                 $faculty_query = "
                     SELECT DISTINCT
                         f.faculty_id,
@@ -698,17 +691,14 @@ switch ($action) {
                     WHERE s.is_active = TRUE 
                     AND s.class_id = ?
                 ";
-                
                 $stmt = $pdo->prepare($faculty_query);
                 $stmt->execute([$class_id]);
                 $faculty_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
                 sendJsonResponse([
                     'success' => true,
                     'faculty' => $faculty_data,
                     'timestamp' => date('Y-m-d H:i:s')
                 ]);
-                
             } elseif ($user_role === 'faculty') {
                 $faculty_query = "
                     SELECT 
@@ -734,11 +724,9 @@ switch ($action) {
                     FROM faculty f
                     WHERE f.user_id = ?
                 ";
-                
                 $stmt = $pdo->prepare($faculty_query);
                 $stmt->execute([$user_id]);
                 $faculty_data = $stmt->fetch(PDO::FETCH_ASSOC);
-                
                 if ($faculty_data) {
                     sendJsonResponse([
                         'success' => true,
@@ -750,9 +738,7 @@ switch ($action) {
                 } else {
                     sendJsonResponse(['success' => false, 'message' => 'Faculty not found'], 404);
                 }
-                
             } elseif ($user_role === 'program_chair') {
-                // Program chair can see all faculty in their program
                 $faculty_query = "
                     SELECT DISTINCT
                         f.faculty_id,
@@ -778,19 +764,15 @@ switch ($action) {
                     FROM faculty f
                     JOIN users u ON f.user_id = u.user_id
                 ";
-                
                 $stmt = $pdo->prepare($faculty_query);
                 $stmt->execute();
                 $faculty_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
                 sendJsonResponse([
                     'success' => true,
                     'faculty' => $faculty_data,
                     'timestamp' => date('Y-m-d H:i:s')
                 ]);
-                
             } elseif ($user_role === 'campus_director') {
-                // Campus director can see all faculty
                 $faculty_query = "
                     SELECT DISTINCT
                         f.faculty_id,
@@ -816,21 +798,17 @@ switch ($action) {
                     FROM faculty f
                     JOIN users u ON f.user_id = u.user_id
                 ";
-                
                 $stmt = $pdo->prepare($faculty_query);
                 $stmt->execute();
                 $faculty_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
                 sendJsonResponse([
                     'success' => true,
                     'faculty' => $faculty_data,
                     'timestamp' => date('Y-m-d H:i:s')
                 ]);
-                
             } else {
                 sendJsonResponse(['success' => false, 'message' => 'Unauthorized role'], 403);
             }
-            
         } catch (Exception $e) {
             sendJsonResponse(['success' => false, 'message' => 'Error fetching location data: ' . $e->getMessage()]);
         }
@@ -899,7 +877,6 @@ switch ($action) {
         $tab = $_GET['tab'] ?? 'faculty';
         $role = $_SESSION['role'];
             $last_update = $_GET['last_update'] ?? '1970-01-01 00:00:00';
-        
         if (!in_array($role, ['campus_director', 'program_chair', 'class', 'faculty'])) {
             sendJsonResponse(['success' => false, 'message' => 'Unauthorized access'], 403);
         }
@@ -949,10 +926,8 @@ switch ($action) {
                 $stmt = $pdo->prepare($class_query);
                 $stmt->execute([$user_id]);
                 $class_info = $stmt->fetch(PDO::FETCH_ASSOC);
-                
                 if ($class_info) {
                     $class_id = $class_info['class_id'];
-                    
                     $faculty_query = "
                         SELECT f.faculty_id, u.full_name as faculty_name, f.program, f.current_location, f.last_location_update,
                                f.office_hours, f.contact_email, f.contact_phone, f.is_active,
@@ -979,7 +954,6 @@ switch ($action) {
                         WHERE s.is_active = TRUE AND s.class_id = ? AND s.faculty_id IS NOT NULL
                         GROUP BY f.faculty_id
                         ORDER BY u.full_name";
-                    
                     $stmt = $pdo->prepare($faculty_query);
                     $stmt->execute([$class_id]);
                     $response_data['faculty_data'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -987,7 +961,6 @@ switch ($action) {
                     $response_data['faculty_data'] = [];
                 }
             } else if ($role === 'faculty') {
-                // Faculty can only access announcements
                 if ($tab === 'announcements') {
                     $announcements_query = "
                         SELECT 
@@ -1016,11 +989,9 @@ switch ($action) {
             }
             $response_data['changes'] = detectDataChanges($pdo, $role, $tab);
             $response_data['current_entities'] = getAllCurrentEntities($pdo, $role, $tab);
-            
             if (($role === 'campus_director' || $role === 'class') && isset($response_data['faculty_data'])) {
                 $response_data['current_entities']['faculty'] = $response_data['faculty_data'];
             }
-            
             sendJsonResponse($response_data);
         } catch (Exception $e) {
             sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
@@ -1030,24 +1001,18 @@ switch ($action) {
         validateUserSession('faculty');
         try {
             $user_id = $_SESSION['user_id'];
-            
-            // Get faculty ID first
             $faculty_query = "SELECT faculty_id FROM faculty WHERE user_id = ? AND is_active = TRUE";
             $stmt = $pdo->prepare($faculty_query);
             $stmt->execute([$user_id]);
             $faculty_info = $stmt->fetch(PDO::FETCH_ASSOC);
-            
             if (!$faculty_info) {
                 sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
                 break;
             }
-            
             $faculty_id = $faculty_info['faculty_id'];
-            $current_day = date('w'); // 0=Sunday, 1=Monday, etc.
+            $current_day = date('w');
             $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
             $today_code = $day_mapping[$current_day];
-            
-            // Get updated schedule with accurate TIME and DAY based status
             $schedule_query = "
                 SELECT s.*, c.course_description, cl.class_name, cl.class_code,
                     CASE 
@@ -1094,11 +1059,9 @@ switch ($action) {
                         ELSE 4
                     END,
                     s.time_start";
-            
             $stmt = $pdo->prepare($schedule_query);
             $stmt->execute([$faculty_id]);
             $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
             sendJsonResponse([
                 'success' => true,
                 'schedules' => $schedules,
@@ -1106,7 +1069,6 @@ switch ($action) {
                 'current_day' => $today_code,
                 'timestamp' => date('Y-m-d H:i:s')
             ]);
-            
         } catch (Exception $e) {
             sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         }
@@ -1120,16 +1082,12 @@ switch ($action) {
             $stmt = $pdo->prepare($faculty_query);
             $stmt->execute([$user_id]);
             $faculty_info = $stmt->fetch(PDO::FETCH_ASSOC);
-            
             if (!$faculty_info) {
                 sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
                 break;
             }
-            
             $faculty_id = $faculty_info['faculty_id'];
             $schedule_data = getScheduleForDays($pdo, $faculty_id, $days);
-            
-            // Return JSON data instead of HTML - let faculty.php handle rendering
             sendJsonResponse([
                 'success' => true, 
                 'schedules' => $schedule_data,

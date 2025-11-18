@@ -3,21 +3,16 @@ require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
 validateUserSession('campus_director');
-
 $user_id = $_SESSION['user_id'];
 $director_name = $_SESSION['full_name'];
-
 require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
-
-// Initialize data - will be loaded via AJAX if needed
 $faculty_data = [];
 $classes_data = [];
 $courses_data = [];
 $all_announcements = [];
 $program_chairs = [];
-
-// Load initial data only if not an AJAX request
+require_once 'assets/php/polling_api.php';
 if (!isset($_GET['action']) && !isset($_POST['action'])) {
     $faculty_data = getAllFaculty($pdo);
     $classes_data = getAllClasses($pdo);
@@ -25,112 +20,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
     $all_announcements = getAllAnnouncements($pdo);
     $program_chairs = getProgramChairs($pdo);
 }
-
-function getAllFaculty($pdo) {
-    $faculty_query = "
-        SELECT 
-            f.faculty_id,
-            u.full_name,
-            f.employee_id,
-            f.program,
-            f.office_hours,
-            f.contact_email,
-            f.contact_phone,
-            f.current_location,
-            f.last_location_update,
-            CASE 
-                WHEN f.is_active = 1 THEN 'Available'
-                ELSE 'Offline'
-            END as status
-        FROM faculty f
-        JOIN users u ON f.user_id = u.user_id
-        WHERE u.is_active = TRUE
-        ORDER BY u.full_name
-    ";
-    $stmt = $pdo->prepare($faculty_query);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-function getAllClasses($pdo) {
-    $classes_query = "
-        SELECT 
-            c.class_id,
-            c.class_code,
-            c.class_name,
-            c.year_level,
-            c.semester,
-            c.academic_year,
-            u.full_name as program_chair_name,
-            COUNT(s.schedule_id) as total_subjects
-        FROM classes c
-        LEFT JOIN faculty f ON c.program_chair_id = f.user_id
-        LEFT JOIN users u ON f.user_id = u.user_id
-        LEFT JOIN schedules s ON c.class_id = s.class_id AND s.is_active = TRUE
-        WHERE c.is_active = TRUE
-        GROUP BY c.class_id
-        ORDER BY c.year_level, c.class_name";
-    
-    $stmt = $pdo->prepare($classes_query);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-function getAllCourses($pdo) {
-    $courses_query = "
-        SELECT 
-            c.course_id,
-            c.course_code,
-            c.course_description,
-            c.units,
-            COUNT(s.schedule_id) as times_scheduled
-        FROM courses c
-        LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
-        GROUP BY c.course_id
-        ORDER BY c.course_code";
-    
-    $stmt = $pdo->prepare($courses_query);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-function getAllAnnouncements($pdo) {
-    $all_announcements_query = "
-        SELECT 
-            a.announcement_id,
-            a.title,
-            a.content,
-            a.priority,
-            a.target_audience,
-            a.created_at,
-            u.full_name as created_by_name
-        FROM announcements a
-        JOIN users u ON a.created_by = u.user_id
-        WHERE a.is_active = TRUE
-        ORDER BY a.created_at DESC";
-    
-    $stmt = $pdo->prepare($all_announcements_query);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-function getProgramChairs($pdo) {
-    $program_chairs_query = "
-        SELECT f.user_id, u.full_name, f.program
-        FROM faculty f
-        JOIN users u ON f.user_id = u.user_id
-        WHERE u.role = 'program_chair' AND f.is_active = TRUE
-        ORDER BY u.full_name";
-    
-    $stmt = $pdo->prepare($program_chairs_query);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-// Polling endpoints moved to assets/php/polling_api.php
-
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -147,7 +37,6 @@ function getProgramChairs($pdo) {
         $online_faculty = count(array_filter($faculty_data, function($faculty) {
             return $faculty['status'] === 'Available';
         }));
-        
         $header_config = [
             'page_title' => 'FaculTrack - Campus Director',
             'page_subtitle' => 'Sultan Kudarat State University - Isulan Campus',
@@ -166,7 +55,6 @@ function getProgramChairs($pdo) {
         ];
         include 'assets/php/page_header.php';
         ?>
-
         <div class="dashboard-tabs">
             <button class="tab-button active" onclick="switchTab('faculty')" data-tab="faculty">
                 Faculty Members
@@ -189,7 +77,6 @@ function getProgramChairs($pdo) {
                 </div>
             </div>
         </div>
-
         <div class="tab-content active" id="faculty-content">
             <div class="table-container">
                 <div class="table-header">
@@ -253,7 +140,6 @@ function getProgramChairs($pdo) {
                 </table>
             </div>
         </div>
-
         <div class="tab-content" id="classes-content">
             <div class="table-container">
                 <div class="table-header">
@@ -314,7 +200,6 @@ function getProgramChairs($pdo) {
                 </table>
             </div>
         </div>
-
         <div class="tab-content" id="courses-content">
             <div class="table-container">
                 <div class="table-header">
@@ -354,7 +239,6 @@ function getProgramChairs($pdo) {
                 </table>
             </div>
         </div>
-
         <div class="tab-content" id="announcements-content">
             <div class="table-container">
                 <div class="table-header">
@@ -415,16 +299,16 @@ function getProgramChairs($pdo) {
             </div>
         </div>
     </div>
-
     <?php 
     $GLOBALS['program_chairs'] = $program_chairs;
     include 'assets/php/shared_modals.php'; 
     ?>
-    
     <script src="assets/js/shared_modals.js"></script>
     <script>
         window.userRole = 'campus_director';
     </script>
+    <script src="assets/js/polling_config.js"></script>
+    <script src="assets/js/toast_manager.js"></script>
     <script src="assets/js/live_polling.js"></script>
     <script src="assets/js/shared_functions.js"></script>
     <script src="assets/js/director.js"></script>
@@ -434,7 +318,6 @@ function getProgramChairs($pdo) {
             if (programChairSelect) {
                 const programChairs = <?php echo json_encode($program_chairs); ?>;
                 programChairSelect.innerHTML = '<option value="">Select Program Chair (Optional)</option>';
-
                 programChairs.forEach(chair => {
                     const option = document.createElement('option');
                     option.value = chair.user_id;
@@ -443,17 +326,13 @@ function getProgramChairs($pdo) {
                 });
             }
         });
-        
-        // Ensure toggleSearch is available immediately
         if (typeof window.toggleSearch !== 'function') {
             window.toggleSearch = function() {
                 const container = document.getElementById('searchContainer');
                 const searchInput = document.getElementById('searchInput');
-                
                 if (!container || !searchInput) {
                     return;
                 }
-                
                 if (container.classList.contains('collapsed')) {
                     container.classList.remove('collapsed');
                     container.classList.add('expanded');
@@ -465,27 +344,20 @@ function getProgramChairs($pdo) {
                 }
             };
         }
-        
-        // Initialize all expansion rows to be hidden on page load
         document.addEventListener('DOMContentLoaded', function() {
             const allExpansionRows = document.querySelectorAll('.expansion-row');
             allExpansionRows.forEach(row => {
                 row.style.display = 'none';
             });
-            
             const allExpandableRows = document.querySelectorAll('.expandable-row');
             allExpandableRows.forEach(row => {
                 row.classList.remove('expanded');
             });
-            
         });
-
-        // Row expansion functionality
         window.toggleRowExpansion = function(row) {
             const facultyId = row.getAttribute('data-faculty-id');
             const classId = row.getAttribute('data-class-id');
             const announcementId = row.getAttribute('data-announcement-id');
-            
             let expansionRowId;
             if (facultyId) {
                 expansionRowId = 'faculty-expansion-' + facultyId;
@@ -494,19 +366,12 @@ function getProgramChairs($pdo) {
             } else if (announcementId) {
                 expansionRowId = 'announcement-expansion-' + announcementId;
             }
-            
             const expansionRow = document.getElementById(expansionRowId);
-            
             if (!expansionRow) {
                 return;
             }
-            
             const isExpanded = expansionRow.style.display === 'table-row';
-            
-            // Find the current table container to limit scope
             const currentTable = row.closest('table');
-            
-            // Close all other expanded rows in the SAME table only
             if (currentTable) {
                 currentTable.querySelectorAll('.expansion-row').forEach(otherRow => {
                     if (otherRow !== expansionRow) {
@@ -518,31 +383,20 @@ function getProgramChairs($pdo) {
                     }
                 });
             }
-            
-            // Toggle current row with animation
             if (isExpanded) {
-                // Collapse animation - details shrink and fade
                 expansionRow.classList.remove('expanding', 'expanded');
                 expansionRow.classList.add('collapsing');
                 row.classList.remove('expanded');
-                
                 setTimeout(() => {
                     expansionRow.style.display = 'none';
                     expansionRow.classList.remove('collapsing');
                 }, 400);
             } else {
-                // Expand animation - details grow and appear
                 expansionRow.style.display = 'table-row';
                 expansionRow.classList.remove('collapsing');
-                
-                // Force reflow
                 expansionRow.offsetHeight;
-                
-                // Start expansion - details will grow smoothly
                 expansionRow.classList.add('expanding');
                 row.classList.add('expanded');
-                
-                // Transition to natural height after initial growth
                 setTimeout(() => {
                     expansionRow.classList.remove('expanding');
                     expansionRow.classList.add('expanded');

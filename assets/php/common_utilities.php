@@ -3,7 +3,6 @@ $servername = "localhost";
 $username = "root";
 $password = "";
 $dbname = "facultrack_db";
-
 function initializeDatabase() {
     global $servername, $username, $password, $dbname;
     try {
@@ -14,13 +13,11 @@ function initializeDatabase() {
         die("Connection failed: " . $e->getMessage());
     }
 }
-
 function validateUserSession($allowed_roles, $redirect_url = "login.php") {
     if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
         header("Location: $redirect_url");
         exit();
     }
-    
     $user_role = $_SESSION['role'];
     if (is_array($allowed_roles)) {
         if (!in_array($user_role, $allowed_roles)) {
@@ -35,7 +32,6 @@ function validateUserSession($allowed_roles, $redirect_url = "login.php") {
     }
     return true;
 }
-
 function getInitials($name) {
     $words = explode(' ', $name);
     $initials = '';
@@ -46,11 +42,9 @@ function getInitials($name) {
     }
     return substr($initials, 0, 2);
 }
-
 function formatTime($time) {
     return date('g:i A', strtotime($time));
 }
-
 function getFacultyStatusSQL() {
     return "CASE 
         WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN 'available'
@@ -58,7 +52,6 @@ function getFacultyStatusSQL() {
         ELSE 'offline'
     END as status";
 }
-
 function getTimeAgoSQL() {
     return "COALESCE(
         (SELECT CASE 
@@ -74,7 +67,6 @@ function getTimeAgoSQL() {
         'No location history'
     ) as last_updated";
 }
-
 function getTimeAgo($timestamp) {
     if (!$timestamp) return 'Never';
     $time_diff = time() - strtotime($timestamp);
@@ -86,14 +78,12 @@ function getTimeAgo($timestamp) {
         return floor($time_diff / 86400) . ' days ago';
     }
 }
-
 function sendJsonResponse($data, $http_code = 200) {
     http_response_code($http_code);
     header('Content-Type: application/json');
     echo json_encode($data);
     exit();
 }
-
 function validateInput($input, $max_length = 255) {
     if (empty($input)) return '';
     $input = trim($input);
@@ -102,13 +92,11 @@ function validateInput($input, $max_length = 255) {
     }
     return $input;
 }
-
 function initializeSession() {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 }
-
 function buildInClause($values) {
     if (empty($values)) return ['placeholders' => '', 'values' => []];
     return [

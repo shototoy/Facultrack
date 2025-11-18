@@ -53,27 +53,6 @@ function showFormLoading(formId, isLoading) {
         ? '<span class="loading-spinner"></span> Processing...'
         : submitBtn.dataset.originalText || 'Submit';
 }
-function showNotification(message, type = 'info') {
-    document.querySelector('.notification')?.remove();
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
-        color: white;
-        padding: 15px 20px;
-        border-radius: 5px;
-        z-index: 10000;
-        max-width: 400px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 5000);
-    notification.addEventListener('click', () => notification.remove());
-}
 function setupClassCodeGeneration() {
     const classNameInput = document.getElementById('class_name');
     const yearLevelSelect = document.getElementById('year_level');
@@ -102,7 +81,7 @@ function setupAcademicYear() {
         input.value = `${y}-${(y + 1).toString().slice(-2)}`;
         input.style.backgroundColor = '#f8f9fa';
         input.title = 'Auto-generated based on current year (for new classes only)';
-        input.readOnly = true;  // Make it non-editable since it's auto-generated
+        input.readOnly = true;  
     }
 }
 document.addEventListener('DOMContentLoaded', () => {

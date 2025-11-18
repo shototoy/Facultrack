@@ -1,7 +1,6 @@
 <?php
 function fetchAnnouncements($pdo, $userRole, $limit = 10) {
     $targetAudiences = ['all'];
-    
     switch ($userRole) {
         case 'faculty':
             $targetAudiences[] = 'faculty';
@@ -14,9 +13,7 @@ function fetchAnnouncements($pdo, $userRole, $limit = 10) {
             $targetAudiences[] = 'faculty';
             break;
     }
-
     $placeholders = implode(',', array_fill(0, count($targetAudiences), '?'));
-    
     $announcements_query = "
         SELECT a.*, u.full_name as created_by_name,
                DATE_FORMAT(a.created_at, '%M %d, %Y at %h:%i %p') as formatted_date,
@@ -32,13 +29,10 @@ function fetchAnnouncements($pdo, $userRole, $limit = 10) {
         AND a.target_audience IN ($placeholders)
         ORDER BY a.created_at DESC 
         LIMIT " . intval($limit);
-    
     $stmt = $pdo->prepare($announcements_query);
     $stmt->execute($targetAudiences);
-    
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getAnnouncementCategory($target_audience) {
     switch ($target_audience) {
         case 'faculty': 
@@ -51,7 +45,6 @@ function getAnnouncementCategory($target_audience) {
             return 'General';
     }
 }
-
 function getAnnouncementPriorityIcon($priority) {
     switch ($priority) {
         case 'high':
@@ -64,14 +57,12 @@ function getAnnouncementPriorityIcon($priority) {
             return '🔵';
     }
 }
-
 if (!function_exists('renderAnnouncementCard')) {
     function renderAnnouncementCard($announcement) {
         $priority_class = $announcement['priority'];
         $priority_icon = getAnnouncementPriorityIcon($announcement['priority']);
         $category = getAnnouncementCategory($announcement['target_audience']);
         $created_at = $announcement['time_ago'] ?? date('M j, Y', strtotime($announcement['created_at']));
-        
         return "
         <div class='announcement-card priority-{$priority_class}'>
             <div class='announcement-header'>

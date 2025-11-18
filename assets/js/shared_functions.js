@@ -113,7 +113,6 @@ async function deleteEntity(action, id) {
     };
     const label = labels[action] || 'item';
     const idField = idFields[action] || 'id';
-    if (!confirm(`Are you sure you want to delete this ${label}? This action cannot be undone.`)) return;
     const button = event.target;
     const originalText = button.textContent;
     try {
@@ -174,28 +173,4 @@ async function handleFormSubmission(form, type) {
         submitButton.disabled = false;
         submitButton.textContent = originalText;
     }
-}
-if (typeof showNotification === 'undefined') {
-    function showNotification(message, type = 'info') {
-        document.querySelector('.notification')?.remove();
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
-            color: white;
-            padding: 15px 20px;
-            border-radius: 5px;
-            z-index: 10000;
-            max-width: 400px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        `;
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 5000);
-        notification.addEventListener('click', () => notification.remove());
-    }
-    window.showNotification = showNotification;
 }

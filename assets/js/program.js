@@ -317,7 +317,7 @@ function showCourseLoadPage(pageNumber) {
 }
 function handleCourseLoadTimeSlotClick(cell) {
     const timeSlot = cell.closest('tr').querySelector('.time-cell').textContent;
-    const dayColumn = cell.cellIndex - 1; // Subtract 1 for time column
+    const dayColumn = cell.cellIndex - 1; 
     let day = '';
     const table = cell.closest('table');
     const headers = table.querySelectorAll('th');
@@ -408,7 +408,7 @@ function showAssignmentPanel(day, timeSlot, cell) {
         </div>
     `;
     panel.style.display = 'block';
-    loadCourseAndClassData(); // Load available courses and classes
+    loadCourseAndClassData(); 
 }
 function closeAssignmentPanel() {
     document.getElementById('assignmentPanel').style.display = 'none';
@@ -1117,8 +1117,6 @@ function handleTimeSlotClick(cell) {
     checkConflicts(time, group);
     updateEndTimeOptions();
     document.querySelector('.courseload-assignment-form').style.display = 'block';
-    
-    // Load room options for the faculty course load modal
     loadRoomOptionsForCourseLoad();
     showNotification(`Time slot selected: ${day} at ${formatTime(time)}`, 'info');
 }
@@ -1381,9 +1379,6 @@ function submitCurriculumAssignment(form, courseCode) {
     });
 }
 function removeCurriculumAssignment(courseCode, curriculumId) {
-    if (!confirm('Are you sure you want to remove this course from the curriculum?')) {
-        return;
-    }
     const formData = new FormData();
     formData.append('action', 'remove_curriculum_assignment');
     formData.append('curriculum_id', curriculumId);
@@ -1405,9 +1400,6 @@ function removeCurriculumAssignment(courseCode, curriculumId) {
     });
 }
 function deleteCourse(courseCode) {
-    if (!confirm(`Are you sure you want to delete the course ${courseCode}? This will also remove all related curriculum assignments and schedules.`)) {
-        return;
-    }
     const courseCard = document.querySelector(`[data-course="${courseCode}"]`);
     if (!courseCard) {
         showNotification('Course not found', 'error');
@@ -1851,9 +1843,6 @@ function validateWithBackend(courseCode, classId, room, timeStart, timeEnd, sele
     });
 }
 function deleteCourseAssignment() {
-    if (!confirm('Are you sure you want to delete this course assignment? This action cannot be undone.')) {
-        return;
-    }
     const originalCourseCode = document.querySelector('input[name="original_course_code"]').value;
     const originalTimeStart = document.querySelector('input[name="original_time_start"]').value;
     const originalDays = document.querySelector('input[name="original_days"]').value;
@@ -1882,7 +1871,6 @@ function deleteCourseAssignment() {
     });
 }
 function updateCourseInfoPage() {
-    // Course info display removed for cleaner interface - no visual clutter
     return;
 }
 function updateEndTimeOptionsPage(group, startTime, existingCourse = null) {
@@ -1913,7 +1901,7 @@ function updateEndTimeOptionsPage(group, startTime, existingCourse = null) {
                 return isLater && endHour >= 12;
             }
         });
-    } else { // TTH schedule
+    } else { 
         const tthTimes = [
             { value: '09:00:00', label: '9:00 AM', isAM: true },
             { value: '10:30:00', label: '10:30 AM', isAM: true },
@@ -1941,9 +1929,6 @@ function updateEndTimeOptionsPage(group, startTime, existingCourse = null) {
     });
 }
 function removeCourseAssignment() {
-    if (!confirm('Are you sure you want to remove this course assignment? This action cannot be undone.')) {
-        return;
-    }
     const form = document.getElementById('courseAssignmentForm');
     const formData = new FormData(form);
     formData.append('action', 'remove_course_assignment');
@@ -2374,7 +2359,6 @@ function updateStatistics() {
 function loadRoomOptionsForCourseLoad() {
     const roomSelect = document.querySelector('.courseload-assignment-form select[name="room"]');
     if (!roomSelect) return;
-    
     fetch('program.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -2388,7 +2372,6 @@ function loadRoomOptionsForCourseLoad() {
                 roomSelect.innerHTML += `<option value="${room}">${room}</option>`;
             });
         } else {
-            // Fallback room options
             const defaultRooms = ['NR102', 'NR103', 'NR104', 'NR105', 'Computer Lab 1', 'Computer Lab 2', 'Library', 'Auditorium', 'TBA'];
             roomSelect.innerHTML = '<option value="">Select room...</option>';
             defaultRooms.forEach(room => {
@@ -2398,19 +2381,10 @@ function loadRoomOptionsForCourseLoad() {
     })
     .catch(error => {
         console.error('Error loading room options:', error);
-        // Fallback room options
         const defaultRooms = ['NR102', 'NR103', 'NR104', 'NR105', 'Computer Lab 1', 'Computer Lab 2', 'Library', 'Auditorium', 'TBA'];
         roomSelect.innerHTML = '<option value="">Select room...</option>';
         defaultRooms.forEach(room => {
             roomSelect.innerHTML += `<option value="${room}">${room}</option>`;
         });
     });
-}
-
-function showNotification(message, type = 'info') {
-    if (typeof window.showToast === 'function') {
-        window.showToast(message, type);
-    } else {
-        alert(message);
-    }
 }

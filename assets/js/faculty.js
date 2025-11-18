@@ -2,44 +2,35 @@ function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
     const contentWrapper = document.getElementById('contentWrapper');
-
     sidebar.classList.toggle('open');
     overlay.classList.toggle('show');
     contentWrapper.classList.toggle('sidebar-open');
 }
-
 function closeSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
     const contentWrapper = document.getElementById('contentWrapper');
-
     sidebar.classList.remove('open');
     overlay.classList.remove('show');
     contentWrapper.classList.remove('sidebar-open');
 }
-
 function openLocationModal() {
     document.getElementById('locationModal').classList.add('show');
     document.body.style.overflow = 'hidden';
 }
-
 function closeLocationModal() {
     document.getElementById('locationModal').classList.remove('show');
     document.body.style.overflow = 'auto';
     document.getElementById('locationForm').reset();
 }
-
 async function viewLocationHistory() {
     document.getElementById('locationHistoryModal').classList.add('show');
     document.body.style.overflow = 'hidden';
-    
     const historyList = document.querySelector('.location-history-list');
     historyList.innerHTML = '<div style="text-align: center; padding: 20px;">Loading...</div>';
-    
     try {
         const response = await fetch('assets/php/polling_api.php?action=get_location_history');
         const result = await response.json();
-        
         if (result.success) {
             historyList.innerHTML = result.html;
         } else {
@@ -49,25 +40,20 @@ async function viewLocationHistory() {
         historyList.innerHTML = '<div class="no-history"><p>Error loading history</p></div>';
     }
 }
-
 function closeLocationHistoryModal() {
     document.getElementById('locationHistoryModal').classList.remove('show');
     document.body.style.overflow = 'auto';
 }
-
 async function updateLocation() {
     const form = document.getElementById('locationForm');
     const formData = new FormData(form);
     const customLocation = formData.get('custom_location');
     const selectedLocation = formData.get('location');
-    
     if (!customLocation && !selectedLocation) {
-        alert('Please select a location or enter a custom location.');
+        showNotification('Please select a location or enter a custom location.', 'warning');
         return;
     }
-    
     const finalLocation = customLocation || selectedLocation;
-    
     try {
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
@@ -76,9 +62,7 @@ async function updateLocation() {
             },
             body: `action=update_location&location=${encodeURIComponent(finalLocation)}`
         });
-
         const result = await response.json();
-
         if (result.success) {
             document.getElementById('currentLocation').textContent = finalLocation;
             const locationUpdated = document.querySelector('.location-updated');
@@ -86,18 +70,13 @@ async function updateLocation() {
             closeLocationModal();
             showNotification('Location updated successfully!', 'success');
         } else {
-            alert('Error updating location: ' + result.message);
+            showNotification('Error updating location: ' + result.message, 'error');
         }
     } catch (error) {
-        alert('An error occurred while updating location. Please try again.');
+        showNotification('An error occurred while updating location. Please try again.', 'error');
     }
 }
-
 async function markAttendance(scheduleId) {
-    if (!confirm('Mark yourself as present for this class?')) {
-        return;
-    }
-    
     try {
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
@@ -106,14 +85,11 @@ async function markAttendance(scheduleId) {
             },
             body: `action=mark_attendance&schedule_id=${scheduleId}`
         });
-
         const result = await response.json();
-
         if (result.success) {
             document.getElementById('currentLocation').textContent = result.location;
             const locationUpdated = document.querySelector('.location-updated');
             locationUpdated.textContent = 'Last updated: Just now';
-            
             showNotification(`Attendance marked! Location updated to ${result.location}`, 'success');
             setTimeout(() => location.reload(), 1500);
         } else {
@@ -123,17 +99,11 @@ async function markAttendance(scheduleId) {
         showNotification('An error occurred while marking attendance', 'error');
     }
 }
-
-// showNotification function moved to shared_functions.js
-
 async function switchScheduleTab(days, tabElement) {
     document.querySelectorAll('.schedule-tab').forEach(tab => tab.classList.remove('active'));
     tabElement.classList.add('active');
-    
     const scheduleList = document.getElementById('scheduleList');
     scheduleList.innerHTML = '<div class="loading-state">Loading schedule...</div>';
-    
-    // Fetch schedule directly for this tab
     try {
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
@@ -142,9 +112,7 @@ async function switchScheduleTab(days, tabElement) {
             },
             body: `action=get_schedule&days=${encodeURIComponent(days)}`
         });
-
         const result = await response.json();
-        
         if (result.success && result.schedules) {
             scheduleList.innerHTML = generateScheduleHTML(result.schedules);
         } else {
@@ -167,25 +135,20 @@ async function switchScheduleTab(days, tabElement) {
         `;
     }
 }
-
-// Client-side HTML generation for schedule items
 function generateScheduleHTML(schedules) {
     if (!schedules || schedules.length === 0) {
         return '';
     }
-    
     let html = '';
     schedules.forEach(schedule => {
         const statusInfo = getScheduleStatusClient(schedule.status);
         const duration = calculateDuration(schedule.time_start, schedule.time_end);
-        
         html += `
             <div class="schedule-item ${statusInfo.class}">
                 <div class="schedule-time">
                     <div class="time-display">${formatTimeClient(schedule.time_start)}</div>
                     <div class="time-duration">${duration}hr</div>
                 </div>
-                
                 <div class="schedule-details">
                     <div class="schedule-course">
                         <div class="course-code">${escapeHtml(schedule.course_code)}</div>
@@ -196,7 +159,6 @@ function generateScheduleHTML(schedules) {
                         <span class="room-info">Room: ${escapeHtml(schedule.room || 'TBA')}</span>
                     </div>
                 </div>
-                
                 <div class="schedule-status">
                     <span class="status-badge status-${statusInfo.class}">
                         ${statusInfo.text}
@@ -210,11 +172,8 @@ function generateScheduleHTML(schedules) {
             </div>
         `;
     });
-    
     return html;
 }
-
-// Helper functions for client-side rendering
 function getScheduleStatusClient(status) {
     switch (status) {
         case 'ongoing': return {text: 'In Progress', class: 'ongoing'};
@@ -225,7 +184,6 @@ function getScheduleStatusClient(status) {
         default: return {text: 'Unknown', class: 'unknown'};
     }
 }
-
 function calculateDuration(timeStart, timeEnd) {
     const start = new Date(`1970-01-01 ${timeStart}`);
     const end = new Date(`1970-01-01 ${timeEnd}`);
@@ -233,7 +191,6 @@ function calculateDuration(timeStart, timeEnd) {
     const diffHours = diffMs / (1000 * 60 * 60);
     return diffHours.toFixed(1);
 }
-
 function formatTimeClient(time) {
     if (!time) return '';
     const [hours, minutes] = time.split(':');
@@ -241,42 +198,33 @@ function formatTimeClient(time) {
     const ampm = hours >= 12 ? 'PM' : 'AM';
     return `${hour12}:${minutes} ${ampm}`;
 }
-
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
-
-// updateLocationStatus function removed - now handled by live_polling.js
-
 document.addEventListener('DOMContentLoaded', function() {
     const locationSelect = document.getElementById('locationSelect');
     const customLocationInput = document.getElementById('customLocation');
-
     if (locationSelect && customLocationInput) {
         locationSelect.addEventListener('change', function() {
             if (this.value) {
                 customLocationInput.value = '';
             }
         });
-        
         customLocationInput.addEventListener('input', function() {
             if (this.value) {
                 locationSelect.value = '';
             }
         });
     }
-    
-    // Automatically load the first active tab's content
     const activeTab = document.querySelector('.schedule-tab.active');
     if (activeTab) {
         const days = activeTab.textContent.trim();
         switchScheduleTab(days, activeTab);
     }
 });
-
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal-overlay')) {
         if (e.target.id === 'locationModal') {
@@ -285,10 +233,8 @@ document.addEventListener('click', function(e) {
             closeLocationHistoryModal();
         }
     }
-    
     const sidebar = document.getElementById('sidebar');
     const toggle = document.querySelector('.announcement-toggle');
-
     if (window.innerWidth > 768 &&
         !sidebar.contains(e.target) &&
         !toggle.contains(e.target) &&
@@ -296,7 +242,6 @@ document.addEventListener('click', function(e) {
         closeSidebar();
     }
 });
-
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         const openModal = document.querySelector('.modal-overlay.show');
@@ -309,108 +254,72 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
-
-// Visibility change polling now handled by live_polling.js
-
-// Location polling now handled by live_polling.js
-
-// FACULTY PHONE ANIMATION HANDLER
 let lastScrollTop = 0;
 let ticking = false;
-
-// Initialize content positioning for phone view
 function initializeContentPosition() {
     if (window.innerWidth <= 768) {
         const header = document.querySelector('.page-header');
         const contentWrapper = document.querySelector('.content-wrapper');
-        
         if (header && contentWrapper) {
             const headerHeight = header.offsetHeight;
             const baseMargin = 20;
-            
-            // Set initial content position below header
             contentWrapper.style.marginTop = `${headerHeight + baseMargin}px`;
-            // Set quick actions initial state (hidden)
             const actionsSection = document.querySelector('.actions-section');
             if (actionsSection) {
                 actionsSection.classList.remove('scroll-visible');
             }
         }
     } else {
-        // Reset for non-phone views
         const contentWrapper = document.querySelector('.content-wrapper');
         if (contentWrapper) {
             contentWrapper.style.removeProperty('margin-top');
         }
     }
 }
-
 function facultyScrollHandler() {
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    
     if (window.innerWidth <= 768) {
         const header = document.querySelector('.page-header');
         const dashboardGrid = document.querySelector('.dashboard-grid');
         const actionsSection = document.querySelector('.actions-section');
         const locationSection = document.querySelector('.location-section');
         const body = document.body;
-        
-        // Check if dashboard grid has reached the top
         const dashboardRect = dashboardGrid.getBoundingClientRect();
         const headerHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height') || '160');
-        
-        // Dashboard reaches top when its top position is at or above header height
         const dashboardReachedTop = dashboardRect.top <= 0;
-        
-        // Toggle body padding and class based on dashboard position
         if (dashboardReachedTop) {
             body.classList.add('dashboard-reached-top');
         } else {
             body.classList.remove('dashboard-reached-top');
         }
-        
-        // Simple scroll-based animation
         if (header && actionsSection) {
             const scheduleSection = document.querySelector('.schedule-section');
-            
-            // Trigger animation when scrolled down more (slower trigger)
             if (scrollTop > 200) {
                 header.classList.add('scroll-hidden');
                 actionsSection.classList.add('scroll-visible');
-                
-                // Activate schedule overflow when fully scrolled
                 if (scheduleSection) {
                     scheduleSection.classList.add('scroll-mode-active');
                 }
             } else {
                 header.classList.remove('scroll-hidden');
                 actionsSection.classList.remove('scroll-visible');
-                
-                // Deactivate schedule overflow when not fully scrolled
                 if (scheduleSection) {
                     scheduleSection.classList.remove('scroll-mode-active');
                 }
             }
         }
     }
-    
     lastScrollTop = scrollTop;
     ticking = false;
 }
-
 function requestTick() {
     if (!ticking) {
         requestAnimationFrame(facultyScrollHandler);
         ticking = true;
     }
 }
-
-// Initialize scroll handler
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize content position on load and resize
     initializeContentPosition();
     window.addEventListener('resize', initializeContentPosition);
-    
-    // Add scroll listener
     window.addEventListener('scroll', requestTick, { passive: true });
 });

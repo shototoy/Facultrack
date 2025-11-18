@@ -1,24 +1,17 @@
 <?php
 require_once 'common_utilities.php';
-
 initializeSession();
 header('Content-Type: application/json');
-
 $pdo = initializeDatabase();
-
 if (!isset($_SESSION['user_id'])) {
     sendJsonResponse(['success' => false, 'message' => 'Unauthorized access'], 401);
 }
-
 $user_id = $_SESSION['user_id'];
 $role = $_SESSION['role'];
-
 try {
-    // Update last activity for all users
     $update_user = "UPDATE users SET updated_at = NOW() WHERE user_id = ?";
     $stmt = $pdo->prepare($update_user);
     $stmt->execute([$user_id]);
-    
     if ($role === 'faculty' || $role === 'program_chair') {
         $update_faculty = "
             UPDATE faculty 
@@ -27,7 +20,6 @@ try {
         ";
         $stmt = $pdo->prepare($update_faculty);
         $stmt->execute([$user_id]);
-        
         $offline_faculty = "
             UPDATE faculty 
             SET is_active = 0 
@@ -36,7 +28,6 @@ try {
         $stmt = $pdo->prepare($offline_faculty);
         $stmt->execute();
     } elseif ($role === 'campus_director') {
-        // Create a virtual faculty record for director status tracking
         $check_director_faculty = "
             INSERT INTO faculty (user_id, employee_id, program, current_location, is_active, last_location_update)
             SELECT ?, CONCAT('DIR-', user_id), 'Administration', 'Director Office', 1, NOW()
@@ -46,8 +37,6 @@ try {
         ";
         $stmt = $pdo->prepare($check_director_faculty);
         $stmt->execute([$user_id, $user_id]);
-        
-        // Set other directors offline if inactive
         $offline_directors = "
             UPDATE faculty f
             JOIN users u ON f.user_id = u.user_id
@@ -58,20 +47,16 @@ try {
         $stmt = $pdo->prepare($offline_directors);
         $stmt->execute();
     }
-    
-    // Update class representative activity if class role
     if ($role === 'class') {
         $update_class = "UPDATE classes SET updated_at = NOW() WHERE user_id = ?";
         $stmt = $pdo->prepare($update_class);
         $stmt->execute([$user_id]);
     }
-    
     sendJsonResponse([
         'success' => true,
         'timestamp' => date('Y-m-d H:i:s'),
         'user_activity_updated' => true
     ]);
-    
 } catch (Exception $e) {
     sendJsonResponse(['success' => false, 'message' => 'Heartbeat update failed'], 500);
 }

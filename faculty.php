@@ -2,8 +2,6 @@
 require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
-
-// Set database timezone to match PHP timezone (same as polling_api.php)
 $php_timezone = date_default_timezone_get();
 $mysql_timezone_map = [
     'Asia/Manila' => '+08:00',
@@ -12,24 +10,17 @@ $mysql_timezone_map = [
     'America/New_York' => '-05:00',
     'America/Los_Angeles' => '-08:00'
 ];
-$mysql_timezone = $mysql_timezone_map[$php_timezone] ?? '+08:00'; // Default to Philippine time
+$mysql_timezone = $mysql_timezone_map[$php_timezone] ?? '+08:00'; 
 $pdo->exec("SET time_zone = '$mysql_timezone'");
-
 $current_time = date('H:i:s');
 $current_date = date('Y-m-d');
 $current_day = date('w');
-
 function getFacultyInfo($pdo, $user_id) {
     $faculty_query = "SELECT f.*, u.full_name FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.user_id = ? AND u.is_active = TRUE";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute([$user_id]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
-
-// Removed getTodaySchedule() - using polling_api.php getScheduleForDays() instead
-// Initial schedule load will be handled by live polling
-
-
 function getLocationHistory($pdo, $faculty_id, $limit = 10) {
     $limit = (int)$limit;
     $query = "SELECT location, time_set, time_changed 
@@ -41,23 +32,17 @@ function getLocationHistory($pdo, $faculty_id, $limit = 10) {
     $stmt->execute([$faculty_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getSmartScheduleTabs($pdo, $faculty_id) {
     $schedules_query = "SELECT DISTINCT days FROM schedules WHERE faculty_id = ? AND is_active = TRUE ORDER BY days";
     $stmt = $pdo->prepare($schedules_query);
     $stmt->execute([$faculty_id]);
     $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
     if (empty($schedules)) {
         return [];
     }
-    
-    // Extract all individual days from schedule patterns
     $all_days = [];
     foreach ($schedules as $schedule) {
         $days = $schedule['days'];
-        
-        // Expand schedule patterns to individual days
         switch($days) {
             case 'MW':
                 $all_days[] = 'M';
@@ -96,26 +81,20 @@ function getSmartScheduleTabs($pdo, $faculty_id) {
                 $all_days[] = 'S';
                 break;
             default:
-                // Single day or unknown pattern
                 $all_days[] = $days;
                 break;
         }
     }
-    
-    // Remove duplicates and sort by day order
     $unique_days = array_unique($all_days);
     $day_order = ['M', 'T', 'W', 'TH', 'F', 'S'];
     $sorted_tabs = [];
-    
     foreach ($day_order as $day) {
         if (in_array($day, $unique_days)) {
             $sorted_tabs[] = $day;
         }
     }
-    
     return $sorted_tabs;
 }
-
 function getScheduleStatus($status) {
     switch ($status) {
         case 'ongoing': return ['text' => 'In Progress', 'class' => 'ongoing'];
@@ -124,22 +103,13 @@ function getScheduleStatus($status) {
         default: return ['text' => 'Unknown', 'class' => 'unknown'];
     }
 }
-
-// generateScheduleHTML function moved to polling_api.php
-
-// Attendance and location update endpoints moved to assets/php/polling_api.php
-// Polling endpoints moved to assets/php/polling_api.php
-
 validateUserSession('faculty');
-
 $user_id = $_SESSION['user_id'];
 $faculty_name = $_SESSION['full_name'];
 $faculty_info = getFacultyInfo($pdo, $user_id);
-
 if (!$faculty_info) {
     die("Faculty information not found");
 }
-
 try {
     $set_online_query = "UPDATE faculty SET is_active = 1, last_location_update = NOW() WHERE user_id = ?";
     $stmt = $pdo->prepare($set_online_query);
@@ -147,17 +117,12 @@ try {
 } catch (Exception $e) {
     error_log("Failed to set faculty online status: " . $e->getMessage());
 }
-
-// Schedule will be loaded via live polling - start with empty array
 $today_schedule = [];
 $location_history = getLocationHistory($pdo, $faculty_info['faculty_id'], 10);
 $schedule_tabs = getSmartScheduleTabs($pdo, $faculty_info['faculty_id']);
-
 require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
-
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -167,7 +132,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        
         .schedule-section::before {
             content: '';
             position: absolute;
@@ -178,21 +142,16 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             background: linear-gradient(90deg, transparent, rgba(46, 125, 50, 0.3), transparent);
             animation: shimmer 4s infinite;
         }
-        
         @keyframes shimmer {
             0%, 100% { opacity: 0; }
             50% { opacity: 1; }
         }
-
-        
         .schedule-card {
             height: 100%;
             display: flex;
             flex-direction: column;
         }
-
         @media (min-width: 1025px) {
-            
             .dashboard-grid {
                 display: grid !important;
                 grid-template-columns: 2fr 1fr !important;
@@ -201,8 +160,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 height: calc(100vh - var(--header-height, 160px) - 40px) !important;
                 overflow: hidden !important;
             }
-            
-            
             .schedule-section {
                 grid-column: 1 !important;
                 grid-row: 1 / 3 !important;
@@ -212,8 +169,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 padding: 20px !important;
                 box-sizing: border-box !important;
             }
-            
-            
             .location-section {
                 grid-column: 2 !important;
                 grid-row: 1 !important;
@@ -224,8 +179,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 min-height: 100% !important;
                 box-sizing: border-box !important;
             }
-            
-            
             .actions-section {
                 grid-column: 2 !important;
                 grid-row: 2 !important;
@@ -245,14 +198,11 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 box-sizing: border-box !important;
             }
         }
-
-        
         @media (max-width: 1024px) and (min-width: 769px) {
             body {
                 padding-bottom: 140px !important;
                 overflow: hidden !important;
             }
-            
             .dashboard-grid {
                 display: grid !important;
                 grid-template-columns: 1fr !important;
@@ -261,8 +211,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 gap: 16px !important;
                 overflow: hidden !important;
             }
-            
-            
             .location-section {
                 grid-row: 1 !important;
                 grid-column: 1 !important;
@@ -273,8 +221,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 max-height: 140px !important;
                 overflow: hidden !important;
             }
-            
-            
             .schedule-section {
                 grid-row: 2 !important;
                 grid-column: 1 !important;
@@ -284,8 +230,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 overflow-x: hidden !important;
                 border: none !important;
             }
-            
-            
             .actions-section {
                 position: fixed !important;
                 bottom: 0 !important;
@@ -300,22 +244,17 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 height: 140px !important;
                 order: 3 !important;
             }
-            
             .quick-actions h3 {
                 display: none !important;
             }
-            
             .action-card {
                 padding: 12px !important;
                 margin: 4px !important;
             }
-            
             .action-icon {
                 font-size: 1.8rem !important;
                 margin-bottom: 4px !important;
             }
-            
-            
             .quick-actions {
                 height: 100% !important;
                 display: flex !important;
@@ -325,7 +264,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 margin: 0 !important;
                 padding: 0 !important;
             }
-            
             .actions-grid {
                 display: grid !important;
                 grid-template-columns: 1fr 1fr !important;
@@ -335,8 +273,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 flex: 0 !important;
             }
         }
-
-        
         @media (max-width: 768px) {
             body .page-header {
                 position: fixed !important;
@@ -350,17 +286,14 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 opacity: 1 !important;
                 transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease !important;
             }
-            
             .page-header.scroll-hidden {
                 transform: translateY(-100%) !important;
                 opacity: 0 !important;
             }
-            
             body {
                 overflow-y: auto !important;
                 padding-bottom: 100px !important;
             }
-            
             .dashboard-grid {
                 display: grid !important;
                 grid-template-columns: 1fr !important;
@@ -369,8 +302,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 min-height: calc(100vh - 100px - 24px) !important;
                 gap: 12px !important;
             }
-            
-            
             .location-section {
                 grid-row: 1 !important;
                 grid-column: 1 !important;
@@ -380,8 +311,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 min-height: auto !important;
                 max-height: 120px !important;
             }
-            
-            
             .schedule-section {
                 grid-row: 2 !important;
                 grid-column: 1 !important;
@@ -391,15 +320,11 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 overflow-y: auto !important;
                 border: none !important;
             }
-            
-            
             .schedule-section.scroll-mode-active {
                 max-height: calc(100vh - 220px) !important;
                 overflow-y: auto !important;
                 padding-bottom: 20px !important;
             }
-            
-            
             .actions-section {
                 position: fixed !important;
                 bottom: 0 !important;
@@ -417,31 +342,24 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 opacity: 0 !important;
                 transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease !important;
             }
-            
             .actions-section.scroll-visible {
                 transform: translateY(0) !important;
                 opacity: 1 !important;
             }
-            
             .quick-actions h3 {
                 display: none !important;
             }
-            
             .action-card {
                 padding: 8px !important;
                 margin: 2px !important;
             }
-            
             .action-icon {
                 font-size: 1.4rem !important;
                 margin-bottom: 2px !important;
             }
-            
             .action-title {
                 font-size: 0.7rem !important;
             }
-            
-            
             .quick-actions {
                 height: 100% !important;
                 display: flex !important;
@@ -451,7 +369,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 margin: 0 !important;
                 padding: 0 !important;
             }
-            
             .actions-grid {
                 display: grid !important;
                 grid-template-columns: 1fr 1fr !important;
@@ -461,7 +378,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 flex: 0 !important;
             }
         }
-
         .schedule-header {
             display: flex;
             justify-content: space-between;
@@ -473,7 +389,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             margin: -10px -10px 20px -10px;
             border-bottom: 2px solid rgba(240, 240, 240, 0.8);
         }
-
         .schedule-header h3 {
             color: var(--text-green-primary);
             margin: 0;
@@ -481,14 +396,12 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8);
             font-weight: 700;
         }
-
         .schedule-date {
             color: var(--text-secondary);
             font-size: 0.9rem;
             font-weight: 500;
             text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
         }
-
         .schedule-list {
             display: flex;
             flex-direction: column;
@@ -497,7 +410,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             overflow-y: auto;
             overflow-x: hidden;
         }
-
         .schedule-item {
             display: flex;
             align-items: center;
@@ -511,7 +423,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             overflow: hidden;
             gap: 10px;
         }
-
         .schedule-item::before {
             content: '';
             position: absolute;
@@ -522,30 +433,25 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.6s;
         }
-
         .schedule-item:hover::before {
             left: 100%;
         }
-
         .schedule-item:hover {
             transform: translateY(-3px) translateX(2px);
             box-shadow: var(--shadow-heavy), inset 0 2px 0 rgba(255, 255, 255, 1);
         }
-
         .schedule-item.ongoing {
             background: var(--status-available-bg);
             border-left-color: var(--primary-green-light);
             box-shadow: 0 4px 20px rgba(76, 175, 80, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
             border: 1px solid rgba(76, 175, 80, 0.2);
         }
-
         .schedule-item.upcoming {
             background: var(--status-busy-bg);
             border-left-color: var(--warning-dark);
             box-shadow: 0 4px 15px rgba(255, 152, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9);
             border: 1px solid rgba(255, 152, 0, 0.2);
         }
-
         .schedule-item.finished {
             background: linear-gradient(135deg, rgba(245, 245, 245, 0.9), rgba(238, 238, 238, 0.9));
             border-left-color: #9E9E9E;
@@ -553,7 +459,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             box-shadow: 0 2px 8px rgba(158, 158, 158, 0.2),
                         inset 0 1px 0 rgba(255, 255, 255, 0.9);
         }
-
         .location-section .location-update-card {
             height: auto !important;
             display: block !important;
@@ -561,17 +466,14 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             position: relative !important;
             top: 0 !important;
         }
-        
         .location-section .location-current {
             height: auto !important;
             display: block !important;
         }
-        
         .location-section .location-display {
             height: auto !important;
             display: block !important;
         }
-
         .location-header {
             display: flex;
             justify-content: space-between;
@@ -582,7 +484,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             border-radius: 8px;
             margin: -10px -10px 15px -10px;
         }
-
         .location-header h3 {
             color: var(--text-green-primary);
             margin: 0;
@@ -590,7 +491,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8);
             font-weight: 700;
         }
-
         .location-status {
             display: flex;
             align-items: center;
@@ -603,19 +503,15 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
         }
-
-
         .location-updated {
             font-size: 0.8rem;
             color: var(--text-secondary);
             text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
         }
-
         .location-actions {
             display: flex;
             gap: 10px;
         }
-
         .location-actions button {
             flex: 1;
             padding: 10px 15px;
@@ -632,14 +528,12 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
         .location-actions button:hover {
             background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
             box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4),
                         inset 0 2px 0 rgba(255, 255, 255, 0.3);
             transform: translateY(-2px);
         }
-
         .actions-section .quick-actions {
             height: auto !important;
             display: block !important;
@@ -648,7 +542,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             left: 20px !important;
             right: 20px !important;
         }
-
         .quick-actions h3 {
             color: #1B5E20;
             margin: 0 0 15px 0;
@@ -660,14 +553,12 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             border-radius: 8px;
             margin: -10px -10px 15px -10px;
         }
-
         .actions-section .actions-grid {
             display: grid !important;
             grid-template-columns: 1fr 1fr !important;
             gap: 12px !important;
             height: 120px !important;
         }
-
         .action-card {
             border: 2px solid rgba(46, 125, 50, 0.1);
             border-radius: 12px;
@@ -685,7 +576,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             position: relative;
             overflow: hidden;
         }
-
         .action-card::before {
             content: '';
             position: absolute;
@@ -696,11 +586,9 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             background: linear-gradient(90deg, transparent, rgba(46, 125, 50, 0.1), transparent);
             transition: left 0.6s;
         }
-
         .action-card:hover::before {
             left: 100%;
         }
-
         .action-card:hover {
             background: linear-gradient(135deg, rgba(233, 236, 239, 0.9), rgba(248, 249, 250, 0.9));
             border-color: #2E7D32;
@@ -708,7 +596,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             box-shadow: 0 8px 25px rgba(46, 125, 50, 0.15),
                         inset 0 2px 0 rgba(255, 255, 255, 1);
         }
-
         .action-icon {
             font-size: 2rem;
             margin-bottom: 4px;
@@ -716,50 +603,42 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             filter: drop-shadow(0 2px 4px rgba(46, 125, 50, 0.3));
             transition: all 0.3s ease;
         }
-
         .action-card:hover .action-icon {
             transform: scale(1.1);
             filter: drop-shadow(0 4px 8px rgba(46, 125, 50, 0.4));
         }
-
         .action-title {
             font-size: 1rem;
             font-weight: bold;
             margin-bottom: 3px;
             text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
         }
-
         .action-subtitle {
             font-size: 0.75rem;
             color: #666;
             text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
         }
-
         .schedule-time {
             min-width: 70px;
             text-align: center;
             margin-right: 15px;
         }
-
         .time-display {
             font-size: 1rem;
             font-weight: bold;
             color: #333;
             text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
         }
-
         .time-duration {
             font-size: 0.75rem;
             color: #666;
             margin-top: 2px;
             text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
         }
-
         .schedule-details {
             flex: 1;
             margin-right: 15px;
         }
-
         .schedule-info {
             gap: 12px;
             font-size: 0.8rem;
@@ -767,18 +646,15 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             margin-top: 5px;
             text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
         }
-
             .schedule-info span {
             display: block;
         }
-
         .schedule-status {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
             gap: 6px;
         }
-
         .no-schedule {
             text-align: center;
             padding: 40px 20px;
@@ -789,34 +665,29 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             justify-content: center;
             align-items: center;
         }
-
         .no-schedule-icon {
             font-size: 2.5rem;
             margin-bottom: 15px;
             opacity: 0.5;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
         }
-
         .no-schedule-text {
             font-size: 1.1rem;
             margin-bottom: 5px;
             color: #333;
             text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
         }
-
         .no-schedule-subtitle {
             font-size: 0.85rem;
             color: #666;
             text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
         }
-
         .schedule-tabs {
             display: flex;
             gap: 5px;
             margin-bottom: 20px;
             flex-wrap: wrap;
         }
-
         .schedule-tab {
             padding: 8px 16px;
             border: 1px solid rgba(221, 221, 221, 0.5);
@@ -830,7 +701,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         inset 0 1px 0 rgba(255, 255, 255, 0.9);
             text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
         }
-
         .schedule-tab.active {
             background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
             color: white;
@@ -839,7 +709,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         inset 0 1px 0 rgba(255, 255, 255, 0.2);
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
         }
-
         .schedule-tab:hover:not(.active) {
             background: linear-gradient(145deg, #e9ecef, #dee2e6);
             border-color: #aaa;
@@ -847,13 +716,11 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         inset 0 1px 0 rgba(255, 255, 255, 1);
             transform: translateY(-2px);
         }
-
         .location-history-list {
             max-height: 400px;
             overflow-y: auto;
             padding: 15px;
         }
-
         .history-item {
             display: flex;
             justify-content: space-between;
@@ -866,31 +733,26 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             transition: all 0.3s ease;
             position: relative;
         }
-
         .history-item:hover {
             background: linear-gradient(145deg, #e9ecef, #dee2e6);
             transform: translateX(3px);
         }
-
         .history-item.current-location {
             background: linear-gradient(135deg, rgba(232, 245, 232, 0.9), rgba(200, 230, 201, 0.9));
             border-left-color: #4CAF50;
             box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
         }
-
         .history-location-name {
             font-size: 1rem;
             font-weight: 600;
             color: #333;
             flex: 1;
         }
-
         .history-timestamp {
             font-size: 0.85rem;
             color: #666;
             margin-left: 15px;
         }
-
         .current-badge {
             position: absolute;
             top: -8px;
@@ -903,18 +765,15 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             font-weight: 600;
             box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
         }
-
         .no-history {
             text-align: center;
             padding: 40px 20px;
             color: #666;
         }
-
         .no-history p {
             margin: 0;
             font-size: 0.95rem;
         }
-
         .loading-state {
             text-align: center;
             padding: 40px 20px;
@@ -927,20 +786,16 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             font-size: 1rem;
             animation: pulse 2s infinite;
         }
-
         @keyframes pulse {
             0%, 100% { opacity: 0.6; }
             50% { opacity: 1; }
         }
-
 </style>
 </head>
 <body class="faculty-page">
     <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
-
         <div class="sidebar-overlay" onclick="closeSidebar()"></div>
-
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <button class="close-btn" onclick="closeSidebar()">×</button>
@@ -967,7 +822,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 <?php endforeach; ?>
             </div>
         </div>
-
         <div class="content-wrapper" id="contentWrapper">
             <?php 
             $ongoing_classes = count(array_filter($today_schedule, function($schedule) {
@@ -977,7 +831,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 return $schedule['status'] === 'finished';
             }));
             $total_classes = count($today_schedule);
-            
             $header_config = [
                 'page_title' => 'FaculTrack - Faculty Portal',
                 'page_subtitle' => 'Sultan Kudarat State University - Isulan Campus',
@@ -995,7 +848,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             ];
             include 'assets/php/page_header.php';
             ?>
-
             <div class="dashboard-grid">
                 <div class="schedule-section">
                     <div class="schedule-card">
@@ -1008,7 +860,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                             ?>
                         </div>
                     </div>
-                        
                         <div class="schedule-tabs">
                             <?php if (!empty($schedule_tabs)): ?>
                                 <?php foreach ($schedule_tabs as $index => $tab): ?>
@@ -1019,13 +870,11 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </div>
-                        
                         <div class="schedule-list" id="scheduleList">
                             <div class="loading-state">Loading schedule...</div>
                         </div>
                     </div>
                 </div>
-
                 <div class="location-section">
                     <div class="location-update-card">
                         <div class="location-current">
@@ -1066,7 +915,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         </div>
                     </div>
                 </div>
-
                 <div class="actions-section">
                     <div class="quick-actions">
                         <h3>Quick Actions</h3>
@@ -1077,7 +925,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                                 </div>
                                 <div class="action-title">Update Location</div>
                             </button>
-                            
                             <button class="action-card" onclick="viewLocationHistory()">
                                 <div class="action-icon">
                                     <svg class="feather"><use href="#clipboard"></use></svg>
@@ -1095,7 +942,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                     <h3 class="modal-title">Update Location</h3>
                     <button type="button" class="modal-close" onclick="closeLocationModal()">&times;</button>
                 </div>
-                
                 <form id="locationForm" class="modal-form" onsubmit="event.preventDefault(); updateLocation();">
                     <div class="form-group">
                         <label class="form-label">Current Location *</label>
@@ -1135,14 +981,12 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                             <option value="On Leave">On Leave</option>
                         </select>
                     </div>
-                    
                     <div class="form-group">
                         <label class="form-label">Custom Location</label>
                         <input type="text" id="customLocation" name="custom_location" class="form-input" 
                             placeholder="Type custom location if not in list above">
                         <small class="form-help">Leave empty to use selected location above</small>
                     </div>
-                    
                     <div class="modal-actions">
                         <button type="button" class="btn-secondary" onclick="closeLocationModal()">Cancel</button>
                         <button type="submit" class="btn-primary">Update Location</button>
@@ -1150,30 +994,26 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 </form>
             </div>
         </div>
-
         <div class="modal-overlay" id="locationHistoryModal">
             <div class="modal">
                 <div class="modal-header">
                     <h3 class="modal-title">Location History</h3>
                     <button type="button" class="modal-close" onclick="closeLocationHistoryModal()">&times;</button>
                 </div>
-                
                 <div class="location-history-list">
                 </div>
-                
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeLocationHistoryModal()">Close</button>
                 </div>
             </div>
         </div>
-
     <script>
         window.userRole = 'faculty';
     </script>
     <script src="assets/js/polling_config.js"></script>
+    <script src="assets/js/toast_manager.js"></script>
     <script src="assets/js/shared_functions.js"></script>
     <script src="assets/js/live_polling.js"></script>
     <script src="assets/js/faculty.js"></script>
-    
 </body>
 </html>

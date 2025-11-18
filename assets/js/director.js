@@ -5,7 +5,6 @@ function createSearchResultActions() {
         searchInput.addEventListener('input', function() {
             const query = this.value.toLowerCase();
             const activeTab = document.querySelector('.tab-content.active');
-            
             if (activeTab.id === 'faculty-content') {
                 searchTable(query, 'faculty');
             } else if (activeTab.id === 'classes-content') {
@@ -18,33 +17,26 @@ function createSearchResultActions() {
         });
     }
 }
-
 function searchTable(query, type) {
     const table = document.querySelector(`#${type === 'class' ? 'classes' : type}-content .data-table`);
     if (!table) return;
-    
     const rows = table.querySelectorAll('tbody tr:not(.expansion-row)');
     let visibleCount = 0;
-    
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
         const isVisible = text.includes(query);
         row.style.display = isVisible ? '' : 'none';
-        
         const expansionRow = row.nextElementSibling;
         if (expansionRow && expansionRow.classList.contains('expansion-row')) {
             expansionRow.style.display = isVisible ? 'none' : 'none';
             row.classList.remove('expanded');
         }
-        
         if (isVisible) visibleCount++;
     });
 }
-
 function createFacultyRow(faculty) {
     const status = faculty.status || 'Offline';
     const statusClass = status.toLowerCase().replace(' ', '-');
-    
     return `
         <tr class="expandable-row" onclick="toggleRowExpansion(this)">
             <td>
@@ -90,13 +82,10 @@ function createFacultyRow(faculty) {
         </tr>
     `;
 }
-
 function addRowToTable(tableSelector, htmlContent, entityType) {
     const tableBody = document.querySelector(`${tableSelector} tbody`);
     if (!tableBody) return;
-    
     tableBody.insertAdjacentHTML('afterbegin', htmlContent);
-    
     const newRows = [];
     if (entityType === 'faculty') {
         newRows.push(tableBody.firstElementChild);
@@ -104,22 +93,18 @@ function addRowToTable(tableSelector, htmlContent, entityType) {
     } else {
         newRows.push(tableBody.firstElementChild);
     }
-    
     const mainRow = newRows[entityType === 'faculty' ? 1 : 0];
     if (mainRow) {
         mainRow.style.opacity = '0';
         mainRow.style.transform = 'translateX(-20px)';
-        
         requestAnimationFrame(() => {
             mainRow.style.transition = 'all 0.3s ease';
             mainRow.style.opacity = '1';
             mainRow.style.transform = 'translateX(0)';
         });
     }
-    
     return newRows;
 }
-
 function createClassRow(classData) {
     return `
         <tr class="expandable-row" onclick="toggleRowExpansion(this)">
@@ -159,19 +144,16 @@ function createClassRow(classData) {
         </tr>
     `;
 }
-
 function resetTableRowStates() {
     const allExpansionRows = document.querySelectorAll('.expansion-row');
     allExpansionRows.forEach(row => {
         row.style.display = 'none';
     });
-    
     const allExpandableRows = document.querySelectorAll('.expandable-row');
     allExpandableRows.forEach(row => {
         row.classList.remove('expanded');
     });
 }
-
 function createCourseRow(course) {
     return `
         <tr>
@@ -189,12 +171,10 @@ function createCourseRow(course) {
         </tr>
     `;
 }
-
 function createAnnouncementRow(announcement) {
     const priorityClass = announcement.priority ? announcement.priority.toLowerCase() : 'normal';
     const date = new Date(announcement.created_at);
     const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-    
     return `
         <tr>
             <td>
@@ -213,7 +193,6 @@ function createAnnouncementRow(announcement) {
         </tr>
     `;
 }
-
 function removeEntityFromUI(entityType, entityId) {
     switch(entityType) {
         case 'faculty':
@@ -230,7 +209,6 @@ function removeEntityFromUI(entityType, entityId) {
             break;
     }
 }
-
 function removeFacultyFromTable(facultyId) {
     const selectors = [
         `tr:has(button[onclick*="delete_faculty, ${facultyId}"])`,
@@ -238,9 +216,7 @@ function removeFacultyFromTable(facultyId) {
         `button[onclick*="delete_faculty, ${facultyId}"]`,
         `button[onclick*="'delete_faculty', ${facultyId}"]`
     ];
-    
     let targetRow = null;
-    
     for (const selector of selectors) {
         try {
             const button = document.querySelector(selector);
@@ -258,77 +234,62 @@ function removeFacultyFromTable(facultyId) {
             if (targetRow) break;
         }
     }
-    
     if (!targetRow) return;
-    
     const expansionRow = targetRow.nextElementSibling;
     if (expansionRow && expansionRow.classList.contains('expansion-row')) {
         expansionRow.remove();
     }
-    
     targetRow.style.transition = 'all 0.3s ease';
     targetRow.style.opacity = '0';
     targetRow.style.transform = 'translateX(-20px)';
-    
     setTimeout(() => {
         targetRow.remove();
         updateHeaderStatistics('faculty', -1);
     }, 300);
 }
-
 function removeClassFromTable(classId) {
     const targetRow = document.querySelector(`button[onclick*="'delete_class', ${classId}"]`)?.closest('tr') ||
                      document.querySelector(`button[onclick*="delete_class, ${classId}"]`)?.closest('tr');
-    
     if (targetRow) {
         const expansionRow = targetRow.nextElementSibling;
         if (expansionRow && expansionRow.classList.contains('expansion-row')) {
             expansionRow.remove();
         }
-        
         targetRow.style.transition = 'all 0.3s ease';
         targetRow.style.opacity = '0';
         targetRow.style.transform = 'translateX(-20px)';
-        
         setTimeout(() => {
             targetRow.remove();
             updateHeaderStatistics('class', -1);
         }, 300);
     }
 }
-
 function removeCourseFromTable(courseId) {
     const targetRow = document.querySelector(`button[onclick*="'delete_course', ${courseId}"]`)?.closest('tr') ||
                      document.querySelector(`button[onclick*="delete_course, ${courseId}"]`)?.closest('tr');
-    
     if (targetRow) {
         targetRow.style.transition = 'all 0.3s ease';
         targetRow.style.opacity = '0';
         targetRow.style.transform = 'translateX(-20px)';
-        
         setTimeout(() => {
             targetRow.remove();
             updateHeaderStatistics('course', -1);
         }, 300);
     }
 }
-
 function removeAnnouncementFromTable(announcementId) {
     const targetRow = document.querySelector(`button[onclick*="'delete_announcement', ${announcementId}"]`)?.closest('tr') ||
                      document.querySelector(`button[onclick*="delete_announcement, ${announcementId}"]`)?.closest('tr');
-    
     if (targetRow) {
         targetRow.style.transition = 'all 0.3s ease';
         targetRow.style.opacity = '0';
         targetRow.style.transform = 'translateX(-20px)';
-        
         setTimeout(() => {
             targetRow.remove();
             updateHeaderStatistics('announcement', -1);
         }, 300);
     }
 }
-
 function updateHeaderStatistics(entityType, delta) {
     const elementMap = {
         'faculty': 'totalFaculty',
@@ -336,36 +297,28 @@ function updateHeaderStatistics(entityType, delta) {
         'course': 'totalCourses',
         'announcement': 'totalAnnouncements'
     };
-    
     const elementId = elementMap[entityType];
     const element = document.getElementById(elementId);
-    
     if (element) {
         const currentValue = parseInt(element.textContent) || 0;
         const newValue = Math.max(0, currentValue + delta);
-        
         if (currentValue !== newValue) {
             element.style.transition = 'all 0.3s ease';
             element.style.transform = 'scale(1.1)';
             element.textContent = newValue;
-            
             setTimeout(() => {
                 element.style.transform = 'scale(1)';
             }, 150);
         }
     }
 }
-
 function updateTableCounts(entityType, delta) {
     updateTableCounts(entityType, delta);
 }
-
 function toggleRowExpansion(row) {
     const expansionRow = row.nextElementSibling;
-    
     if (expansionRow && expansionRow.classList.contains('expansion-row')) {
         const isExpanded = row.classList.contains('expanded');
-        
         if (isExpanded) {
             row.classList.remove('expanded');
             expansionRow.style.display = 'none';
@@ -375,33 +328,26 @@ function toggleRowExpansion(row) {
         }
     }
 }
-
 window.loadClassesForSemester = async function(semester) {
     const academicYearSelect = document.querySelector('[name="academic_year"]');
     const academicYear = academicYearSelect.value;
     const previewDiv = document.getElementById('classesPreview');
     const previewContent = document.getElementById('classesPreviewContent');
     const updateBtn = document.getElementById('updateSemesterBtn');
-    
     previewDiv.style.display = 'none';
-    
     if (!semester || !academicYear) {
         return;
     }
-    
     try {
         const formData = new FormData();
         formData.set('action', 'get_classes_for_semester');
         formData.set('semester', semester);
         formData.set('academic_year', academicYear);
-        
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             body: formData
         });
-        
         const result = await response.json();
-        
         if (result.success) {
             if (result.classes.length > 0) {
                 let html = '<div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; padding: 10px;">';
@@ -420,7 +366,6 @@ window.loadClassesForSemester = async function(semester) {
                     `;
                 });
                 html += '</div>';
-                
                 previewContent.innerHTML = html;
                 previewDiv.style.display = 'block';
             } else {
@@ -431,38 +376,27 @@ window.loadClassesForSemester = async function(semester) {
     } catch (error) {
     }
 }
-
 window.updateSemester = async function(form) {
-    if (!confirm('Are you sure you want to update the semester? This will:\n• Add ALL curriculum courses to selected classes\n• Reset ALL faculty assignments\n• This action cannot be undone!')) {
-        return;
-    }
-    
     const submitBtn = document.getElementById('updateSemesterBtn');
     const originalText = submitBtn.textContent;
-    
     try {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Updating...';
-        
         const formData = new FormData(form);
         formData.set('action', 'update_semester');
-        
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             body: formData
         });
-        
         const result = await response.json();
-        
         if (result.success) {
             if (typeof showNotification === 'function') {
                 showNotification(result.message, 'success');
             } else if (typeof window.showNotification === 'function') {
                 window.showNotification(result.message, 'success');
             } else {
-                alert('Success: ' + result.message);
+                showNotification(result.message, 'success');
             }
-            
             if (typeof closeModal === 'function') {
                 closeModal('updateSemesterModal');
             } else if (typeof window.closeModal === 'function') {
@@ -470,13 +404,10 @@ window.updateSemester = async function(form) {
             } else {
                 document.getElementById('updateSemesterModal').classList.remove('show');
             }
-            
             form.reset();
-            
             const previewDiv = document.getElementById('classesPreview');
             if (previewDiv) previewDiv.style.display = 'none';
             submitBtn.disabled = true;
-            
             const activeTab = document.querySelector('.tab-content.active');
             if (activeTab && activeTab.id === 'classes-content') {
                 setTimeout(() => {
@@ -492,14 +423,13 @@ window.updateSemester = async function(form) {
         } else if (typeof window.showNotification === 'function') {
             window.showNotification('Error updating semester: ' + error.message, 'error');
         } else {
-            alert('Error updating semester: ' + error.message);
+            showNotification('Error updating semester: ' + error.message, 'error');
         }
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
     }
 }
-
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         const updateForm = document.getElementById('updateSemesterForm');

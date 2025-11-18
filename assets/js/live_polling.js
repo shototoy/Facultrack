@@ -15,7 +15,6 @@ class LivePollingManager {
         this.isActive = true;
         this.isOnline = navigator.onLine;
         this.updateQueue = [];
-        // Use unified polling configuration
         this.config = window.PollingConfig || null;
         this.defaultIntervals = this.config ? this.config.intervals : {
             statistics: 3000,
@@ -63,7 +62,7 @@ class LivePollingManager {
         if (activeTab) {
             return activeTab.id.replace('-content', '');
         }
-        return 'faculty'; // default fallback
+        return 'faculty'; 
     }
     getObservableElementsForPage() {
         const elements = {};
@@ -140,8 +139,6 @@ class LivePollingManager {
                 polling: 'schedules'
             };
         }
-        
-        // Add individual schedule tabs (M, MW, TTH, etc.)
         const scheduleTabs = document.querySelectorAll('.schedule-tab');
         scheduleTabs.forEach(tab => {
             const tabText = tab.textContent.trim();
@@ -158,7 +155,6 @@ class LivePollingManager {
                 };
             }
         });
-        
         const actionsElements = document.querySelectorAll('.actions-section');
         if (actionsElements.length > 0) {
             elements.actions_tab = {
@@ -167,7 +163,6 @@ class LivePollingManager {
                 polling: 'tables'
             };
         }
-        // Add schedule items polling for dynamic status updates
         const scheduleItems = document.querySelectorAll('.schedule-item');
         if (scheduleItems.length > 0) {
             elements.schedule_items = {
@@ -220,8 +215,6 @@ class LivePollingManager {
                 polling: 'schedules'
             };
         }
-        
-        // Add faculty cards for class dashboard
         const facultyGrid = document.querySelector('.faculty-grid');
         if (facultyGrid) {
             elements.faculty_cards = {
@@ -229,11 +222,7 @@ class LivePollingManager {
                 description: 'Faculty Cards',
                 polling: 'location'
             };
-            console.log('Faculty grid found, faculty cards:', facultyGrid.querySelectorAll('.faculty-card').length);
-        } else {
-            console.log('Faculty grid NOT found');
         }
-        
         const announcementElements = document.querySelectorAll('.announcements-section');
         if (announcementElements.length > 0) {
             elements.announcements = {
@@ -267,7 +256,6 @@ class LivePollingManager {
         document.addEventListener('click', (e) => {
             const tabButton = e.target.closest('.tab-button');
             const scheduleTab = e.target.closest('.schedule-tab');
-            
             if (tabButton && tabButton.dataset.tab) {
                 const previousTab = this.currentTab;
                 this.currentTab = tabButton.dataset.tab;
@@ -277,7 +265,6 @@ class LivePollingManager {
                 this.logCurrentStatus();
                 this.refreshVisibleElements();
             } else if (scheduleTab && this.pageType === 'faculty') {
-                // Handle faculty schedule tab switching
                 setTimeout(() => {
                     console.clear();
                     const pageName = document.title.split(' - ')[1] || 'Dashboard';
@@ -353,30 +340,22 @@ class LivePollingManager {
     }
     startPolling() {
         if (!this.isOnline) return;
-        
-        // Unified polling strategy - start all relevant polling types for all roles
-        // Individual polling methods will handle role-specific logic internally
-        this.startLocationPolling();        // All roles need location updates
-        this.startAnnouncementsPolling();   // All roles need announcements
-        
-        // Role-specific polling
+        this.startLocationPolling();        
+        this.startAnnouncementsPolling();
         if (window.userRole === 'faculty') {
-            this.startSchedulePolling();    // Faculty needs schedule updates
+            this.startSchedulePolling();    
         }
-        
         if (['program_chair', 'campus_director'].includes(window.userRole)) {
-            this.startStatisticsPolling();  // Management roles need statistics
-            this.startTablePolling();       // Management roles need table updates
+            this.startStatisticsPolling();  
+            this.startTablePolling();       
         }
-        
         if (window.userRole === 'class') {
-            this.startTablePolling();       // Class dashboard needs table updates
+            this.startTablePolling();       
         }
     }
     startSchedulePolling() {
-        if (this.intervals.schedules) return; // Avoid duplicate intervals
+        if (this.intervals.schedules) return; 
         this.intervals.schedules = setInterval(() => {
-            // Always poll schedules for faculty dashboard - regardless of visible tab
             if (this.pageType === 'faculty') {
                 this.fetchScheduleUpdates();
             } else if (this.hasVisibleElement('schedules')) {
@@ -429,14 +408,11 @@ class LivePollingManager {
     }
     startLocationPolling() {
         if (this.intervals.location) return;
-        // Simplified location polling - always poll for all page types that need location data
         this.intervals.location = setInterval(() => {
             this.fetchLocationUpdates();
         }, this.defaultIntervals.location);
-        // Initial fetch
         this.fetchLocationUpdates();
     }
-    
     hasLocationElements() {
         if (this.pageType === 'director') {
             return this.isElementVisible('faculty-content') && document.querySelector('#faculty-content .status-badge');
@@ -473,12 +449,6 @@ class LivePollingManager {
         }
     }
     updateScheduleDisplay(data) {
-        // Clear console and show updated debug info on each poll for faculty only
-        if (this.pageType === 'faculty') {
-            console.clear();
-            this.logCurrentStatus();
-        }
-        
         if (data.schedules) {
             const scheduleContainers = document.querySelectorAll('.schedule-container, .schedule-section, .schedule-list');
             scheduleContainers.forEach(container => {
@@ -486,18 +456,11 @@ class LivePollingManager {
                     this.updateScheduleItems(container, data.schedules);
                 }
             });
-            
-            // Log schedule contents after updates for faculty only
-            if (this.pageType === 'faculty') {
-                console.log('Schedule for active tab:');
-                this.logActualScheduleItems();
-            }
         }
     }
     updateScheduleItems(container, schedules) {
         const scheduleItems = container.querySelectorAll('.schedule-item');
         let updatedCount = 0;
-        
         scheduleItems.forEach(item => {
             const courseCode = item.querySelector('.course-code')?.textContent?.trim();
             if (courseCode) {
@@ -506,51 +469,30 @@ class LivePollingManager {
                     const statusBadge = item.querySelector('.status-badge');
                     const currentStatus = statusBadge?.textContent?.trim();
                     const newStatusText = this.getStatusText(schedule.status);
-                    
-                    // Only update if status has actually changed
                     if (currentStatus !== newStatusText || statusBadge?.classList.contains('status-pending')) {
                         if (statusBadge) {
-                            // Remove existing status classes and add new one
                             statusBadge.className = statusBadge.className.replace(/status-\w+/g, '');
                             statusBadge.className = `status-badge status-${schedule.status}`;
                             statusBadge.textContent = newStatusText;
-                            
-                            // Add subtle animation for status change
                             statusBadge.style.animation = 'statusUpdate 0.3s ease-in-out';
                             setTimeout(() => statusBadge.style.animation = '', 300);
                         }
-                        
-                        // Update the entire item's status class only if changed
                         item.className = item.className.replace(/(ongoing|upcoming|finished|pending)/g, '');
                         item.classList.add(schedule.status);
-                        
-                        // Update action buttons based on status
                         this.updateScheduleActions(item, schedule);
-                        
                         updatedCount++;
-                        if (this.debug) {
-                            console.log(`Schedule status updated: ${courseCode} -> ${schedule.status}`);
-                        }
                     }
                 }
             }
         });
-        
-        if (this.debug && updatedCount > 0) {
-            console.log(`Schedule polling: ${updatedCount} items updated`);
-        }
     }
     updateScheduleActions(item, schedule) {
-        // Update action buttons based on status
         const statusSection = item.querySelector('.schedule-status');
         if (statusSection) {
-            // Remove existing action buttons
             const existingButton = statusSection.querySelector('button');
             if (existingButton) {
                 existingButton.remove();
             }
-            
-            // Add action button only for ongoing classes
             if (schedule.status === 'ongoing') {
                 const button = document.createElement('button');
                 button.className = 'btn-small btn-primary';
@@ -560,7 +502,6 @@ class LivePollingManager {
             }
         }
     }
-
     getStatusText(status) {
         switch (status) {
             case 'ongoing': return 'In Progress';
@@ -578,16 +519,12 @@ class LivePollingManager {
             this.queueUpdate('tables', { action: 'fetch_tables', tab: this.currentTab });
             return;
         }
-        
         const observableElements = this.getObservableElementsStatus();
         const activeElements = Object.keys(observableElements).filter(key => observableElements[key]);
-        
         if (activeElements.length === 0) {
             return;
         }
-        
         const pollingTargets = this.getPollingTargetsFromObservable(activeElements);
-        
         for (const target of pollingTargets) {
             try {
                 let params = new URLSearchParams();
@@ -629,17 +566,14 @@ class LivePollingManager {
     isTabObservable(tab) {
         const tabElementKey = `${tab}_tab`;
         const tableElementKey = `${tab}_table`;
-        
         const tabElement = this.observableElements[tabElementKey];
         const tableElement = this.observableElements[tableElementKey];
-        
         if (tabElement && tabElement.condition) {
             return tabElement.condition();
         }
         if (tableElement && tableElement.condition) {
             return tableElement.condition();
         }
-        
         return this.isElementVisible(`${tab}-content`);
     }
     getLastUpdateForTab(tab) {
@@ -661,21 +595,18 @@ class LivePollingManager {
         Object.keys(this.observableElements).forEach(elementKey => {
             const element = this.observableElements[elementKey];
             let isObservable = false;
-            
             if (element.condition) {
                 isObservable = element.condition();
             } else {
                 const domElement = document.querySelector(element.selector);
                 isObservable = domElement ? this.isElementVisible(domElement) : false;
             }
-            
             observableStatus[elementKey] = isObservable;
         });
         return observableStatus;
     }
     getPollingTargetsFromObservable(activeElements) {
         const targets = new Set();
-        
         activeElements.forEach(elementKey => {
             const element = this.observableElements[elementKey];
             if (element.polling === 'tables' || element.polling === 'cards') {
@@ -685,14 +616,12 @@ class LivePollingManager {
                 }
             }
         });
-        
         if (targets.size === 0 && this.pageType === 'director') {
             const activeTab = this.getActiveTab();
             if (activeTab) {
                 targets.add(activeTab);
             }
         }
-        
         return Array.from(targets);
     }
     handleOptimizedResponse(data) {
@@ -838,8 +767,8 @@ class LivePollingManager {
         const container = document.querySelector(containerSelector);
         if (!container || !Array.isArray(newData)) return null;
         const currentRows = (type === 'faculty' || type === 'classes') ? 
-            container.querySelectorAll('tr.expandable-row').length : // Faculty/Classes: count main rows only
-            container.querySelectorAll('tr:not(.expansion-row)').length; // Others: count non-expansion rows
+            container.querySelectorAll('tr.expandable-row').length : 
+            container.querySelectorAll('tr:not(.expansion-row)').length; 
         const newCount = newData.length;
         if (currentRows !== newCount) {
             const difference = newCount - currentRows;
@@ -902,18 +831,14 @@ class LivePollingManager {
     logCurrentStatus() {
         const pageName = document.title.split(' - ')[1] || 'Dashboard';
         const activeTab = this.getActiveTab();
-        
         console.log('Observable elements:');
         const observableStatus = this.getObservableElementsStatus();
         Object.keys(observableStatus).forEach(elementKey => {
             console.log(`${elementKey}: ${observableStatus[elementKey]}`);
         });
-        
         const activeElements = Object.keys(observableStatus).filter(key => observableStatus[key]);
         const pollingTargets = this.getPollingTargetsFromObservable(activeElements);
-        
         console.log(`Active polling targets: ${pollingTargets.length > 0 ? pollingTargets.join(', ') : 'none'}`);
-        
         if (pollingTargets.length > 0) {
             pollingTargets.forEach(target => {
                 const lastUpdate = this.getLastUpdateForTab(target);
@@ -966,11 +891,8 @@ class LivePollingManager {
                 credentials: 'same-origin'
             });
             const data = await response.json();
-            
             if (data.success) {
                 this.updateLocationDisplay(data);
-                
-                // Debug logging for class dashboard only
                 if (this.pageType === 'class') {
                     console.clear();
                     this.logCurrentStatus();
@@ -1060,7 +982,6 @@ class LivePollingManager {
         if (!this.initialized) {
             this.initialized = true;
         }
-        
         if (currentEntities && currentEntities.faculty) {
             currentEntities.faculty.forEach(faculty => {
                 this.updateEntityStatus('faculty', faculty);
@@ -1127,7 +1048,7 @@ class LivePollingManager {
         if (!entity.created_at) return false;
         const createdTime = new Date(entity.created_at);
         const currentTime = new Date();
-        const timeDifference = (currentTime - createdTime) / 1000; // in seconds
+        const timeDifference = (currentTime - createdTime) / 1000; 
         return timeDifference <= 5;
     }
     entityExistsInUI(entityType, entity) {
@@ -1157,7 +1078,7 @@ class LivePollingManager {
         const selector = `[data-${entityType.replace('s', '')}-id="${entityData[entityType.replace('s', '') + '_id']}"]`;
         const existingRow = tableBody.querySelector(selector);
         if (existingRow) {
-            return; // Don't add if already exists
+            return; 
         }
         let newRow = '';
         switch(entityType) {
@@ -1211,7 +1132,7 @@ class LivePollingManager {
         if (!cardContainer) return;
         const idField = entityType.replace('s', '') + '_id';
         const existingCard = cardContainer.querySelector(`[data-${entityType.replace('s', '')}-id="${entityData[idField]}"]`);
-        if (existingCard) return; // Don't add if already exists
+        if (existingCard) return; 
         let newCard = '';
         switch(entityType) {
             case 'faculty':
@@ -1649,10 +1570,6 @@ class LivePollingManager {
                 this.updateCurrentLocation(data.current_location, data.status, data.last_updated);
             }
         } else if (this.pageType === 'program') {
-            // Comment out the problematic function call to work like class dashboard
-            // if (data.faculty && Array.isArray(data.faculty)) {
-            //     this.updateProgramFacultyStatus(data.faculty);
-            // }
         } else if (this.pageType === 'director') {
             if (data.faculty && Array.isArray(data.faculty)) {
                 this.updateDirectorFacultyStatus(data.faculty);
@@ -1663,32 +1580,26 @@ class LivePollingManager {
             }
         }
     }
-    
     updateDirectorFacultyStatus(facultyData) {
         const facultyTableBody = document.querySelector('#faculty-content .data-table tbody');
         if (!facultyTableBody) return;
-        
         facultyData.forEach(faculty => {
             const row = facultyTableBody.querySelector(`tr[data-faculty-id="${faculty.faculty_id}"]`);
             if (row) {
                 const statusBadge = row.querySelector('.status-indicator, .status-badge');
                 const locationCell = row.querySelector('td:nth-child(5)');
-                
                 if (statusBadge) {
                     const oldStatus = statusBadge.textContent.trim().toLowerCase();
                     const newStatus = faculty.status || 'offline';
-                    
                     if (oldStatus !== newStatus.toLowerCase()) {
                         statusBadge.className = statusBadge.className.replace(/status-\w+/, `status-${newStatus.toLowerCase()}`);
                         statusBadge.textContent = newStatus;
                         statusBadge.style.animation = 'statusPulse 0.6s ease';
                     }
                 }
-                
                 if (locationCell && faculty.current_location) {
                     const oldLocation = locationCell.textContent.trim();
                     const newLocation = faculty.current_location || 'Not Available';
-                    
                     if (oldLocation !== newLocation) {
                         locationCell.textContent = newLocation;
                         locationCell.style.color = '#2ecc71';
@@ -1702,30 +1613,24 @@ class LivePollingManager {
             }
         });
     }
-    
     updateProgramFacultyStatus(facultyData) {
         const facultyGrid = document.querySelector('.faculty-grid');
         if (!facultyGrid) return;
-        
         facultyData.forEach(faculty => {
             const card = facultyGrid.querySelector(`.faculty-card[data-faculty-id="${faculty.faculty_id}"]`) ||
                         facultyGrid.querySelector(`.faculty-card[data-name*="${faculty.faculty_name}"]`);
-            
             if (card) {
                 const statusDot = card.querySelector('.status-dot, .status-indicator');
                 const locationText = card.querySelector('.location-text, .status-text');
                 const locationDiv = card.querySelector('.current-location, .location-info p:last-child');
-                
                 if (statusDot) {
                     const oldStatus = statusDot.className;
                     const newStatus = faculty.status || 'offline';
                     const statusClass = newStatus.toLowerCase() === 'available' ? 'available' : 'offline';
                     const newStatusClass = `status-dot status-${statusClass}`;
-                    
                     if (oldStatus !== newStatusClass) {
                         statusDot.className = newStatusClass;
                         if (locationText) locationText.textContent = newStatus;
-                        
                         statusDot.style.transform = 'scale(1.3)';
                         statusDot.style.boxShadow = '0 0 15px rgba(46, 204, 113, 0.6)';
                         setTimeout(() => {
@@ -1734,11 +1639,9 @@ class LivePollingManager {
                         }, 500);
                     }
                 }
-                
                 if (locationDiv && faculty.current_location) {
                     const oldLocation = locationDiv.textContent.trim();
                     const newLocation = faculty.current_location;
-                    
                     if (oldLocation !== newLocation) {
                         locationDiv.textContent = newLocation;
                         locationDiv.style.color = '#2ecc71';
@@ -1749,7 +1652,6 @@ class LivePollingManager {
                         }, 2000);
                     }
                 }
-                
                 const timeInfo = card.querySelector('.time-info, .last-updated');
                 if (timeInfo && faculty.last_updated) {
                     timeInfo.textContent = faculty.last_updated;
@@ -1757,11 +1659,9 @@ class LivePollingManager {
             }
         });
     }
-    
     updateClassFacultyStatus(facultyData) {
         const facultyGrid = document.querySelector('#facultyGrid');
         if (!facultyGrid) return;
-        
         facultyData.forEach(faculty => {
             const card = facultyGrid.querySelector(`.faculty-card[data-faculty-id="${faculty.faculty_id}"]`);
             if (card) {
@@ -1769,38 +1669,31 @@ class LivePollingManager {
                 const locationText = card.querySelector('.location-text');
                 const currentLocationDiv = card.querySelector('.location-info div:nth-child(2)');
                 const timeInfo = card.querySelector('.time-info');
-                
                 if (statusDot) {
                     const oldStatus = statusDot.className.replace('status-dot ', '');
                     const newStatus = faculty.status || 'offline';
                     const newStatusClass = `status-dot status-${newStatus}`;
-                    
                     if (statusDot.className !== newStatusClass) {
                         statusDot.className = newStatusClass;
-                        
                         statusDot.style.transition = 'all 0.5s ease';
                         statusDot.style.transform = 'scale(1.3)';
-                        
                         if (newStatus === 'available') {
                             statusDot.style.boxShadow = '0 0 15px rgba(46, 204, 113, 0.8)';
                         } else {
                             statusDot.style.boxShadow = '0 0 15px rgba(108, 117, 125, 0.8)';
                         }
-                        
                         setTimeout(() => {
                             statusDot.style.transform = 'scale(1)';
                             statusDot.style.boxShadow = '';
                         }, 500);
                     }
                 }
-                
                 if (locationText) {
                     const statusLabels = {
                         'available': 'Available',
                         'offline': 'Offline'
                     };
                     const newStatusText = statusLabels[faculty.status] || 'Unknown';
-                    
                     if (locationText.textContent.trim() !== newStatusText) {
                         locationText.textContent = newStatusText;
                         locationText.style.color = '#2ecc71';
@@ -1811,18 +1704,15 @@ class LivePollingManager {
                         }, 2000);
                     }
                 }
-                
                 if (currentLocationDiv && faculty.current_location) {
                     const oldLocation = currentLocationDiv.textContent.trim();
                     const newLocation = faculty.current_location || 'Unknown Location';
-                    
                     if (oldLocation !== newLocation) {
                         currentLocationDiv.textContent = newLocation;
                         currentLocationDiv.style.transition = 'all 0.4s ease';
                         currentLocationDiv.style.color = '#2ecc71';
                         currentLocationDiv.style.fontWeight = 'bold';
                         currentLocationDiv.style.transform = 'translateX(3px)';
-                        
                         setTimeout(() => {
                             currentLocationDiv.style.color = '#333';
                             currentLocationDiv.style.fontWeight = '500';
@@ -1830,7 +1720,6 @@ class LivePollingManager {
                         }, 3000);
                     }
                 }
-                
                 if (timeInfo && faculty.last_updated) {
                     const updateText = `Last updated: ${faculty.last_updated}`;
                     if (timeInfo.textContent !== updateText) {
@@ -1912,93 +1801,66 @@ class LivePollingManager {
             }
             elements.push(`${element.description}: ${isVisible}`);
         });
-        
-        // Add current date/time info to debug
         const now = new Date();
         const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
         const currentTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
         const currentDate = now.toLocaleDateString('en-US');
-        
         const pageTitle = this.pageType === 'faculty' ? 'Faculty Dashboard' : 
                           this.pageType === 'class' ? 'Class Dashboard' : 
                           'Dashboard';
         console.log(`Page: ${pageTitle}`);
         console.log(`${currentDay}, ${currentDate} ${currentTime}`);
         elements.forEach(element => console.log(element));
-        
-        // Add class-specific debug immediately for class dashboard
         if (this.pageType === 'class') {
             console.log('Faculty with schedules:');
             this.logActualScheduleItems();
         }
     }
-
     logActualScheduleItems() {
         if (this.pageType === 'class') {
             console.log('CLASS DEBUG FUNCTION CALLED!');
-            // For class dashboard, show faculty list and schedule organized by course
             const facultyCards = document.querySelectorAll('.faculty-card:not(.add-card)');
             if (facultyCards.length === 0) {
                 console.log('No faculty found');
                 return;
             }
-
-            // First, list all faculties
             console.log('Faculties found:');
             facultyCards.forEach(card => {
                 const facultyName = card.querySelector('.faculty-name')?.textContent?.trim() || 'Unknown Faculty';
                 const program = card.querySelector('.faculty-program')?.textContent?.trim() || '';
                 console.log(`  ${facultyName} (${program})`);
             });
-
             console.log('\nClass schedule:');
-            
-            // Then, organize by courses for this class
             const allCourses = [];
-            
             facultyCards.forEach(card => {
                 const facultyName = card.querySelector('.faculty-name')?.textContent?.trim() || 'Unknown Faculty';
                 const courseItems = card.querySelectorAll('.course-info');
-                
                 courseItems.forEach(item => {
                     const courseContent = item.querySelector('.course-content');
                     const statusElement = item.querySelector('.course-status-label');
-                    
                     if (courseContent && statusElement) {
-                        // Parse the actual structure: strong tag + text + small tag
                         const strongElement = courseContent.querySelector('strong');
                         const smallElement = courseContent.querySelector('small');
-                        
                         if (strongElement && smallElement) {
                             const courseCodeText = strongElement.textContent.trim();
                             const courseCode = courseCodeText.replace(':', '').trim();
-                            
-                            // Get course name from the text between strong and small
                             const fullText = courseContent.textContent.trim();
                             const courseName = fullText.split('\n')[0].replace(courseCodeText, '').trim();
-                            
-                            // Parse small tag content (days | time | room)
                             const detailText = smallElement.textContent.trim();
                             const parts = detailText.split('|').map(p => p.trim());
                             const days = parts[0] || '';
                             const timeRange = parts[1] || '';
                             const room = parts[2] || '';
-                            
-                            // Format time range
                             let formattedTime = timeRange;
                             if (timeRange.includes(' - ')) {
                                 const [start, end] = timeRange.split(' - ');
                                 let startTime = start.replace(' AM', '').replace(' PM', '');
                                 let endTime = end.replace(' AM', '').replace(' PM', '');
-                                
                                 startTime = startTime.replace(':00', '');
                                 endTime = endTime.replace(':00', '');
-                                
                                 formattedTime = `${startTime}-${endTime}`;
                             }
-                            
                             const status = statusElement.textContent.trim().toLowerCase();
-                            
                             allCourses.push({
                                 courseCode,
                                 courseName,
@@ -2012,10 +1874,7 @@ class LivePollingManager {
                     }
                 });
             });
-            
-            // Sort courses by course code and display
             allCourses.sort((a, b) => a.courseCode.localeCompare(b.courseCode));
-            
             if (allCourses.length === 0) {
                 console.log('  No courses scheduled');
             } else {
@@ -2024,7 +1883,6 @@ class LivePollingManager {
                 });
             }
         } else {
-            // For faculty dashboard, use the original schedule item logic
             const possibleContainers = [
                 '.schedule-grid',
                 '.schedule-list', 
@@ -2034,7 +1892,6 @@ class LivePollingManager {
                 '#schedule-content',
                 '[data-tab="schedule"]'
             ];
-            
             let scheduleItems = [];
             for (const selector of possibleContainers) {
                 const container = document.querySelector(selector);
@@ -2046,45 +1903,33 @@ class LivePollingManager {
                     }
                 }
             }
-            
-            // If still no items found, search globally
             if (scheduleItems.length === 0) {
                 scheduleItems = document.querySelectorAll('.schedule-item, .schedule-card, .class-item');
             }
-            
             if (scheduleItems.length === 0) {
                 console.log('No items found');
                 return;
             }
-
             scheduleItems.forEach(item => {
-                // Try multiple selectors for time, course, and status
                 const timeElement = item.querySelector('.time, .schedule-time, .time-range, .class-time');
                 const courseElement = item.querySelector('.course-code, .course-name, .class-code, .subject-code');
                 const statusElement = item.querySelector('.status-badge, .schedule-status, .class-status, .badge');
-                
                 let timeText = timeElement ? timeElement.textContent.trim() : '';
                 const course = courseElement ? courseElement.textContent.trim() : 'Unknown';
                 const status = statusElement ? statusElement.textContent.trim().toLowerCase() : 'unknown';
-                
-                // Convert time format if needed
                 if (timeText.includes(' - ')) {
                     const [startTime, endTime] = timeText.split(' - ');
                     const start = this.formatTime12Hour(startTime);
                     const duration = this.calculateDuration(startTime, endTime);
                     timeText = `${start} ${duration}hr`;
                 }
-                
                 console.log(`${timeText} ${course}: ${status}`);
             });
         }
     }
-
     logScheduleItemsForActiveTabs(elements) {
-        // This is now unused - keeping for compatibility
         this.logActualScheduleItems();
     }
-
     formatTime12Hour(time24) {
         if (!time24) return '';
         const [hours, minutes] = time24.split(':');
@@ -2093,7 +1938,6 @@ class LivePollingManager {
         const hour12 = hour % 12 || 12;
         return `${hour12}:${minutes} ${ampm}`;
     }
-
     calculateDuration(startTime, endTime) {
         if (!startTime || !endTime) return '?';
         const start = new Date(`2000-01-01 ${startTime}`);
@@ -2102,13 +1946,12 @@ class LivePollingManager {
         const diffHours = diffMs / (1000 * 60 * 60);
         return diffHours.toFixed(1);
     }
-
     startHeartbeat() {
         this.heartbeatInterval = setInterval(() => {
             if (this.isOnline && !document.hidden) {
                 this.sendHeartbeat();
             }
-        }, 120000); // 2 minutes
+        }, 120000); 
         this.sendHeartbeat();
     }
     stopHeartbeat() {
@@ -2322,7 +2165,7 @@ class LivePollingManager {
     }
     handlePollingError(type, error) {
         const currentInterval = this.defaultIntervals[type];
-        const newInterval = Math.min(currentInterval * 2, 30000); // Max 30 seconds
+        const newInterval = Math.min(currentInterval * 2, 30000); 
         setTimeout(() => {
             this.defaultIntervals[type] = 3000;
         }, 300000);

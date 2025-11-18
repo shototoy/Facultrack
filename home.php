@@ -2,8 +2,6 @@
 require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
-
-// Set database timezone to match polling_api.php
 $pdo->exec("SET time_zone = '+08:00'");
 validateUserSession('class');
 $user_id = $_SESSION['user_id'];
@@ -15,21 +13,13 @@ $class_id = $class_info['class_id'];
 $announcements = getClassAnnouncements($pdo);
 $faculty_data = getClassFacultyHome($pdo, $class_id);
 $faculty_courses = [];
-
-// Debug: Check if we found faculty
 error_log("Class ID: $class_id");
 error_log("Faculty data count: " . count($faculty_data));
-
 foreach ($faculty_data as $faculty) {
     $faculty_courses[$faculty['faculty_id']] = getFacultyCourses($pdo, $faculty['faculty_id'], $class_id);
 }
-
 require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
-
-// Polling endpoints moved to assets/php/polling_api.php
-
-
 function getClassInfo($pdo, $user_id) {
     $class_query = "SELECT class_id, class_code, class_name FROM classes WHERE user_id = ? AND is_active = TRUE";
     $stmt = $pdo->prepare($class_query);
@@ -71,16 +61,11 @@ function getClassFacultyHome($pdo, $class_id) {
     $stmt->execute([$class_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getFacultyCourses($pdo, $faculty_id, $class_id) {
-    // Set timezone to match polling_api.php
     $pdo->exec("SET time_zone = '+08:00'");
-    
     $current_day = date('w');
     $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
     $today_code = $day_mapping[$current_day];
-    
-    // Only get courses that are scheduled for today
     $courses_query = "
         SELECT s.course_code, c.course_description, s.days, s.time_start, s.time_end, s.room,
         CASE 
@@ -131,7 +116,6 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
             $online_faculty = count(array_filter($faculty_data, function($faculty) {
                 return $faculty['status'] === 'available';
             }));
-            
             $header_config = [
                 'page_title' => 'FaculTrack',
                 'page_subtitle' => 'Sultan Kudarat State University - Isulan Campus',
@@ -148,14 +132,12 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
             ];
             include 'assets/php/page_header.php';
             ?>
-
             <div class="search-bar">
                 <input type="text" class="search-input" placeholder="Search faculty by name or department..." id="searchInput">
                 <button class="search-btn" onclick="searchFaculty()">
                     <svg class="feather"><use href="#search"></use></svg>
                 </button>
             </div>
-
             <div class="home-content-wrapper">
                 <div class="faculty-grid" id="facultyGrid">
                 <?php if (empty($faculty_data)): ?>
@@ -169,7 +151,6 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                     <div class="faculty-avatar"><?php echo getInitials($faculty['faculty_name']); ?></div>
                     <div class="faculty-name"><?php echo htmlspecialchars($faculty['faculty_name']); ?></div>
                     <div class="faculty-program"><?php echo htmlspecialchars($faculty['program']); ?></div>
-                    
                 <div class="courses-list">
                 <?php foreach ($faculty_courses[$faculty['faculty_id']] as $course): ?>
                 <div class="course-info course-<?php echo $course['status']; ?>">
@@ -214,7 +195,6 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                         </div>
                         <div class="time-info">Last updated: <?php echo $faculty['last_updated']; ?></div>
                     </div>
-
                     <div class="contact-info">
                         <div class="office-hours">
                             Office Hours:<br><?php echo htmlspecialchars($faculty['office_hours'] ?? 'Not specified'); ?>
@@ -232,11 +212,11 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
             </div>
         </div>
     </div>
-
 <script>
     window.userRole = 'class';
 </script>
 <script src="assets/js/polling_config.js"></script>
+<script src="assets/js/toast_manager.js"></script>
 <script src="assets/js/shared_functions.js"></script>
 <script src="assets/js/live_polling.js"></script>
 <script src="assets/js/home.js"></script>
