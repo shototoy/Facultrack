@@ -195,6 +195,9 @@ class LivePollingManager {
                 description: 'Faculty Cards',
                 polling: 'location'
             };
+            console.log('Faculty grid found, faculty cards:', facultyGrid.querySelectorAll('.faculty-card').length);
+        } else {
+            console.log('Faculty grid NOT found');
         }
         const coursesGrid = document.querySelector('.courses-grid');
         if (coursesGrid) {
@@ -215,6 +218,20 @@ class LivePollingManager {
                 polling: 'schedules'
             };
         }
+        
+        // Add faculty cards for class dashboard
+        const facultyGrid = document.querySelector('.faculty-grid');
+        if (facultyGrid) {
+            elements.faculty_cards = {
+                selector: '.faculty-grid .faculty-card',
+                description: 'Faculty Cards',
+                polling: 'location'
+            };
+            console.log('Faculty grid found, faculty cards:', facultyGrid.querySelectorAll('.faculty-card').length);
+        } else {
+            console.log('Faculty grid NOT found');
+        }
+        
         const announcementElements = document.querySelectorAll('.announcements-section');
         if (announcementElements.length > 0) {
             elements.announcements = {
@@ -348,6 +365,7 @@ class LivePollingManager {
                 this.startTablePolling();
                 break;
             case 'class':
+                console.log('Starting class dashboard polling...');
                 this.startLocationPolling(); // Still needed for class viewing faculty
                 this.startAnnouncementsPolling();
                 this.startTablePolling();
@@ -357,7 +375,10 @@ class LivePollingManager {
     startSchedulePolling() {
         if (this.intervals.schedules) return; // Avoid duplicate intervals
         this.intervals.schedules = setInterval(() => {
-            if (this.hasVisibleElement('schedules')) {
+            // Always poll schedules for faculty dashboard - regardless of visible tab
+            if (this.pageType === 'faculty') {
+                this.fetchScheduleUpdates();
+            } else if (this.hasVisibleElement('schedules')) {
                 this.fetchScheduleUpdates();
             }
         }, this.defaultIntervals.schedules);
@@ -453,6 +474,12 @@ class LivePollingManager {
         }
     }
     updateScheduleDisplay(data) {
+        // Clear console and show updated debug info on each poll for faculty only
+        if (this.pageType === 'faculty') {
+            console.clear();
+            this.logCurrentStatus();
+        }
+        
         if (data.schedules) {
             const scheduleContainers = document.querySelectorAll('.schedule-container, .schedule-section, .schedule-list');
             scheduleContainers.forEach(container => {
@@ -460,34 +487,87 @@ class LivePollingManager {
                     this.updateScheduleItems(container, data.schedules);
                 }
             });
+            
+            // Log schedule contents after updates for faculty only
+            if (this.pageType === 'faculty') {
+                console.log('Schedule for active tab:');
+                this.logActualScheduleItems();
+            }
         }
     }
     updateScheduleItems(container, schedules) {
         const scheduleItems = container.querySelectorAll('.schedule-item');
+        let updatedCount = 0;
+        
         scheduleItems.forEach(item => {
             const courseCode = item.querySelector('.course-code')?.textContent?.trim();
             if (courseCode) {
                 const schedule = schedules.find(s => s.course_code === courseCode);
                 if (schedule && schedule.status) {
                     const statusBadge = item.querySelector('.status-badge');
-                    if (statusBadge) {
-                        // Remove existing status classes and add new one
-                        statusBadge.className = statusBadge.className.replace(/status-\w+/g, '');
-                        statusBadge.className = `status-badge status-${schedule.status}`;
-                        statusBadge.textContent = this.getStatusText(schedule.status);
+                    const currentStatus = statusBadge?.textContent?.trim();
+                    const newStatusText = this.getStatusText(schedule.status);
+                    
+                    // Only update if status has actually changed
+                    if (currentStatus !== newStatusText || statusBadge?.classList.contains('status-pending')) {
+                        if (statusBadge) {
+                            // Remove existing status classes and add new one
+                            statusBadge.className = statusBadge.className.replace(/status-\w+/g, '');
+                            statusBadge.className = `status-badge status-${schedule.status}`;
+                            statusBadge.textContent = newStatusText;
+                            
+                            // Add subtle animation for status change
+                            statusBadge.style.animation = 'statusUpdate 0.3s ease-in-out';
+                            setTimeout(() => statusBadge.style.animation = '', 300);
+                        }
+                        
+                        // Update the entire item's status class only if changed
+                        item.className = item.className.replace(/(ongoing|upcoming|finished|pending)/g, '');
+                        item.classList.add(schedule.status);
+                        
+                        // Update action buttons based on status
+                        this.updateScheduleActions(item, schedule);
+                        
+                        updatedCount++;
+                        if (this.debug) {
+                            console.log(`Schedule status updated: ${courseCode} -> ${schedule.status}`);
+                        }
                     }
-                    // Update the entire item's status class
-                    item.className = item.className.replace(/(ongoing|upcoming|finished)/g, '');
-                    item.classList.add(schedule.status);
                 }
             }
         });
+        
+        if (this.debug && updatedCount > 0) {
+            console.log(`Schedule polling: ${updatedCount} items updated`);
+        }
     }
+    updateScheduleActions(item, schedule) {
+        // Update action buttons based on status
+        const statusSection = item.querySelector('.schedule-status');
+        if (statusSection) {
+            // Remove existing action buttons
+            const existingButton = statusSection.querySelector('button');
+            if (existingButton) {
+                existingButton.remove();
+            }
+            
+            // Add action button only for ongoing classes
+            if (schedule.status === 'ongoing') {
+                const button = document.createElement('button');
+                button.className = 'btn-small btn-primary';
+                button.textContent = 'Mark Present';
+                button.onclick = () => markAttendance(schedule.schedule_id);
+                statusSection.appendChild(button);
+            }
+        }
+    }
+
     getStatusText(status) {
         switch (status) {
             case 'ongoing': return 'In Progress';
             case 'upcoming': return 'Upcoming';
             case 'finished': return 'Completed';
+            case 'pending': return 'Loading...';
             default: return 'Unknown';
         }
     }
@@ -877,6 +957,10 @@ class LivePollingManager {
         }
     }
     async fetchLocationUpdates() {
+        if (this.pageType === 'class') {
+            console.log('Location polling triggered for class dashboard');
+        }
+        
         if (!this.isOnline) {
             this.queueUpdate('location', { action: 'get_location_updates' });
             return;
@@ -887,8 +971,23 @@ class LivePollingManager {
                 credentials: 'same-origin'
             });
             const data = await response.json();
+            if (this.pageType === 'class') {
+                console.log('Location API response:', data);
+            }
             if (data.success) {
                 this.updateLocationDisplay(data);
+                
+                // Add class dashboard debug logging after location updates  
+                if (this.pageType === 'class') {
+                    console.clear();
+                    this.logCurrentStatus();
+                    console.log('Faculty with schedules:');
+                    this.logActualScheduleItems();
+                }
+            } else {
+                if (this.pageType === 'class') {
+                    console.log('Location update FAILED:', data.message || 'Unknown error');
+                }
             }
         } catch (error) {
             this.handlePollingError('location', error);
@@ -1853,8 +1952,197 @@ class LivePollingManager {
             }
             elements.push(`${element.description}: ${isVisible}`);
         });
+        
+        // Add current date/time info to debug
+        const now = new Date();
+        const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
+        const currentTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const currentDate = now.toLocaleDateString('en-US');
+        
+        const pageTitle = this.pageType === 'faculty' ? 'Faculty Dashboard' : 
+                          this.pageType === 'class' ? 'Class Dashboard' : 
+                          'Dashboard';
+        console.log(`Page: ${pageTitle}`);
+        console.log(`${currentDay}, ${currentDate} ${currentTime}`);
         elements.forEach(element => console.log(element));
+        
+        // Add class-specific debug immediately for class dashboard
+        if (this.pageType === 'class') {
+            console.log('Faculty with schedules:');
+            this.logActualScheduleItems();
+        }
     }
+
+    logActualScheduleItems() {
+        if (this.pageType === 'class') {
+            console.log('CLASS DEBUG FUNCTION CALLED!');
+            // For class dashboard, show faculty list and schedule organized by course
+            const facultyCards = document.querySelectorAll('.faculty-card:not(.add-card)');
+            if (facultyCards.length === 0) {
+                console.log('No faculty found');
+                return;
+            }
+
+            // First, list all faculties
+            console.log('Faculties found:');
+            facultyCards.forEach(card => {
+                const facultyName = card.querySelector('.faculty-name')?.textContent?.trim() || 'Unknown Faculty';
+                const program = card.querySelector('.faculty-program')?.textContent?.trim() || '';
+                console.log(`  ${facultyName} (${program})`);
+            });
+
+            console.log('\nClass schedule:');
+            
+            // Then, organize by courses for this class
+            const allCourses = [];
+            
+            facultyCards.forEach(card => {
+                const facultyName = card.querySelector('.faculty-name')?.textContent?.trim() || 'Unknown Faculty';
+                const courseItems = card.querySelectorAll('.course-info');
+                
+                courseItems.forEach(item => {
+                    const courseContent = item.querySelector('.course-content');
+                    const statusElement = item.querySelector('.course-status-label');
+                    
+                    if (courseContent && statusElement) {
+                        // Parse the actual structure: strong tag + text + small tag
+                        const strongElement = courseContent.querySelector('strong');
+                        const smallElement = courseContent.querySelector('small');
+                        
+                        if (strongElement && smallElement) {
+                            const courseCodeText = strongElement.textContent.trim();
+                            const courseCode = courseCodeText.replace(':', '').trim();
+                            
+                            // Get course name from the text between strong and small
+                            const fullText = courseContent.textContent.trim();
+                            const courseName = fullText.split('\n')[0].replace(courseCodeText, '').trim();
+                            
+                            // Parse small tag content (days | time | room)
+                            const detailText = smallElement.textContent.trim();
+                            const parts = detailText.split('|').map(p => p.trim());
+                            const days = parts[0] || '';
+                            const timeRange = parts[1] || '';
+                            const room = parts[2] || '';
+                            
+                            // Format time range
+                            let formattedTime = timeRange;
+                            if (timeRange.includes(' - ')) {
+                                const [start, end] = timeRange.split(' - ');
+                                let startTime = start.replace(' AM', '').replace(' PM', '');
+                                let endTime = end.replace(' AM', '').replace(' PM', '');
+                                
+                                startTime = startTime.replace(':00', '');
+                                endTime = endTime.replace(':00', '');
+                                
+                                formattedTime = `${startTime}-${endTime}`;
+                            }
+                            
+                            const status = statusElement.textContent.trim().toLowerCase();
+                            
+                            allCourses.push({
+                                courseCode,
+                                courseName,
+                                facultyName,
+                                days,
+                                time: formattedTime,
+                                status,
+                                room
+                            });
+                        }
+                    }
+                });
+            });
+            
+            // Sort courses by course code and display
+            allCourses.sort((a, b) => a.courseCode.localeCompare(b.courseCode));
+            
+            if (allCourses.length === 0) {
+                console.log('  No courses scheduled');
+            } else {
+                allCourses.forEach(course => {
+                    console.log(`  ${course.courseCode}: ${course.facultyName}, ${course.courseName}, ${course.days} ${course.time}, ${course.status}`);
+                });
+            }
+        } else {
+            // For faculty dashboard, use the original schedule item logic
+            const possibleContainers = [
+                '.schedule-grid',
+                '.schedule-list', 
+                '.today-schedule',
+                '.schedule-container',
+                '.tab-content.active',
+                '#schedule-content',
+                '[data-tab="schedule"]'
+            ];
+            
+            let scheduleItems = [];
+            for (const selector of possibleContainers) {
+                const container = document.querySelector(selector);
+                if (container) {
+                    const items = container.querySelectorAll('.schedule-item, .schedule-card, .class-item');
+                    if (items.length > 0) {
+                        scheduleItems = items;
+                        break;
+                    }
+                }
+            }
+            
+            // If still no items found, search globally
+            if (scheduleItems.length === 0) {
+                scheduleItems = document.querySelectorAll('.schedule-item, .schedule-card, .class-item');
+            }
+            
+            if (scheduleItems.length === 0) {
+                console.log('No items found');
+                return;
+            }
+
+            scheduleItems.forEach(item => {
+                // Try multiple selectors for time, course, and status
+                const timeElement = item.querySelector('.time, .schedule-time, .time-range, .class-time');
+                const courseElement = item.querySelector('.course-code, .course-name, .class-code, .subject-code');
+                const statusElement = item.querySelector('.status-badge, .schedule-status, .class-status, .badge');
+                
+                let timeText = timeElement ? timeElement.textContent.trim() : '';
+                const course = courseElement ? courseElement.textContent.trim() : 'Unknown';
+                const status = statusElement ? statusElement.textContent.trim().toLowerCase() : 'unknown';
+                
+                // Convert time format if needed
+                if (timeText.includes(' - ')) {
+                    const [startTime, endTime] = timeText.split(' - ');
+                    const start = this.formatTime12Hour(startTime);
+                    const duration = this.calculateDuration(startTime, endTime);
+                    timeText = `${start} ${duration}hr`;
+                }
+                
+                console.log(`${timeText} ${course}: ${status}`);
+            });
+        }
+    }
+
+    logScheduleItemsForActiveTabs(elements) {
+        // This is now unused - keeping for compatibility
+        this.logActualScheduleItems();
+    }
+
+    formatTime12Hour(time24) {
+        if (!time24) return '';
+        const [hours, minutes] = time24.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        return `${hour12}:${minutes} ${ampm}`;
+    }
+
+    calculateDuration(startTime, endTime) {
+        if (!startTime || !endTime) return '?';
+        const start = new Date(`2000-01-01 ${startTime}`);
+        const end = new Date(`2000-01-01 ${endTime}`);
+        const diffMs = end - start;
+        const diffHours = diffMs / (1000 * 60 * 60);
+        return diffHours.toFixed(1);
+    }
+
     startHeartbeat() {
         this.heartbeatInterval = setInterval(() => {
             if (this.isOnline && !document.hidden) {

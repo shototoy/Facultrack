@@ -22,69 +22,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 
 // Polling endpoints moved to assets/php/polling_api.php
 
-function generateFacultyCardHTML($faculty, $courses) {
-    ob_start();
-    ?>
-    <div class="faculty-card" data-faculty-id="<?php echo $faculty['faculty_id']; ?>">
-        <div class="faculty-header">
-            <h3 class="faculty-name"><?php echo htmlspecialchars($faculty['faculty_name']); ?></h3>
-            <div class="status-badge status-<?php echo strtolower($faculty['status']); ?>">
-                <?php echo $faculty['status']; ?>
-            </div>
-        </div>
-        
-        <div class="courses-section">
-            <h4>Today's Classes</h4>
-            <?php if (!empty($courses)): ?>
-                <?php foreach ($courses as $course): ?>
-                    <div class="course-item course-<?php echo $course['status']; ?>">
-                        <div class="course-code"><?php echo htmlspecialchars($course['course_code']); ?></div>
-                        <div class="course-description"><?php echo htmlspecialchars($course['course_description']); ?></div>
-                        <div class="course-time"><?php echo formatTime($course['time_start']) . ' - ' . formatTime($course['time_end']); ?></div>
-                        <div class="course-room">Room: <?php echo htmlspecialchars($course['room'] ?? 'TBA'); ?></div>
-                        <div class="course-status status-<?php echo $course['status']; ?>">
-                            <?php 
-                            switch ($course['status']) {
-                                case 'current': echo 'In Progress';
-                                    break;
-                                case 'upcoming': echo 'Upcoming';
-                                    break;
-                                case 'finished': echo 'Completed';
-                                    break;
-                                default: echo 'Not Today';
-                            }
-                            ?>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div class="no-courses">No classes scheduled for today</div>
-            <?php endif; ?>
-        </div>
-
-        <div class="location-section">
-            <div class="location-info">
-                <div class="current-location">
-                    <?php echo htmlspecialchars($faculty['current_location']); ?>
-                </div>
-                <div class="time-info">Last updated: <?php echo $faculty['last_updated']; ?></div>
-            </div>
-
-            <div class="contact-info">
-                <div class="office-hours">
-                    Office Hours:<br><?php echo htmlspecialchars($faculty['office_hours'] ?? 'Not specified'); ?>
-                </div>
-                <?php if (!empty($faculty['contact_email'])): ?>
-                <button class="contact-btn" onclick="contactFaculty('<?php echo htmlspecialchars($faculty['contact_email']); ?>')">
-                    Contact
-                </button>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-    <?php
-    return ob_get_clean();
-}
 
 function getClassInfo($pdo, $user_id) {
     $class_query = "SELECT class_id, class_code, class_name FROM classes WHERE user_id = ? AND is_active = TRUE";

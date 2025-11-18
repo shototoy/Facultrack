@@ -3,6 +3,18 @@ require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
 
+// Set database timezone to match PHP timezone (same as polling_api.php)
+$php_timezone = date_default_timezone_get();
+$mysql_timezone_map = [
+    'Asia/Manila' => '+08:00',
+    'Europe/Berlin' => '+01:00',
+    'UTC' => '+00:00',
+    'America/New_York' => '-05:00',
+    'America/Los_Angeles' => '-08:00'
+];
+$mysql_timezone = $mysql_timezone_map[$php_timezone] ?? '+08:00'; // Default to Philippine time
+$pdo->exec("SET time_zone = '$mysql_timezone'");
+
 $current_time = date('H:i:s');
 $current_date = date('Y-m-d');
 $current_day = date('w');
@@ -18,37 +30,28 @@ function getTodaySchedule($pdo, $faculty_id) {
     global $current_day, $current_time;
     $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
     $today_code = $day_mapping[$current_day];
-    $time_condition = "TIME(NOW())";
     
+    // Initial load: Just get today's schedule without status calculation
+    // Let polling handle all status updates dynamically
     $schedule_query = "
         SELECT s.*, c.course_description, cl.class_name, cl.class_code,
-            CASE 
-                WHEN $time_condition BETWEEN s.time_start AND s.time_end THEN 'ongoing'
-                WHEN $time_condition < s.time_start THEN 'upcoming'
-                ELSE 'finished'
-            END as status
+            'pending' as status
         FROM schedules s
         JOIN courses c ON s.course_code = c.course_code
         JOIN classes cl ON s.class_id = cl.class_id
         WHERE s.faculty_id = ? AND s.is_active = TRUE
-        AND (s.days = ? OR 
-            (s.days = 'MWF' AND ? IN ('M', 'W', 'F')) OR
-            (s.days = 'TTH' AND ? IN ('T', 'TH')) OR
-            (s.days = 'MW' AND ? IN ('M', 'W')) OR
-            (s.days = 'MF' AND ? IN ('M', 'F')) OR
-            (s.days = 'WF' AND ? IN ('W', 'F')) OR
-            (s.days = 'MTWTHF' AND ? NOT IN ('S', 'SAT'))
+        AND (
+            (s.days = '$today_code') OR
+            (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
+            (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
+            (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
+            (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
+            (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
+            (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
         )
-        ORDER BY 
-            CASE 
-                WHEN $time_condition > s.time_end THEN 1
-                WHEN $time_condition BETWEEN s.time_start AND s.time_end THEN 2
-                WHEN $time_condition < s.time_start THEN 3
-                ELSE 4
-            END,
-            s.time_start";
+        ORDER BY s.time_start";
     $stmt = $pdo->prepare($schedule_query);
-    $stmt->execute([$faculty_id, $today_code, $today_code, $today_code, $today_code, $today_code, $today_code, $today_code]);
+    $stmt->execute([$faculty_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 

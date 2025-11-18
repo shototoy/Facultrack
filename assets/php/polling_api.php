@@ -6,6 +6,20 @@ require_once 'common_utilities.php';
 initializeSession();
 header('Content-Type: application/json');
 $pdo = initializeDatabase();
+
+// Set database timezone to match PHP timezone
+$php_timezone = date_default_timezone_get();
+// Convert PHP timezone to MySQL format (for common Philippine timezones)
+$mysql_timezone_map = [
+    'Asia/Manila' => '+08:00',
+    'Europe/Berlin' => '+01:00',
+    'UTC' => '+00:00',
+    'America/New_York' => '-05:00',
+    'America/Los_Angeles' => '-08:00'
+];
+// Force Philippine timezone since browser shows local Philippine time
+$mysql_timezone = '+08:00'; // Philippine time (UTC+8)
+$pdo->exec("SET time_zone = '$mysql_timezone'");
 $action = $_GET['action'] ?? $_POST['action'] ?? $_POST['admin_action'] ?? '';
 function getAllFaculty($pdo) {
     $faculty_query = "
@@ -910,58 +924,85 @@ switch ($action) {
         validateUserSession('faculty');
         try {
             $user_id = $_SESSION['user_id'];
-            $current_day = date('w'); // 0=Sunday, 1=Monday, etc.
-            $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
-            $today_code = $day_mapping[$current_day];
             
+            // Get faculty ID first
             $faculty_query = "SELECT faculty_id FROM faculty WHERE user_id = ? AND is_active = TRUE";
             $stmt = $pdo->prepare($faculty_query);
             $stmt->execute([$user_id]);
             $faculty_info = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($faculty_info) {
-                $schedule_query = "
-                    SELECT s.*, c.course_description, cl.class_name,
-                        CASE 
-                            WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end 
-                                 AND (
-                                     (s.days = '$today_code') OR
-                                     (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
-                                     (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
-                                     (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
-                                     (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
-                                     (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
-                                     (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
-                                 ) THEN 'ongoing'
-                            WHEN TIME(NOW()) < s.time_start 
-                                 AND (
-                                     (s.days = '$today_code') OR
-                                     (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
-                                     (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
-                                     (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
-                                     (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
-                                     (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
-                                     (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
-                                 ) THEN 'upcoming'
-                            ELSE 'finished'
-                        END as status
-                    FROM schedules s
-                    JOIN courses c ON s.course_code = c.course_code
-                    JOIN classes cl ON s.class_id = cl.class_id
-                    WHERE s.faculty_id = ? AND s.is_active = TRUE AND s.faculty_id IS NOT NULL
-                    ORDER BY s.time_start";
-                $stmt = $pdo->prepare($schedule_query);
-                $stmt->execute([$faculty_info['faculty_id']]);
-                $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                sendJsonResponse([
-                    'success' => true,
-                    'schedules' => $schedules,
-                    'timestamp' => date('Y-m-d H:i:s')
-                ]);
-            } else {
+            
+            if (!$faculty_info) {
                 sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
+                break;
             }
+            
+            $faculty_id = $faculty_info['faculty_id'];
+            $current_day = date('w'); // 0=Sunday, 1=Monday, etc.
+            $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
+            $today_code = $day_mapping[$current_day];
+            
+            // Get updated schedule with accurate TIME and DAY based status
+            $schedule_query = "
+                SELECT s.*, c.course_description, cl.class_name, cl.class_code,
+                    CASE 
+                        WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end 
+                             AND (
+                                 (s.days = '$today_code') OR
+                                 (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
+                                 (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
+                                 (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
+                                 (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
+                                 (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
+                                 (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
+                             ) THEN 'ongoing'
+                        WHEN TIME(NOW()) < s.time_start 
+                             AND (
+                                 (s.days = '$today_code') OR
+                                 (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
+                                 (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
+                                 (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
+                                 (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
+                                 (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
+                                 (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
+                             ) THEN 'upcoming'
+                        ELSE 'finished'
+                    END as status
+                FROM schedules s
+                JOIN courses c ON s.course_code = c.course_code
+                JOIN classes cl ON s.class_id = cl.class_id
+                WHERE s.faculty_id = ? AND s.is_active = TRUE
+                AND (
+                    (s.days = '$today_code') OR
+                    (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
+                    (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
+                    (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
+                    (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
+                    (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
+                    (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
+                )
+                ORDER BY 
+                    CASE 
+                        WHEN TIME(NOW()) > s.time_end THEN 1
+                        WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 2
+                        WHEN TIME(NOW()) < s.time_start THEN 3
+                        ELSE 4
+                    END,
+                    s.time_start";
+            
+            $stmt = $pdo->prepare($schedule_query);
+            $stmt->execute([$faculty_id]);
+            $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            sendJsonResponse([
+                'success' => true,
+                'schedules' => $schedules,
+                'current_time' => date('H:i:s'),
+                'current_day' => $today_code,
+                'timestamp' => date('Y-m-d H:i:s')
+            ]);
+            
         } catch (Exception $e) {
-            sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         }
         break;
     case 'get_schedule':

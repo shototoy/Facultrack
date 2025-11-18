@@ -220,6 +220,7 @@ function getScheduleStatusClient(status) {
         case 'ongoing': return {text: 'In Progress', class: 'ongoing'};
         case 'upcoming': return {text: 'Upcoming', class: 'upcoming'};
         case 'finished': return {text: 'Completed', class: 'finished'};
+        case 'pending': return {text: 'Loading...', class: 'pending'};
         default: return {text: 'Unknown', class: 'unknown'};
     }
 }
