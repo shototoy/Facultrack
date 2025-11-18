@@ -91,7 +91,7 @@ class LivePollingManager {
         return elements;
     }
     addDirectorElements(elements) {
-        const tabs = ['faculty', 'classes', 'courses', 'announcements'];
+        const tabs = ['faculty', 'classes', 'courses', 'announcements', 'programs'];
         tabs.forEach(tab => {
             const tabElement = document.querySelector(`#${tab}-content`);
             if (tabElement) {

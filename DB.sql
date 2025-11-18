@@ -60,16 +60,31 @@ CREATE TABLE `classes` (
   FOREIGN KEY (`program_chair_id`) REFERENCES `users`(`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE `programs` (
+  `program_id` int(11) NOT NULL AUTO_INCREMENT,
+  `program_code` varchar(20) NOT NULL,
+  `program_name` varchar(100) NOT NULL,
+  `program_description` text,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`program_id`),
+  UNIQUE KEY `program_code` (`program_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 CREATE TABLE `courses` (
   `course_id` int(11) NOT NULL AUTO_INCREMENT,
   `course_code` varchar(20) NOT NULL,
   `course_description` varchar(255) NOT NULL,
   `units` decimal(3,2) NOT NULL,
+  `program_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `is_active` tinyint(1) DEFAULT 1,
   PRIMARY KEY (`course_id`),
-  UNIQUE KEY `course_code` (`course_code`)
+  UNIQUE KEY `course_code` (`course_code`),
+  KEY `fk_courses_program` (`program_id`),
+  CONSTRAINT `fk_courses_program` FOREIGN KEY (`program_id`) REFERENCES `programs` (`program_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `schedules` (
@@ -161,13 +176,20 @@ INSERT INTO `classes` VALUES
 (1, 5, 'IT-1A', 'Information Technology 2024-2025', 1, '1st', '2024-25', 2, NOW(), NOW(), 1),
 (2, 6, 'IT-1B', 'Information Technology 2024-2025', 1, '1st', '2024-25', 2, NOW(), NOW(), 1);
 
+INSERT INTO `programs` VALUES 
+(1, 'CS', 'Computer Science', 'Bachelor of Science in Computer Science', 1, NOW(), NOW()),
+(2, 'IT', 'Information Technology', 'Bachelor of Science in Information Technology', 1, NOW(), NOW()),
+(3, 'ENG', 'Engineering', 'Bachelor of Science in Engineering', 1, NOW(), NOW()),
+(4, 'BA', 'Business Administration', 'Bachelor of Science in Business Administration', 1, NOW(), NOW()),
+(5, 'EDU', 'Education', 'Bachelor of Science in Education', 1, NOW(), NOW());
+
 INSERT INTO `courses` VALUES 
-(1, 'CC111', 'Introduction to Computing', 3.00, NOW(), NOW(), 1),
-(2, 'CC112', 'Computer Programming 1', 3.00, NOW(), NOW(), 1),
-(3, 'IT111', 'Discrete Mathematics', 3.00, NOW(), NOW(), 1),
-(4, 'CC113', 'Computer Programming 2', 3.00, NOW(), NOW(), 1),
-(5, 'IT121', 'Fundamentals of Database Systems', 3.00, NOW(), NOW(), 1),
-(6, 'CC114', 'Data Structures and Algorithm', 3.00, NOW(), NOW(), 1);
+(1, 'CC111', 'Introduction to Computing', 3.00, 2, NOW(), NOW(), 1),
+(2, 'CC112', 'Computer Programming 1', 3.00, 2, NOW(), NOW(), 1),
+(3, 'IT111', 'Discrete Mathematics', 3.00, 2, NOW(), NOW(), 1),
+(4, 'CC113', 'Computer Programming 2', 3.00, 2, NOW(), NOW(), 1),
+(5, 'IT121', 'Fundamentals of Database Systems', 3.00, 2, NOW(), NOW(), 1),
+(6, 'CC114', 'Data Structures and Algorithm', 3.00, 2, NOW(), NOW(), 1);
 
 INSERT INTO `curriculum` VALUES 
 (1, 'CC111', 1, '1st', 2, NOW(), NOW(), 1),
@@ -193,8 +215,11 @@ CREATE INDEX idx_faculty_program ON faculty(program);
 CREATE INDEX idx_faculty_employee ON faculty(employee_id);
 CREATE INDEX idx_classes_chair ON classes(program_chair_id);
 CREATE INDEX idx_classes_year ON classes(year_level);
+CREATE INDEX idx_programs_code ON programs(program_code);
+CREATE INDEX idx_programs_active ON programs(is_active);
 CREATE INDEX idx_courses_code ON courses(course_code);
 CREATE INDEX idx_courses_active ON courses(is_active);
+CREATE INDEX idx_courses_program ON courses(program_id);
 CREATE INDEX idx_schedules_course ON schedules(course_code);
 CREATE INDEX idx_schedules_class_faculty ON schedules(class_id, faculty_id);
 CREATE INDEX idx_schedules_time ON schedules(days, time_start, time_end);

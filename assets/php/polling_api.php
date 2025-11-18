@@ -74,12 +74,33 @@ function getAllCourses($pdo) {
             c.course_code,
             c.course_description,
             c.units,
+            p.program_name,
             COUNT(s.schedule_id) as times_scheduled
         FROM courses c
+        LEFT JOIN programs p ON c.program_id = p.program_id
         LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
         GROUP BY c.course_id
         ORDER BY c.course_code";
     $stmt = $pdo->prepare($courses_query);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getAllPrograms($pdo) {
+    $programs_query = "
+        SELECT 
+            p.program_id,
+            p.program_code,
+            p.program_name,
+            p.program_description,
+            p.created_at,
+            COUNT(c.course_id) as course_count
+        FROM programs p
+        LEFT JOIN courses c ON p.program_id = c.program_id AND c.is_active = TRUE
+        WHERE p.is_active = TRUE
+        GROUP BY p.program_id
+        ORDER BY p.program_name";
+    $stmt = $pdo->prepare($programs_query);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -508,10 +529,16 @@ switch ($action) {
                         'fields' => ['program', 'office_hours', 'contact_email', 'contact_phone']
                     ],
                     'add_course' => [
-                        'required' => ['course_code', 'course_description', 'units'],
+                        'required' => ['course_code', 'course_description', 'units', 'program_id'],
                         'unique' => ['courses.course_code'],
                         'table' => 'courses',
-                        'fields' => ['course_code', 'course_description', 'units']
+                        'fields' => ['course_code', 'course_description', 'units', 'program_id']
+                    ],
+                    'add_program' => [
+                        'required' => ['program_code', 'program_name'],
+                        'unique' => ['programs.program_code'],
+                        'table' => 'programs',
+                        'fields' => ['program_code', 'program_name', 'program_description']
                     ],
                     'add_class' => [
                         'required' => ['class_name', 'class_code', 'year_level', 'semester', 'academic_year', 'username', 'password'],
@@ -594,6 +621,13 @@ switch ($action) {
                             if (!$insert_data['program_chair_id']) {
                                 throw new Exception('Program Chair ID is required for class creation');
                             }
+                        }
+                    }
+                    if ($action === 'add_course') {
+                        if ($user_role === 'program_chair') {
+                            $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
+                            $stmt->execute([$user_id]);
+                            $insert_data['program'] = $stmt->fetchColumn();
                         }
                     }
                     if ($action === 'add_announcement') {
@@ -996,6 +1030,11 @@ switch ($action) {
         } catch (Exception $e) {
             sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         }
+        break;
+        
+    case 'get_programs':
+        $programs = getAllPrograms($pdo);
+        sendJsonResponse(['success' => true, 'programs' => $programs]);
         break;
     case 'get_schedule_updates':
         validateUserSession('faculty');

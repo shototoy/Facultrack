@@ -92,6 +92,14 @@ $role = $_SESSION['role'] ?? '';
                 <label class="form-label">Course Description *</label>
                 <input type="text" name="course_description" class="form-input" required>
             </div>
+            <?php if ($role === 'campus_director'): ?>
+            <div class="form-group">
+                <label class="form-label">Program *</label>
+                <select name="program_id" class="form-select" id="programSelectCourse" required>
+                    <option value="">Select Program</option>
+                </select>
+            </div>
+            <?php endif; ?>
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" onclick="closeModal('addCourseModal')">Cancel</button>
                 <button type="submit" class="btn-primary">Add Course</button>
@@ -143,7 +151,7 @@ $role = $_SESSION['role'] ?? '';
             <?php if ($role === 'campus_director'): ?>
             <div class="form-group">
                 <label class="form-label">Assign Program Chair</label>
-                <select name="program_chair_id" class="form-select">
+                <select name="program_chair_id" class="form-select" id="programChairSelect">
                     <option value="">Select Program Chair (Optional)</option>
                 </select>
             </div>

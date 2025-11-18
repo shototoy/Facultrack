@@ -19,6 +19,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
     $courses_data = getAllCourses($pdo);
     $all_announcements = getAllAnnouncements($pdo);
     $program_chairs = getProgramChairs($pdo);
+    $programs_data = getAllPrograms($pdo);
 }
 ?>
 <!DOCTYPE html>
@@ -67,6 +68,9 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             </button>
             <button class="tab-button" onclick="switchTab('announcements')" data-tab="announcements">
                 Manage Announcements
+            </button>
+            <button class="tab-button" onclick="switchTab('programs')" data-tab="programs">
+                Programs
             </button>
             <div class="search-bar">
                 <div class="search-container collapsed" id="searchContainer">
@@ -298,6 +302,52 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </table>
             </div>
         </div>
+        
+        <div class="tab-content" id="programs-content">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Programs</h3>
+                    <div class="table-actions">
+                        <button class="export-btn" onclick="exportData('programs')" title="Export Programs Data">
+                            <svg class="feather feather-sm"><use href="#download"></use></svg> Export
+                        </button>
+                        <button class="add-btn" data-modal="addProgramModal">
+                            <svg class="feather feather-sm"><use href="#plus"></use></svg> Add Program
+                        </button>
+                    </div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Program Name</th>
+                            <th>Description</th>
+                            <th>Courses</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!empty($programs_data)): ?>
+                            <?php foreach ($programs_data as $program): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($program['program_code']) ?></td>
+                                    <td><?= htmlspecialchars($program['program_name']) ?></td>
+                                    <td><?= htmlspecialchars($program['program_description'] ?? '') ?></td>
+                                    <td><?= $program['course_count'] ?? 0 ?></td>
+                                    <td>
+                                        <button class="delete-btn" onclick="deleteEntity('delete_program', <?= $program['program_id'] ?>, 'program')">Delete</button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 20px;">No programs found</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
     <?php 
     $GLOBALS['program_chairs'] = $program_chairs;
@@ -311,6 +361,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
     <script src="assets/js/toast_manager.js"></script>
     <script src="assets/js/live_polling.js"></script>
     <script src="assets/js/shared_functions.js"></script>
+    <script src="assets/js/program_chair_loader.js"></script>
     <script src="assets/js/director.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {

@@ -26,7 +26,22 @@ if (!empty($class_ids)) {
     foreach ($faculty_data as $faculty) {
         $faculty_schedules[$faculty['faculty_id']] = getFacultySchedulesProgram($pdo, $faculty['faculty_id']);
     }
-    $courses_data = getProgramCourses($pdo, $class_ids);
+    $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
+    $stmt->execute([$user_id]);
+    $program = $stmt->fetchColumn();
+    
+    $courses_query = "
+        SELECT DISTINCT c.course_id, c.course_code, c.course_description, c.units,
+               COUNT(s.schedule_id) as times_scheduled
+        FROM courses c
+        LEFT JOIN programs p ON c.program_id = p.program_id
+        LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
+        WHERE c.is_active = TRUE AND p.program_name = ?
+        GROUP BY c.course_id
+        ORDER BY c.course_code";
+    $stmt = $pdo->prepare($courses_query);
+    $stmt->execute([$program]);
+    $courses_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($classes_data as $class) {
         $class_schedules[$class['class_id']] = getClassSchedules($pdo, $class['class_id']);
     }
