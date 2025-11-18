@@ -67,69 +67,39 @@ function getClassFaculty($pdo, $class_id) {
 }
 
 function getFacultyCourses($pdo, $faculty_id, $class_id) {
+    // Set timezone to match polling_api.php
+    $pdo->exec("SET time_zone = '+08:00'");
+    
     $current_day = date('w');
     $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
     $today_code = $day_mapping[$current_day];
-    $current_time = date('H:i:s');
     
+    // Only get courses that are scheduled for today
     $courses_query = "
         SELECT s.course_code, c.course_description, s.days, s.time_start, s.time_end, s.room,
         CASE 
-            WHEN (s.days = '$today_code' OR 
-                  (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
-                  (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
-                  (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
-                  (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
-                  (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
-                 AND TIME('$current_time') > s.time_end
-                 THEN 'finished'
-            WHEN TIME('$current_time') BETWEEN s.time_start AND s.time_end 
-                 AND (s.days = '$today_code' OR 
-                      (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
-                      (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
-                      (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
-                      (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
-                      (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
-                 THEN 'current'
-            WHEN TIME('$current_time') < s.time_start 
-                 AND (s.days = '$today_code' OR 
-                      (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
-                      (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
-                      (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
-                      (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
-                      (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
-                 THEN 'upcoming'
+            WHEN TIME(NOW()) > s.time_end THEN 'finished'
+            WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 'current'
+            WHEN TIME(NOW()) < s.time_start THEN 'upcoming'
             ELSE 'not-today'
         END as status
         FROM schedules s
         JOIN courses c ON s.course_code = c.course_code
         WHERE s.faculty_id = ? AND s.class_id = ? AND s.is_active = TRUE
+        AND (
+            (s.days = '$today_code') OR
+            (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
+            (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
+            (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
+            (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
+            (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
+            (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
+        )
         ORDER BY 
             CASE 
-                WHEN (s.days = '$today_code' OR 
-                      (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
-                      (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
-                      (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
-                      (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
-                      (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
-                     AND TIME('$current_time') > s.time_end
-                     THEN 1
-                WHEN TIME('$current_time') BETWEEN s.time_start AND s.time_end 
-                     AND (s.days = '$today_code' OR 
-                          (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
-                          (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
-                          (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
-                          (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
-                          (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
-                     THEN 2
-                WHEN TIME('$current_time') < s.time_start 
-                     AND (s.days = '$today_code' OR 
-                          (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
-                          (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
-                          (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
-                          (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
-                          (s.days = 'TTH' AND '$today_code' IN ('T', 'TH'))) 
-                     THEN 3
+                WHEN TIME(NOW()) > s.time_end THEN 1
+                WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 2
+                WHEN TIME(NOW()) < s.time_start THEN 3
                 ELSE 4
             END,
             s.time_start";
