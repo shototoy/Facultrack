@@ -26,34 +26,8 @@ function getFacultyInfo($pdo, $user_id) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-function getTodaySchedule($pdo, $faculty_id) {
-    global $current_day, $current_time;
-    $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
-    $today_code = $day_mapping[$current_day];
-    
-    // Initial load: Just get today's schedule without status calculation
-    // Let polling handle all status updates dynamically
-    $schedule_query = "
-        SELECT s.*, c.course_description, cl.class_name, cl.class_code,
-            'pending' as status
-        FROM schedules s
-        JOIN courses c ON s.course_code = c.course_code
-        JOIN classes cl ON s.class_id = cl.class_id
-        WHERE s.faculty_id = ? AND s.is_active = TRUE
-        AND (
-            (s.days = '$today_code') OR
-            (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
-            (s.days = 'MF' AND '$today_code' IN ('M', 'F')) OR
-            (s.days = 'WF' AND '$today_code' IN ('W', 'F')) OR
-            (s.days = 'MWF' AND '$today_code' IN ('M', 'W', 'F')) OR
-            (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
-            (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
-        )
-        ORDER BY s.time_start";
-    $stmt = $pdo->prepare($schedule_query);
-    $stmt->execute([$faculty_id]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+// Removed getTodaySchedule() - using polling_api.php getScheduleForDays() instead
+// Initial schedule load will be handled by live polling
 
 
 function getLocationHistory($pdo, $faculty_id, $limit = 10) {
@@ -174,7 +148,8 @@ try {
     error_log("Failed to set faculty online status: " . $e->getMessage());
 }
 
-$today_schedule = getTodaySchedule($pdo, $faculty_info['faculty_id']);
+// Schedule will be loaded via live polling - start with empty array
+$today_schedule = [];
 $location_history = getLocationHistory($pdo, $faculty_info['faculty_id'], 10);
 $schedule_tabs = getSmartScheduleTabs($pdo, $faculty_info['faculty_id']);
 
@@ -1195,6 +1170,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
     <script>
         window.userRole = 'faculty';
     </script>
+    <script src="assets/js/polling_config.js"></script>
     <script src="assets/js/shared_functions.js"></script>
     <script src="assets/js/live_polling.js"></script>
     <script src="assets/js/faculty.js"></script>

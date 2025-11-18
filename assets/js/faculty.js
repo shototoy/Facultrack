@@ -133,6 +133,7 @@ async function switchScheduleTab(days, tabElement) {
     const scheduleList = document.getElementById('scheduleList');
     scheduleList.innerHTML = '<div class="loading-state">Loading schedule...</div>';
     
+    // Fetch schedule directly for this tab
     try {
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
@@ -145,7 +146,6 @@ async function switchScheduleTab(days, tabElement) {
         const result = await response.json();
         
         if (result.success && result.schedules) {
-            // Generate HTML client-side using the schedule data
             scheduleList.innerHTML = generateScheduleHTML(result.schedules);
         } else {
             scheduleList.innerHTML = `

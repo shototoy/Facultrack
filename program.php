@@ -29,7 +29,8 @@ if (!empty($class_ids)) {
     // Use local getAllFaculty() function - restored to avoid API execution
     $faculty_data = getAllFacultyProgram($pdo);
     foreach ($faculty_data as $faculty) {
-        $faculty_schedules[$faculty['faculty_id']] = getFacultySchedules($pdo, $faculty['faculty_id']);
+        // Faculty schedules will be loaded via live polling - use empty array for initial load
+        $faculty_schedules[$faculty['faculty_id']] = [];
     }
     $courses_data = getProgramCourses($pdo, $class_ids);
     foreach ($classes_data as $class) {
@@ -116,19 +117,7 @@ function getAllFacultyProgram($pdo) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getFacultySchedules($pdo, $faculty_id) {
-    $schedule_query = "
-        SELECT s.course_code, c.course_description, c.units, s.days, s.time_start, s.time_end, s.room,
-               cl.class_name, cl.class_code
-        FROM schedules s
-        JOIN courses c ON s.course_code = c.course_code
-        JOIN classes cl ON s.class_id = cl.class_id
-        WHERE s.faculty_id = ? AND s.is_active = TRUE
-        ORDER BY s.time_start";
-    $stmt = $pdo->prepare($schedule_query);
-    $stmt->execute([$faculty_id]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+// Removed duplicate getFacultySchedules() - using polling_api.php version instead
 
 function getProgramCourses($pdo, $class_ids) {
     $in_clause = buildInClause($class_ids);
@@ -1336,5 +1325,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
             };
         }
     </script>
+    <script src="assets/js/polling_config.js"></script>
 </body>
 </html>

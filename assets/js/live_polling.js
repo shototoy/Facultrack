@@ -15,7 +15,9 @@ class LivePollingManager {
         this.isActive = true;
         this.isOnline = navigator.onLine;
         this.updateQueue = [];
-        this.defaultIntervals = {
+        // Use unified polling configuration
+        this.config = window.PollingConfig || null;
+        this.defaultIntervals = this.config ? this.config.intervals : {
             statistics: 3000,
             location: 3000,
             announcements: 3000,
@@ -351,26 +353,24 @@ class LivePollingManager {
     }
     startPolling() {
         if (!this.isOnline) return;
-        switch(window.userRole) {
-            case 'program_chair':
-            case 'campus_director':
-                this.startStatisticsPolling();
-                this.startLocationPolling(); // Add location polling for faculty cards
-                this.startAnnouncementsPolling();
-                // Remove conflicting table polling for program dashboard
-                break;
-            case 'faculty':
-                this.startLocationPolling(); // Still needed for faculty's own location
-                this.startAnnouncementsPolling();
-                this.startSchedulePolling(); // Add schedule polling for faculty
-                this.startTablePolling();
-                break;
-            case 'class':
-                console.log('Starting class dashboard polling...');
-                this.startLocationPolling(); // Still needed for class viewing faculty
-                this.startAnnouncementsPolling();
-                this.startTablePolling();
-                break;
+        
+        // Unified polling strategy - start all relevant polling types for all roles
+        // Individual polling methods will handle role-specific logic internally
+        this.startLocationPolling();        // All roles need location updates
+        this.startAnnouncementsPolling();   // All roles need announcements
+        
+        // Role-specific polling
+        if (window.userRole === 'faculty') {
+            this.startSchedulePolling();    // Faculty needs schedule updates
+        }
+        
+        if (['program_chair', 'campus_director'].includes(window.userRole)) {
+            this.startStatisticsPolling();  // Management roles need statistics
+            this.startTablePolling();       // Management roles need table updates
+        }
+        
+        if (window.userRole === 'class') {
+            this.startTablePolling();       // Class dashboard needs table updates
         }
     }
     startSchedulePolling() {

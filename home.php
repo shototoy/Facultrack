@@ -236,6 +236,7 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
 <script>
     window.userRole = 'class';
 </script>
+<script src="assets/js/polling_config.js"></script>
 <script src="assets/js/shared_functions.js"></script>
 <script src="assets/js/live_polling.js"></script>
 <script src="assets/js/home.js"></script>
