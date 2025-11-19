@@ -30,7 +30,6 @@ async function submitForm(action, formId, tabName) {
             switchTab(tabName);
             setTimeout(() => {
                 addNewRowToTable(tabName, result.data);
-                updateStatistics();
             }, 100);
             closeModal();
             form.reset();

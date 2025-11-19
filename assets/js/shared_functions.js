@@ -53,6 +53,11 @@ function exportData(type) {
             selector: '#announcements-content .data-table',
             filename: 'announcements_data.csv',
             message: 'Announcements data exported successfully'
+        },
+        programs: {
+            selector: '#programs-content .data-table',
+            filename: 'programs_data.csv',
+            message: 'Programs data exported successfully'
         }
     };
     const typeConfig = config[type];
@@ -103,13 +108,15 @@ async function deleteEntity(action, id) {
         delete_faculty: 'faculty_id',
         delete_class: 'class_id',
         delete_course: 'course_id',
-        delete_announcement: 'announcement_id'
+        delete_announcement: 'announcement_id',
+        delete_program: 'program_id'
     };
     const labels = {
         delete_faculty: 'faculty member',
         delete_class: 'class',
         delete_course: 'course',
-        delete_announcement: 'announcement'
+        delete_announcement: 'announcement',
+        delete_program: 'program'
     };
     const label = labels[action] || 'item';
     const idField = idFields[action] || 'id';
@@ -128,6 +135,29 @@ async function deleteEntity(action, id) {
         const result = await response.json();
         if (result.success) {
             showNotification(`${capitalize(label)} deleted successfully`, 'success');
+            
+            const entityType = action.replace('delete_', '');
+            if (typeof window.removeEntityFromTable === 'function') {
+                window.removeEntityFromTable(entityType, id);
+            } else {
+                switch (entityType) {
+                    case 'faculty':
+                        if (typeof removeFacultyFromTable === 'function') removeFacultyFromTable(id);
+                        break;
+                    case 'class':
+                        if (typeof removeClassFromTable === 'function') removeClassFromTable(id);
+                        break;
+                    case 'course':
+                        if (typeof removeCourseFromTable === 'function') removeCourseFromTable(id);
+                        break;
+                    case 'announcement':
+                        if (typeof removeAnnouncementFromTable === 'function') removeAnnouncementFromTable(id);
+                        break;
+                    case 'program':
+                        if (typeof removeProgramFromTable === 'function') removeProgramFromTable(id);
+                        break;
+                }
+            }
         } else {
             throw new Error(result.message || `Failed to delete ${label}`);
         }
@@ -147,7 +177,8 @@ async function handleFormSubmission(form, type) {
         'faculty': 'add_faculty',
         'classes': 'add_class', 
         'courses': 'add_course',
-        'announcements': 'add_announcement'
+        'announcements': 'add_announcement',
+        'programs': 'add_program'
     };
     try {
         submitButton.disabled = true;

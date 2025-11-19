@@ -17,6 +17,38 @@ function createSearchResultActions() {
         });
     }
 }
+
+async function loadProgramCourses(programId) {
+    const container = document.getElementById(`program-courses-${programId}`);
+    if (!container) return;
+    
+    try {
+        const response = await fetch(`assets/php/polling_api.php?action=get_program_courses&program_id=${programId}`);
+        const data = await response.json();
+        
+        if (data.success && data.courses) {
+            if (data.courses.length === 0) {
+                container.innerHTML = '<div class="no-courses">No courses assigned to this program yet.</div>';
+            } else {
+                const coursesHtml = data.courses.map(course => `
+                    <div class="course-item">
+                        <strong>${course.course_code}</strong> - ${course.course_description}
+                        <span class="course-meta">${course.units} units, scheduled ${course.times_scheduled} times</span>
+                    </div>
+                `).join('');
+                container.innerHTML = coursesHtml;
+            }
+        } else {
+            container.innerHTML = '<div class="error">Failed to load courses</div>';
+        }
+    } catch (error) {
+        console.error('Error loading program courses:', error);
+        container.innerHTML = '<div class="error">Error loading courses</div>';
+    }
+}
+
+window.loadProgramCourses = loadProgramCourses;
+
 function searchTable(query, type) {
     const table = document.querySelector(`#${type === 'class' ? 'classes' : type}-content .data-table`);
     if (!table) return;
@@ -193,6 +225,32 @@ function createAnnouncementRow(announcement) {
         </tr>
     `;
 }
+
+function createProgramRow(program) {
+    return `
+        <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-program-id="${program.program_id}">
+            <td>${escapeHtml(program.program_code)}</td>
+            <td>${escapeHtml(program.program_name)}</td>
+            <td>${escapeHtml(program.program_description || '')}</td>
+            <td>${program.course_count || 0}</td>
+            <td>
+                <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_program', ${program.program_id})">Delete</button>
+            </td>
+        </tr>
+        <tr class="expansion-row" id="program-expansion-${program.program_id}" style="display: none;">
+            <td colspan="5" class="expansion-content">
+                <div class="expanded-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Courses in this Program:</span>
+                        <div class="program-courses-list" id="program-courses-${program.program_id}">
+                            <div class="loading">Loading courses...</div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    `;
+}
 function removeEntityFromUI(entityType, entityId) {
     switch(entityType) {
         case 'faculty':
@@ -206,6 +264,9 @@ function removeEntityFromUI(entityType, entityId) {
             break;
         case 'announcement':
             removeAnnouncementFromTable(entityId);
+            break;
+        case 'program':
+            removeProgramFromTable(entityId);
             break;
     }
 }
@@ -295,7 +356,8 @@ function updateHeaderStatistics(entityType, delta) {
         'faculty': 'totalFaculty',
         'class': 'totalClasses', 
         'course': 'totalCourses',
-        'announcement': 'totalAnnouncements'
+        'announcement': 'totalAnnouncements',
+        'program': 'totalPrograms'
     };
     const elementId = elementMap[entityType];
     const element = document.getElementById(elementId);
@@ -441,3 +503,105 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 1000);
 });
+
+function removeFacultyFromTable(facultyId) {
+    const row = document.querySelector(`tr[data-faculty-id="${facultyId}"]`);
+    if (row) {
+        const expansionRow = row.nextElementSibling;
+        if (expansionRow && expansionRow.classList.contains('expansion-row')) {
+            expansionRow.remove();
+        }
+        row.remove();
+    }
+}
+
+function removeClassFromTable(classId) {
+    const row = document.querySelector(`tr[data-class-id="${classId}"]`);
+    if (row) {
+        const expansionRow = row.nextElementSibling;
+        if (expansionRow && expansionRow.classList.contains('expansion-row')) {
+            expansionRow.remove();
+        }
+        row.remove();
+    }
+}
+
+function removeCourseFromTable(courseId) {
+    const rows = document.querySelectorAll('#courses-content .data-table tbody tr');
+    rows.forEach(row => {
+        const deleteBtn = row.querySelector('.delete-btn');
+        if (deleteBtn && deleteBtn.onclick && deleteBtn.onclick.toString().includes(courseId)) {
+            row.remove();
+        }
+    });
+}
+
+function removeAnnouncementFromTable(announcementId) {
+    const row = document.querySelector(`tr[data-announcement-id="${announcementId}"]`);
+    if (row) {
+        const expansionRow = row.nextElementSibling;
+        if (expansionRow && expansionRow.classList.contains('expansion-row')) {
+            expansionRow.remove();
+        }
+        row.remove();
+    }
+}
+
+function removeProgramFromTable(programId) {
+    const row = document.querySelector(`tr[data-program-id="${programId}"]`);
+    if (row) {
+        const expansionRow = row.nextElementSibling;
+        if (expansionRow && expansionRow.classList.contains('expansion-row')) {
+            expansionRow.remove();
+        }
+        row.remove();
+    }
+}
+
+function addNewRowToTable(tabName, data) {
+    if (!data) return;
+    
+    const tableSelector = `#${tabName}-content .data-table tbody`;
+    const tableBody = document.querySelector(tableSelector);
+    
+    if (!tableBody) return;
+    
+    let newRowHtml = '';
+    
+    switch (tabName) {
+        case 'faculty':
+            newRowHtml = createFacultyRow(data);
+            break;
+        case 'classes':
+            newRowHtml = createClassRow(data);
+            break;
+        case 'courses':
+            newRowHtml = createCourseRow(data);
+            break;
+        case 'announcements':
+            newRowHtml = createAnnouncementRow(data);
+            break;
+        case 'programs':
+            newRowHtml = createProgramRow(data);
+            break;
+        default:
+            console.warn('Unknown tab for addNewRowToTable:', tabName);
+            return;
+    }
+    
+    if (newRowHtml) {
+        tableBody.insertAdjacentHTML('afterbegin', newRowHtml);
+        
+        const newRow = tableBody.firstElementChild;
+        if (newRow) {
+            newRow.style.opacity = '0';
+            newRow.style.transform = 'translateY(-20px)';
+            newRow.offsetHeight;
+            newRow.style.transition = 'all 0.3s ease';
+            newRow.style.opacity = '1';
+            newRow.style.transform = 'translateY(0)';
+        }
+        
+        updateHeaderStatistics(tabName.replace('s', ''), 1);
+    }
+}

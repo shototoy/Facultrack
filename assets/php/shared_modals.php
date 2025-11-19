@@ -370,3 +370,30 @@ $role = $_SESSION['role'] ?? '';
         </form>
     </div>
 </div>
+
+<div class="modal-overlay" id="addProgramModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Add New Program</h3>
+            <button type="button" class="modal-close" onclick="closeModal('addProgramModal')">&times;</button>
+        </div>
+        <form id="addProgramForm" data-action="add_program" data-tab="programs" onsubmit="event.preventDefault(); submitGenericForm(this);" class="modal-form">
+            <div class="form-group">
+                <label class="form-label">Program Code *</label>
+                <input type="text" name="program_code" class="form-input" required placeholder="e.g., CS, IT, ENG">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Program Name *</label>
+                <input type="text" name="program_name" class="form-input" required placeholder="e.g., Computer Science">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea name="program_description" class="form-input" rows="3" placeholder="Brief description of the program"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('addProgramModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Add Program</button>
+            </div>
+        </form>
+    </div>
+</div>

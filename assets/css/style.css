@@ -1173,9 +1173,12 @@ body:has(.table-container) .tab-content.active {
     border-radius: 0px 0px 12px 12px;
     backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 20px;
-    margin-bottom: 40px;
+    padding: 0;
+    margin-bottom: 0;
     box-sizing: border-box;
+    overflow-y: auto;
+    height: auto;
+    min-height: auto;
 }
 
 @keyframes fadeInUp {
@@ -1238,18 +1241,26 @@ body:has(.table-container) .tab-content.active {
     border: 1px solid rgba(222, 226, 230, 0.3);
     backdrop-filter: blur(10px);
     position: relative;
-    margin-bottom: 40px;
+    margin-bottom: 0;
 }
 
 @media (max-width: 768px) {
     .table-container {
-        max-height: 70vh;
+        height: auto;
+        max-height: none;
         overflow: visible;
     }
     
     .data-table {
         table-layout: auto;
-        overflow: visible;
+    }
+    
+    .data-table th,
+    .data-table td {
+        white-space: normal;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        max-width: 200px;
     }
 }
 
@@ -1269,6 +1280,7 @@ body:has(.table-container) .tab-content.active {
     flex: 1;
     overflow: visible;
     min-height: 0;
+    height: auto;
 }
 
 .table-title {
@@ -1290,6 +1302,7 @@ body:has(.table-container) .tab-content.active {
     background: transparent;
     table-layout: fixed;
     margin: 0;
+    height: auto;
 }
 
 .data-table th,
@@ -1438,6 +1451,26 @@ body:has(.table-container) .tab-content.active {
     width: 15%;
 }
 
+#programs-content .data-table th:nth-child(1) {
+    width: 10%;
+}
+
+#programs-content .data-table th:nth-child(2) {
+    width: 25%;
+}
+
+#programs-content .data-table th:nth-child(3) {
+    width: 40%;
+}
+
+#programs-content .data-table th:nth-child(4) {
+    width: 10%;
+}
+
+#programs-content .data-table th:nth-child(5) {
+    width: 15%;
+}
+
 .expandable-row {
     cursor: pointer;
     position: relative;
@@ -1503,6 +1536,7 @@ body:has(.table-container) .tab-content.active {
 .expansion-row {
     background: rgba(248, 249, 250, 0.3) !important;
     border-top: none !important;
+    height: auto !important;
 }
 
 
@@ -1520,7 +1554,46 @@ body:has(.table-container) .tab-content.active {
     max-height: 0;
     padding: 0 20px;
     opacity: 0;
-    overflow: hidden;
+    overflow: visible;
+    transition: all 0.4s ease;
+}
+
+.expansion-row.expanded .expanded-details {
+    max-height: none;
+    padding: 20px;
+    opacity: 1;
+    overflow: visible;
+}
+
+.program-courses-list {
+    margin-top: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.course-item {
+    padding: 8px 12px;
+    background: rgba(248, 249, 250, 0.5);
+    border: 1px solid rgba(222, 226, 230, 0.3);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.course-meta {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.no-courses, .loading, .error {
+    text-align: center;
+    padding: 12px;
+    color: #6c757d;
+    font-style: italic;
+}
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateY(-20px);
 }
@@ -1584,6 +1657,20 @@ body:has(.table-container) .tab-content.active {
     border-bottom: 1px solid rgba(222, 226, 230, 0.2);
     line-height: 1.2;
     gap: 8px;
+}
+
+#programs-content .detail-item {
+    display: block;
+    border-bottom: none;
+    padding: 0;
+}
+
+#programs-content .detail-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
 }
 
 .detail-item:last-child {
@@ -2118,8 +2205,10 @@ body:has(.table-container) .tab-content.active {
     }
     
     .table-container {
-        height: calc(100vh - 200px);
+        height: auto;
+        max-height: none;
         margin-bottom: 20px;
+        overflow: visible;
     }
     
     .table-header {
@@ -2433,6 +2522,29 @@ body:has(.table-container) .tab-content.active {
     .data-table .program-column {
         width: auto;
         min-width: 70px;
+    }
+    
+    #programs-content .data-table th,
+    #programs-content .data-table td {
+        width: auto;
+    }
+    
+    #programs-content .data-table th:nth-child(1),
+    #programs-content .data-table td:nth-child(1) {
+        width: auto;
+        min-width: 50px;
+    }
+    
+    #programs-content .data-table th:nth-child(2),
+    #programs-content .data-table td:nth-child(2) {
+        width: auto;
+        min-width: 80px;
+    }
+    
+    #programs-content .data-table th:nth-child(3),
+    #programs-content .data-table td:nth-child(3) {
+        width: auto;
+        min-width: 100px;
     }
     
     .data-table .status-column {

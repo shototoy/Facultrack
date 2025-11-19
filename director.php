@@ -311,7 +311,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                         <button class="export-btn" onclick="exportData('programs')" title="Export Programs Data">
                             <svg class="feather feather-sm"><use href="#download"></use></svg> Export
                         </button>
-                        <button class="add-btn" data-modal="addProgramModal">
+                        <button class="add-btn" onclick="openModal('addProgramModal')">
                             <svg class="feather feather-sm"><use href="#plus"></use></svg> Add Program
                         </button>
                     </div>
@@ -329,13 +329,25 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     <tbody>
                         <?php if (!empty($programs_data)): ?>
                             <?php foreach ($programs_data as $program): ?>
-                                <tr>
+                                <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-program-id="<?= $program['program_id'] ?>">
                                     <td><?= htmlspecialchars($program['program_code']) ?></td>
                                     <td><?= htmlspecialchars($program['program_name']) ?></td>
                                     <td><?= htmlspecialchars($program['program_description'] ?? '') ?></td>
                                     <td><?= $program['course_count'] ?? 0 ?></td>
                                     <td>
-                                        <button class="delete-btn" onclick="deleteEntity('delete_program', <?= $program['program_id'] ?>, 'program')">Delete</button>
+                                        <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_program', <?= $program['program_id'] ?>)">Delete</button>
+                                    </td>
+                                </tr>
+                                <tr class="expansion-row" id="program-expansion-<?= $program['program_id'] ?>" style="display: none;">
+                                    <td colspan="5" class="expansion-content">
+                                        <div class="expanded-details">
+                                            <div class="detail-item">
+                                                <span class="detail-label">Courses in this Program:</span>
+                                                <div class="program-courses-list" id="program-courses-<?= $program['program_id'] ?>">
+                                                    <div class="loading">Loading courses...</div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -409,6 +421,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             const facultyId = row.getAttribute('data-faculty-id');
             const classId = row.getAttribute('data-class-id');
             const announcementId = row.getAttribute('data-announcement-id');
+            const programId = row.getAttribute('data-program-id');
             let expansionRowId;
             if (facultyId) {
                 expansionRowId = 'faculty-expansion-' + facultyId;
@@ -416,6 +429,8 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 expansionRowId = 'class-expansion-' + classId;
             } else if (announcementId) {
                 expansionRowId = 'announcement-expansion-' + announcementId;
+            } else if (programId) {
+                expansionRowId = 'program-expansion-' + programId;
             }
             const expansionRow = document.getElementById(expansionRowId);
             if (!expansionRow) {
@@ -452,6 +467,11 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     expansionRow.classList.remove('expanding');
                     expansionRow.classList.add('expanded');
                 }, 400);
+                
+                if (programId && !expansionRow.dataset.loaded) {
+                    loadProgramCourses(programId);
+                    expansionRow.dataset.loaded = 'true';
+                }
             }
         };
     </script>

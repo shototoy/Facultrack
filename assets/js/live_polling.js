@@ -941,7 +941,8 @@ class LivePollingManager {
             'faculty': 'faculty_id',
             'courses': 'course_id',
             'classes': 'class_id',
-            'announcements': 'announcement_id'
+            'announcements': 'announcement_id',
+            'programs': 'program_id'
         };
         return mapping[entityType] || 'id';
     }

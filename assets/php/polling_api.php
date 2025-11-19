@@ -400,10 +400,12 @@ switch ($action) {
     case 'add_faculty':
     case 'add_class':
     case 'add_announcement':
+    case 'add_program':
     case 'delete_course':
     case 'delete_faculty':
     case 'delete_class':
     case 'delete_announcement':
+    case 'delete_program':
         $user_id = $_SESSION['user_id'];
         $user_role = $_SESSION['role'];
         if ($action === 'delete_course') {
@@ -511,6 +513,41 @@ switch ($action) {
                     sendJsonResponse(['success' => false, 'message' => 'Announcement not found']);
                 }
             } catch (Exception $e) {
+                sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+        } elseif ($action === 'delete_program') {
+            $program_id = $_POST['program_id'] ?? '';
+            if (empty($program_id)) {
+                sendJsonResponse(['success' => false, 'message' => 'Program ID is required']);
+                break;
+            }
+            try {
+                $pdo->beginTransaction();
+                
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM courses WHERE program_id = ? AND is_active = TRUE");
+                $stmt->execute([$program_id]);
+                $courseCount = $stmt->fetchColumn();
+                
+                if ($courseCount > 0) {
+                    $pdo->rollback();
+                    sendJsonResponse(['success' => false, 'message' => 'Cannot delete program: ' . $courseCount . ' courses are still assigned to this program']);
+                    break;
+                }
+                
+                $stmt = $pdo->prepare("DELETE FROM programs WHERE program_id = ?");
+                $stmt->execute([$program_id]);
+                
+                if ($stmt->rowCount() > 0) {
+                    $pdo->commit();
+                    sendJsonResponse(['success' => true, 'message' => 'Program deleted successfully']);
+                } else {
+                    $pdo->rollback();
+                    sendJsonResponse(['success' => false, 'message' => 'Program not found']);
+                }
+            } catch (Exception $e) {
+                if (isset($pdo)) {
+                    $pdo->rollback();
+                }
                 sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
         } else {
@@ -938,11 +975,15 @@ switch ($action) {
                         $response_data['count'] = count($announcements_data);
                         $response_data['announcements'] = array_slice($announcements_data, 0, 10);
                         break;
+                    case 'programs':
+                        $response_data['programs_data'] = getAllPrograms($pdo);
+                        break;
                     case 'all':
                         $response_data['faculty_data'] = getAllFaculty($pdo);
                         $response_data['classes_data'] = getAllClasses($pdo);
                         $response_data['courses_data'] = getAllCourses($pdo);
                         $response_data['announcements_data'] = getAllAnnouncements($pdo);
+                        $response_data['programs_data'] = getAllPrograms($pdo);
                         $response_data['program_chairs'] = getProgramChairs($pdo);
                         break;
                 }
@@ -1035,6 +1076,28 @@ switch ($action) {
     case 'get_programs':
         $programs = getAllPrograms($pdo);
         sendJsonResponse(['success' => true, 'programs' => $programs]);
+        break;
+        
+    case 'get_program_courses':
+        $program_id = $_GET['program_id'] ?? $_POST['program_id'] ?? null;
+        if (!$program_id) {
+            sendJsonResponse(['success' => false, 'message' => 'Program ID required']);
+            break;
+        }
+        
+        $courses_query = "
+            SELECT c.course_id, c.course_code, c.course_description, c.units,
+                   COUNT(s.schedule_id) as times_scheduled
+            FROM courses c
+            LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
+            WHERE c.program_id = ? AND c.is_active = TRUE
+            GROUP BY c.course_id
+            ORDER BY c.course_code";
+        $stmt = $pdo->prepare($courses_query);
+        $stmt->execute([$program_id]);
+        $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        sendJsonResponse(['success' => true, 'courses' => $courses]);
         break;
     case 'get_schedule_updates':
         validateUserSession('faculty');
@@ -1323,6 +1386,16 @@ function fetchAddedRecord($pdo, $action, $id) {
                 FROM announcements a
                 JOIN users u ON a.created_by = u.user_id
                 WHERE a.announcement_id = ?
+            ");
+            break;
+        case 'add_program':
+            $stmt = $pdo->prepare("
+                SELECT p.program_id, p.program_code, p.program_name, p.program_description,
+                       p.created_at, COUNT(c.course_id) as course_count
+                FROM programs p
+                LEFT JOIN courses c ON p.program_id = c.program_id AND c.is_active = TRUE
+                WHERE p.program_id = ? AND p.is_active = TRUE
+                GROUP BY p.program_id
             ");
             break;
         default:
