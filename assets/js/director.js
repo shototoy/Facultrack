@@ -189,15 +189,11 @@ function resetTableRowStates() {
 function createCourseRow(course) {
     return `
         <tr>
-            <td>
-                <div class="course-info">
-                    <div class="course-code">${course.course_code}</div>
-                    <div class="course-description">${course.course_description}</div>
-                </div>
-            </td>
-            <td>${course.units}</td>
-            <td>${course.times_scheduled || 0}</td>
-            <td class="actions-cell">
+            <td class="id-column">${escapeHtml(course.course_code)}</td>
+            <td class="description-column">${escapeHtml(course.course_description)}</td>
+            <td class="id-column">${course.units}</td>
+            <td class="id-column">${course.times_scheduled || 0}</td>
+            <td class="actions-column">
                 <button class="delete-btn" onclick="deleteEntity('delete_course', ${course.course_id})">Delete</button>
             </td>
         </tr>

@@ -94,9 +94,10 @@ $role = $_SESSION['role'] ?? '';
             </div>
             <?php if ($role === 'campus_director'): ?>
             <div class="form-group">
-                <label class="form-label">Program *</label>
-                <select name="program_id" class="form-select" id="programSelectCourse" required>
+                <label class="form-label">Program</label>
+                <select name="program_id" class="form-select" id="programSelectCourse">
                     <option value="">Select Program</option>
+                    <option value="general">General Education (Common to All Programs)</option>
                 </select>
             </div>
             <?php endif; ?>

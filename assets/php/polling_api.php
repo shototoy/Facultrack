@@ -74,11 +74,12 @@ function getAllCourses($pdo) {
             c.course_code,
             c.course_description,
             c.units,
-            p.program_name,
+            COALESCE(p.program_name, 'General Education') as program_name,
             COUNT(s.schedule_id) as times_scheduled
         FROM courses c
         LEFT JOIN programs p ON c.program_id = p.program_id
         LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
+        WHERE c.is_active = TRUE
         GROUP BY c.course_id
         ORDER BY c.course_code";
     $stmt = $pdo->prepare($courses_query);
@@ -566,7 +567,7 @@ switch ($action) {
                         'fields' => ['program', 'office_hours', 'contact_email', 'contact_phone']
                     ],
                     'add_course' => [
-                        'required' => ['course_code', 'course_description', 'units', 'program_id'],
+                        'required' => ['course_code', 'course_description', 'units'],
                         'unique' => ['courses.course_code'],
                         'table' => 'courses',
                         'fields' => ['course_code', 'course_description', 'units', 'program_id']
@@ -671,7 +672,12 @@ switch ($action) {
                         $insert_data['created_by'] = $user_id;
                     }
                     foreach ($c['fields'] as $field) {
-                        $insert_data[$field] = $_POST[$field] ?? null;
+                        if ($field === 'program_id' && $action === 'add_course') {
+                            $program_id = $_POST[$field] ?? '';
+                            $insert_data[$field] = ($program_id === '' || $program_id === 'general') ? null : (int)$program_id;
+                        } else {
+                            $insert_data[$field] = $_POST[$field] ?? null;
+                        }
                     }
                     if ($new_user_id) {
                         $insert_data['user_id'] = $new_user_id;
@@ -989,12 +995,56 @@ switch ($action) {
                 }
             } else if ($role === 'program_chair') {
                 $user_id = $_SESSION['user_id'];
-                $classes_query = "SELECT * FROM classes WHERE program_chair_id = ? AND is_active = TRUE ORDER BY year_level, class_name";
+                $classes_query = "
+                    SELECT 
+                        c.class_id,
+                        c.class_code,
+                        c.class_name,
+                        c.year_level,
+                        c.semester,
+                        c.academic_year,
+                        c.program_chair_id,
+                        u.full_name as program_chair_name,
+                        COUNT(s.schedule_id) as total_subjects
+                    FROM classes c
+                    LEFT JOIN faculty f ON c.program_chair_id = f.user_id
+                    LEFT JOIN users u ON f.user_id = u.user_id
+                    LEFT JOIN schedules s ON c.class_id = s.class_id AND s.is_active = TRUE
+                    WHERE c.is_active = TRUE AND c.program_chair_id = ?
+                    GROUP BY c.class_id
+                    ORDER BY c.year_level, c.class_name";
                 $stmt = $pdo->prepare($classes_query);
                 $stmt->execute([$user_id]);
                 $response_data['classes_data'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $response_data['faculty_data'] = getAllFaculty($pdo);
-                $response_data['courses_data'] = getAllCourses($pdo);
+                
+                $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
+                $stmt->execute([$user_id]);
+                $program_chair_program = $stmt->fetchColumn();
+                
+                $stmt = $pdo->prepare("SELECT program_id FROM programs WHERE program_name = ? AND is_active = TRUE");
+                $stmt->execute([$program_chair_program]);
+                $program_id = $stmt->fetchColumn();
+                
+                $courses_query = "
+                    SELECT 
+                        c.course_id,
+                        c.course_code,
+                        c.course_description,
+                        c.units,
+                        COALESCE(p.program_name, 'General Education') as program_name,
+                        COUNT(s.schedule_id) as times_scheduled,
+                        CASE WHEN c.program_id IS NULL THEN 1 ELSE 0 END as is_general_education
+                    FROM courses c
+                    LEFT JOIN programs p ON c.program_id = p.program_id
+                    LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
+                    WHERE c.is_active = TRUE 
+                    AND (c.program_id = ? OR c.program_id IS NULL)
+                    GROUP BY c.course_id
+                    ORDER BY c.course_code";
+                $stmt = $pdo->prepare($courses_query);
+                $stmt->execute([$program_id]);
+                $response_data['courses_data'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
             } else if ($role === 'class') {
                 $user_id = $_SESSION['user_id'];
                 $class_query = "SELECT class_id FROM classes WHERE user_id = ? AND is_active = TRUE";
