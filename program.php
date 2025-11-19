@@ -7,7 +7,7 @@ validateUserSession('program_chair');
 $user_id = $_SESSION['user_id'];
 $program_chair_name = $_SESSION['full_name'];
 try {
-    $set_online_query = "UPDATE faculty SET is_active = 1, last_location_update = NOW() WHERE user_id = ?";
+    $set_online_query = "UPDATE faculty SET is_active = 1, status = 'Available', last_location_update = NOW() WHERE user_id = ?";
     $stmt = $pdo->prepare($set_online_query);
     $stmt->execute([$user_id]);
 } catch (Exception $e) {

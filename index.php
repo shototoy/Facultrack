@@ -36,7 +36,7 @@ if ($_POST) {
                     if ($faculty_info) {
                         $_SESSION['faculty_id'] = $faculty_info['faculty_id'];
                         $_SESSION['employee_id'] = $faculty_info['employee_id'];
-                        $set_online_query = "UPDATE faculty SET is_active = 1 WHERE user_id = ?";
+                        $set_online_query = "UPDATE faculty SET is_active = 1, status = 'Available' WHERE user_id = ?";
                         $online_stmt = $pdo->prepare($set_online_query);
                         $online_stmt->execute([$user['user_id']]);
                     }
@@ -48,7 +48,7 @@ if ($_POST) {
                         $_SESSION['faculty_id'] = $faculty_info['faculty_id'];
                         $_SESSION['employee_id'] = $faculty_info['employee_id'];
                         $_SESSION['program'] = $faculty_info['program'];
-                        $set_online_query = "UPDATE faculty SET is_active = 1 WHERE user_id = ?";
+                        $set_online_query = "UPDATE faculty SET is_active = 1, status = 'Available' WHERE user_id = ?";
                         $online_stmt = $pdo->prepare($set_online_query);
                         $online_stmt->execute([$user['user_id']]);
                     }

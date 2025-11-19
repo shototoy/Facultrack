@@ -343,7 +343,9 @@ class LivePollingManager {
         this.startLocationPolling();        
         this.startAnnouncementsPolling();
         if (window.userRole === 'faculty') {
-            this.startSchedulePolling();    
+            this.startSchedulePolling();
+            this.startStatisticsPolling();
+            this.startTablePolling();
         }
         if (['program_chair', 'campus_director'].includes(window.userRole)) {
             this.startStatisticsPolling();  
@@ -396,6 +398,13 @@ class LivePollingManager {
         return false;
     }
     startStatisticsPolling() {
+        if (this.intervals.statistics) return;
+        this.intervals.statistics = setInterval(() => {
+            if (this.hasVisibleElement('statistics')) {
+                this.fetchStatistics();
+            }
+        }, this.defaultIntervals.statistics);
+        this.fetchStatistics();
     }
     startTablePolling() {
         this.intervals.tables = setInterval(() => {
@@ -509,6 +518,20 @@ class LivePollingManager {
             case 'finished': return 'Completed';
             case 'pending': return 'Loading...';
             default: return 'Unknown';
+        }
+    }
+
+    getStatusClass(status) {
+        switch(status) {
+            case 'Available':
+                return 'status-available';
+            case 'In Meeting':
+                return 'status-in status-meeting';
+            case 'On Leave':
+                return 'status-on status-leave';
+            case 'Offline':
+            default:
+                return 'status-offline';
         }
     }
     async fetchStatistics() {
@@ -1011,38 +1034,167 @@ class LivePollingManager {
             }
         }
     }
+
+    updateLocationDisplay(data) {
+        if (this.pageType === 'faculty') {
+            if (data.current_location !== undefined || data.status !== undefined) {
+                const locationText = document.getElementById('currentLocation');
+                const statusDots = document.querySelectorAll('.status-dot');
+                const statusTexts = document.querySelectorAll('.location-status span:not(.status-dot)');
+                
+                if (data.current_location !== undefined && locationText) {
+                    locationText.textContent = data.current_location || 'Not Available';
+                }
+                
+                if (data.status !== undefined) {
+                    const status = data.status || 'Offline';
+                    const statusClass = this.getStatusClass(status);
+                    
+                    statusDots.forEach(dot => {
+                        dot.className = `status-dot ${statusClass}`;
+                    });
+                    
+                    statusTexts.forEach(text => {
+                        text.textContent = status;
+                    });
+                }
+            }
+            if (data.faculty && Array.isArray(data.faculty)) {
+                this.updateFacultyOwnStatus(data.faculty);
+            }
+        } else if (this.pageType === 'program' && data.faculty) {
+            data.faculty.forEach(faculty => {
+                const existingCard = document.querySelector(`.faculty-card[data-faculty-id="${faculty.faculty_id}"]`);
+                if (existingCard) {
+                    this.updateCardStatus(existingCard, faculty, 'faculty');
+                }
+            });
+        } else if (this.pageType === 'director' && data.faculty) {
+            data.faculty.forEach(faculty => {
+                const row = document.querySelector(`tr[data-faculty-id="${faculty.faculty_id}"]`);
+                if (row) {
+                    this.updateTableRowStatus(row, faculty, 'faculty');
+                }
+            });
+        } else if (this.pageType === 'class' && data.faculty) {
+            data.faculty.forEach(faculty => {
+                const existingCard = document.querySelector(`.faculty-card[data-faculty-id="${faculty.faculty_id}"]`);
+                if (existingCard) {
+                    this.updateCardStatus(existingCard, faculty, 'faculty');
+                }
+            });
+        }
+    }
+
+
     updateTableRowStatus(row, entityData, entityType) {
-        if (entityType === 'faculty') {
-            const statusBadge = row.querySelector('.status-badge');
-            const locationCell = row.querySelector('.location-column');
-            if (statusBadge) {
-                const status = entityData.status || 'Offline';
-                statusBadge.className = `status-badge status-${status.toLowerCase()}`;
-                statusBadge.textContent = status;
-            }
-            if (locationCell) {
-                locationCell.textContent = entityData.current_location || 'Not Available';
-            }
+        const statusClass = this.getStatusClass(entityData.status);
+        
+        switch (entityType) {
+            case 'faculty':
+                // Update status badge in director table
+                const statusBadge = row.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.className = `status-badge ${statusClass}`;
+                    statusBadge.textContent = entityData.status || 'Offline';
+                }
+                
+                // Update status dot for consistent color coding
+                const statusDot = row.querySelector('.status-dot');
+                if (statusDot) {
+                    statusDot.className = `status-dot ${statusClass}`;
+                }
+                
+                // Update location
+                const locationCell = row.querySelector('.location-column, .location-cell, .current-location');
+                if (locationCell && entityData.current_location !== undefined) {
+                    locationCell.textContent = entityData.current_location || 'Not Available';
+                }
+                
+                // Update last seen
+                const lastSeenCell = row.querySelector('.last-seen');
+                if (lastSeenCell && entityData.last_seen !== undefined) {
+                    lastSeenCell.textContent = entityData.last_seen || 'Unknown';
+                }
+                break;
+                
+            default:
+                // Handle other entity types with consistent color coding
+                const defaultStatusBadge = row.querySelector('.status-badge');
+                if (defaultStatusBadge) {
+                    defaultStatusBadge.className = `status-badge ${statusClass}`;
+                    defaultStatusBadge.textContent = entityData.status || 'Offline';
+                }
+                
+                const defaultStatusDot = row.querySelector('.status-dot');
+                if (defaultStatusDot) {
+                    defaultStatusDot.className = `status-dot ${statusClass}`;
+                }
+                break;
         }
     }
     updateCardStatus(card, entityData, entityType) {
-        if (entityType === 'faculty') {
-            const statusDot = card.querySelector('.status-dot');
-            const locationText = card.querySelector('.location-text');
-            const locationDiv = card.querySelector('.location-info div:nth-child(2)');
-            if (statusDot && locationText) {
-                const status = entityData.status || 'Offline';
-                const statusClass = status.toLowerCase() === 'available' ? 'available' : 'offline';
-                statusDot.className = `status-dot status-${statusClass}`;
-                locationText.textContent = status;
-            }
-            if (locationDiv && entityData.current_location) {
-                locationDiv.textContent = entityData.current_location;
-            }
-            const timeInfo = card.querySelector('.time-info');
-            if (timeInfo) {
-                timeInfo.textContent = 'Last updated: 0 minutes ago';
-            }
+        const statusClass = this.getStatusClass(entityData.status);
+        
+        switch (entityType) {
+            case 'faculty':
+                // Update status badge in program/class cards for consistent color coding
+                const statusBadge = card.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.className = `status-badge ${statusClass}`;
+                    statusBadge.textContent = entityData.status || 'Offline';
+                }
+                
+                // Update status dot for consistent color coding
+                const statusDot = card.querySelector('.status-dot');
+                if (statusDot) {
+                    statusDot.className = `status-dot ${statusClass}`;
+                }
+                
+                // Update location text
+                const locationText = card.querySelector('.location-text');
+                if (locationText) {
+                    locationText.textContent = entityData.status || 'Offline';
+                }
+                
+                // Update location info
+                const locationDiv = card.querySelector('.location-info div:nth-child(2)');
+                if (locationDiv && entityData.current_location !== undefined) {
+                    locationDiv.textContent = entityData.current_location || 'Not Available';
+                }
+                
+                // Update current location elements
+                const currentLocationElement = card.querySelector('.current-location, .faculty-location');
+                if (currentLocationElement && entityData.current_location !== undefined) {
+                    currentLocationElement.textContent = entityData.current_location || 'Not Available';
+                }
+                
+                // Update time info
+                const timeInfo = card.querySelector('.time-info');
+                if (timeInfo) {
+                    timeInfo.textContent = 'Last updated: 0 minutes ago';
+                }
+                
+                // Update last seen
+                const lastSeenElement = card.querySelector('.last-seen, .faculty-last-seen');
+                if (lastSeenElement && entityData.last_seen !== undefined) {
+                    lastSeenElement.textContent = entityData.last_seen || 'Unknown';
+                }
+                break;
+                
+            default:
+                // Handle other entity types with consistent color coding
+                const defaultStatusBadge = card.querySelector('.status-badge');
+                if (defaultStatusBadge) {
+                    defaultStatusBadge.className = `status-badge ${statusClass}`;
+                    defaultStatusBadge.textContent = entityData.status || 'Offline';
+                }
+                
+                const defaultStatusDot = card.querySelector('.status-dot');
+                if (defaultStatusDot) {
+                    defaultStatusDot.className = `status-dot ${statusClass}`;
+                }
+                break;
         }
     }
     isRecentlyCreated(entity) {
@@ -1199,7 +1351,7 @@ class LivePollingManager {
             <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-faculty-id="${faculty.faculty_id}">
                 <td class="name-column">${escapeHtml(faculty.full_name)}</td>
                 <td class="status-column">
-                    <span class="status-badge status-${status.toLowerCase()}">${status}</span>
+                    <span class="status-badge ${this.getStatusClass(status)}">${status}</span>
                 </td>
                 <td class="location-column">${escapeHtml(faculty.current_location || 'Not Available')}</td>
                 <td class="actions-column">
@@ -2192,6 +2344,41 @@ class LivePollingManager {
                     this.startTablePolling();
                     break;
             }
+        }
+    }
+
+    updateFacultyOwnStatus(facultyData) {
+        const currentUserId = window.userId || sessionStorage.getItem('userId');
+        const currentUser = facultyData.find(faculty => faculty.user_id == currentUserId);
+        if (!currentUser) return;
+        
+        const statusDots = document.querySelectorAll('.status-dot');
+        const statusTexts = document.querySelectorAll('.location-status span:not(.status-dot)');
+        const locationText = document.getElementById('currentLocation');
+        
+        const status = currentUser.status || 'Offline';
+        const statusClass = this.getStatusClass(status);
+        
+        statusDots.forEach(dot => {
+            const oldClass = dot.className;
+            const newClass = `status-dot ${statusClass}`;
+            if (oldClass !== newClass) {
+                dot.className = newClass;
+                dot.style.animation = 'statusUpdate 0.3s ease-in-out';
+                setTimeout(() => dot.style.animation = '', 300);
+            }
+        });
+        
+        statusTexts.forEach(text => {
+            if (text.textContent.trim() !== status) {
+                text.textContent = status;
+                text.style.animation = 'statusUpdate 0.3s ease-in-out';
+                setTimeout(() => text.style.animation = '', 300);
+            }
+        });
+        
+        if (locationText && currentUser.current_location) {
+            locationText.textContent = currentUser.current_location || 'Not Available';
         }
     }
 }

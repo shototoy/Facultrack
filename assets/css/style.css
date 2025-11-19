@@ -828,6 +828,38 @@ body::before {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
+.status-badge.status-in,
+.status-badge.status-meeting {
+    background: rgba(255, 152, 0, 0.1);
+    color: #E65100;
+    box-shadow: 0 2px 6px rgba(255, 152, 0, 0.2);
+}
+
+.status-badge.status-on,
+.status-badge.status-leave {
+    background: rgba(244, 67, 54, 0.1);
+    color: #C62828;
+    box-shadow: 0 2px 6px rgba(244, 67, 54, 0.2);
+}
+
+.status-dot.status-available {
+    background-color: #4CAF50;
+}
+
+.status-dot.status-in,
+.status-dot.status-meeting {
+    background-color: #FF9800;
+}
+
+.status-dot.status-on,
+.status-dot.status-leave {
+    background-color: #F44336;
+}
+
+.status-dot.status-offline {
+    background-color: #9E9E9E;
+}
+
 .status-badge {
     padding: 3px 8px;
     border-radius: 10px;

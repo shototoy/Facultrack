@@ -34,9 +34,11 @@ function getAllFaculty($pdo) {
             f.current_location,
             f.last_location_update,
             CASE 
-                WHEN f.is_active = 1 THEN 'Available'
+                WHEN f.is_active = 1 THEN f.status
                 ELSE 'Offline'
-            END as status
+            END as status,
+            f.is_active as connection_status,
+            f.status as activity_status
         FROM faculty f
         JOIN users u ON f.user_id = u.user_id
         ORDER BY u.full_name
@@ -746,8 +748,8 @@ switch ($action) {
                         u.full_name as faculty_name,
                         f.current_location,
                         CASE 
-                            WHEN f.is_active = 1 THEN 'available'
-                            ELSE 'offline'
+                            WHEN f.is_active = 1 THEN f.status
+                            ELSE 'Offline'
                         END as status,
                         COALESCE(
                             (SELECT CASE 
@@ -777,13 +779,19 @@ switch ($action) {
                     'timestamp' => date('Y-m-d H:i:s')
                 ]);
             } elseif ($user_role === 'faculty') {
+                $stmt = $pdo->prepare("UPDATE faculty SET is_active = 1 WHERE user_id = ?");
+                $stmt->execute([$user_id]);
+                
                 $faculty_query = "
                     SELECT 
+                        f.faculty_id,
+                        f.user_id,
+                        u.full_name as faculty_name,
                         f.current_location,
                         f.last_location_update,
                         CASE 
-                            WHEN f.is_active = 1 THEN 'available'
-                            ELSE 'offline'
+                            WHEN f.is_active = 1 THEN f.status
+                            ELSE 'Offline'
                         END as status,
                         COALESCE(
                             (SELECT CASE 
@@ -799,6 +807,7 @@ switch ($action) {
                             'No location history'
                         ) as last_updated
                     FROM faculty f
+                    JOIN users u ON f.user_id = u.user_id
                     WHERE f.user_id = ?
                 ";
                 $stmt = $pdo->prepare($faculty_query);
@@ -810,6 +819,7 @@ switch ($action) {
                         'current_location' => $faculty_data['current_location'],
                         'status' => $faculty_data['status'],
                         'last_updated' => $faculty_data['last_updated'],
+                        'faculty' => [$faculty_data],
                         'timestamp' => date('Y-m-d H:i:s')
                     ]);
                 } else {
@@ -822,8 +832,8 @@ switch ($action) {
                         u.full_name as faculty_name,
                         f.current_location,
                         CASE 
-                            WHEN f.is_active = 1 THEN 'available'
-                            ELSE 'offline'
+                            WHEN f.is_active = 1 THEN f.status
+                            ELSE 'Offline'
                         END as status,
                         COALESCE(
                             (SELECT CASE 
@@ -856,8 +866,8 @@ switch ($action) {
                         u.full_name as faculty_name,
                         f.current_location,
                         CASE 
-                            WHEN f.is_active = 1 THEN 'available'
-                            ELSE 'offline'
+                            WHEN f.is_active = 1 THEN f.status
+                            ELSE 'Offline'
                         END as status,
                         COALESCE(
                             (SELECT CASE 
@@ -888,6 +898,27 @@ switch ($action) {
             }
         } catch (Exception $e) {
             sendJsonResponse(['success' => false, 'message' => 'Error fetching location data: ' . $e->getMessage()]);
+        }
+        break;
+    case 'update_status':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'faculty') {
+            sendJsonResponse(['success' => false, 'message' => 'Unauthorized access'], 401);
+        }
+        $user_id = $_SESSION['user_id'];
+        $status = $_POST['status'] ?? '';
+        if (!in_array($status, ['Available', 'In Meeting', 'On Leave'])) {
+            sendJsonResponse(['success' => false, 'message' => 'Invalid status']);
+        }
+        try {
+            $stmt = $pdo->prepare("UPDATE faculty SET status = ?, last_location_update = NOW() WHERE user_id = ?");
+            $stmt->execute([$status, $user_id]);
+            if ($stmt->rowCount() > 0) {
+                sendJsonResponse(['success' => true, 'message' => 'Status updated successfully', 'status' => $status]);
+            } else {
+                sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
+            }
+        } catch (Exception $e) {
+            sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         }
         break;
     case 'get_status':
@@ -1057,8 +1088,8 @@ switch ($action) {
                         SELECT f.faculty_id, u.full_name as faculty_name, f.program, f.current_location, f.last_location_update,
                                f.office_hours, f.contact_email, f.contact_phone, f.is_active,
                                CASE 
-                                   WHEN f.is_active = 1 THEN 'available'
-                                   ELSE 'offline'
+                                   WHEN f.is_active = 1 THEN f.status
+                                   ELSE 'Offline'
                                END as status,
                                COALESCE(
                                    (SELECT CASE 
@@ -1086,6 +1117,34 @@ switch ($action) {
                     $response_data['faculty_data'] = [];
                 }
             } else if ($role === 'faculty') {
+                $user_id = $_SESSION['user_id'];
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        f.faculty_id,
+                        u.full_name,
+                        f.employee_id,
+                        f.program,
+                        f.office_hours,
+                        f.contact_email,
+                        f.contact_phone,
+                        f.current_location,
+                        f.last_location_update,
+                        CASE 
+                            WHEN f.is_active = 1 THEN f.status
+                            ELSE 'Offline'
+                        END as status,
+                        f.is_active as connection_status,
+                        f.status as activity_status
+                    FROM faculty f
+                    JOIN users u ON f.user_id = u.user_id
+                    WHERE f.user_id = ?
+                ");
+                $stmt->execute([$user_id]);
+                $faculty_data = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($faculty_data) {
+                    $response_data['current_entities'] = ['faculty' => [$faculty_data]];
+                }
+                
                 if ($tab === 'announcements') {
                     $announcements_query = "
                         SELECT 

@@ -44,6 +44,49 @@ function closeLocationHistoryModal() {
     document.getElementById('locationHistoryModal').classList.remove('show');
     document.body.style.overflow = 'auto';
 }
+
+function openStatusModal() {
+    document.getElementById('statusModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeStatusModal() {
+    document.getElementById('statusModal').classList.remove('show');
+    document.body.style.overflow = 'auto';
+    document.getElementById('statusForm').reset();
+}
+
+async function updateStatus() {
+    const statusSelect = document.getElementById('statusSelect');
+    const selectedStatus = statusSelect.value;
+
+    if (!selectedStatus) {
+        showNotification('Please select a status', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=update_status&status=${encodeURIComponent(selectedStatus)}`
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(`Status updated to: ${selectedStatus}`, 'success');
+            closeStatusModal();
+        } else {
+            throw new Error(result.message || 'Failed to update status');
+        }
+    } catch (error) {
+        console.error('Status update error:', error);
+        showNotification('Failed to update status. Please try again.', 'error');
+    }
+}
 async function updateLocation() {
     const form = document.getElementById('locationForm');
     const formData = new FormData(form);
@@ -231,6 +274,8 @@ document.addEventListener('click', function(e) {
             closeLocationModal();
         } else if (e.target.id === 'locationHistoryModal') {
             closeLocationHistoryModal();
+        } else if (e.target.id === 'statusModal') {
+            closeStatusModal();
         }
     }
     const sidebar = document.getElementById('sidebar');
@@ -250,6 +295,8 @@ document.addEventListener('keydown', function(e) {
                 closeLocationModal();
             } else if (openModal.id === 'locationHistoryModal') {
                 closeLocationHistoryModal();
+            } else if (openModal.id === 'statusModal') {
+                closeStatusModal();
             }
         }
     }

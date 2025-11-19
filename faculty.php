@@ -111,7 +111,7 @@ if (!$faculty_info) {
     die("Faculty information not found");
 }
 try {
-    $set_online_query = "UPDATE faculty SET is_active = 1, last_location_update = NOW() WHERE user_id = ?";
+    $set_online_query = "UPDATE faculty SET is_active = 1, status = 'Available', last_location_update = NOW() WHERE user_id = ?";
     $stmt = $pdo->prepare($set_online_query);
     $stmt->execute([$user_id]);
 } catch (Exception $e) {
@@ -266,7 +266,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             }
             .actions-grid {
                 display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
+                grid-template-columns: 1fr 1fr 1fr !important;
                 gap: 12px !important;
                 width: 100% !important;
                 max-width: none !important;
@@ -371,7 +371,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             }
             .actions-grid {
                 display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
+                grid-template-columns: 1fr 1fr 1fr !important;
                 gap: 8px !important;
                 width: 100% !important;
                 max-width: none !important;
@@ -555,7 +555,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
         }
         .actions-section .actions-grid {
             display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
             gap: 12px !important;
             height: 120px !important;
         }
@@ -612,6 +612,10 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             font-weight: bold;
             margin-bottom: 3px;
             text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+        .btn-primary .action-title {
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
         }
         .action-subtitle {
             font-size: 0.75rem;
@@ -919,7 +923,13 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                     <div class="quick-actions">
                         <h3>Quick Actions</h3>
                         <div class="actions-grid">
-                            <button class="action-card btn-primary" onclick="openLocationModal()">
+                            <button class="action-card btn-primary" onclick="openStatusModal()">
+                                <div class="action-icon">
+                                    <svg class="feather"><use href="#user-check"></use></svg>
+                                </div>
+                                <div class="action-title">Update Status</div>
+                            </button>
+                            <button class="action-card" onclick="openLocationModal()">
                                 <div class="action-icon">
                                     <svg class="feather"><use href="#map-pin"></use></svg>
                                 </div>
@@ -976,9 +986,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                             <option value="Library">Library</option>
                             <option value="Registrar">Registrar</option>
                             <option value="Outside Campus">Outside Campus</option>
-                            <option value="In Meeting">In Meeting</option>
-                            <option value="Idle">Idle</option>
-                            <option value="On Leave">On Leave</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -1007,8 +1014,74 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 </div>
             </div>
         </div>
+        <div class="modal-overlay" id="statusModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Update Status</h3>
+                    <button type="button" class="modal-close" onclick="closeStatusModal()">&times;</button>
+                </div>
+                <form id="statusForm" class="modal-form" onsubmit="event.preventDefault(); updateStatus();">
+                    <div class="form-group">
+                        <label class="form-label">Current Status *</label>
+                        <select id="statusSelect" name="status" class="form-select" required>
+                            <option value="">Select your status</option>
+                            <option value="Available">Available</option>
+                            <option value="In Meeting">In Meeting</option>
+                            <option value="On Leave">On Leave</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeStatusModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Update Status</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     <script>
         window.userRole = 'faculty';
+        
+        function openStatusModal() {
+            document.getElementById('statusModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeStatusModal() {
+            document.getElementById('statusModal').classList.remove('show');
+            document.body.style.overflow = 'auto';
+            document.getElementById('statusForm').reset();
+        }
+
+        async function updateStatus() {
+            const statusSelect = document.getElementById('statusSelect');
+            const selectedStatus = statusSelect.value;
+
+            if (!selectedStatus) {
+                showNotification('Please select a status', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('assets/php/polling_api.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=update_status&status=${encodeURIComponent(selectedStatus)}`
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(`Status updated to: ${selectedStatus}`, 'success');
+                    closeStatusModal();
+                } else {
+                    throw new Error(result.message || 'Failed to update status');
+                }
+            } catch (error) {
+                console.error('Status update error:', error);
+                showNotification('Failed to update status. Please try again.', 'error');
+            }
+        }
     </script>
     <script src="assets/js/polling_config.js"></script>
     <script src="assets/js/toast_manager.js"></script>
