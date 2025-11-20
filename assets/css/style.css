@@ -1328,7 +1328,7 @@ body:has(.table-container) .tab-content.active {
     gap: 10px;
 }
 
-.data-table {
+.table-container .data-table {
     width: 100%;
     border-collapse: collapse;
     background: transparent;
@@ -1337,8 +1337,8 @@ body:has(.table-container) .tab-content.active {
     height: auto;
 }
 
-.data-table th,
-.data-table td {
+.table-container .data-table th,
+.table-container .data-table td {
     padding: 12px 8px;
     text-align: left;
     border-bottom: 1px solid rgba(222, 226, 230, 0.4);
@@ -1347,7 +1347,7 @@ body:has(.table-container) .tab-content.active {
     overflow-wrap: break-word;
 }
 
-.data-table th {
+.table-container .data-table th {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     font-weight: 600;
     color: #495057;
@@ -1359,22 +1359,22 @@ body:has(.table-container) .tab-content.active {
     white-space: nowrap;
 }
 
-.data-table tr {
+.table-container .data-table tr {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
 }
 
-.data-table tr {
+.table-container .data-table tr {
     transform: scale(0.98);
 }
 
-.data-table tr:hover {
+.table-container .data-table tr:hover {
     background: linear-gradient(90deg, rgba(248, 249, 250, 0.8), rgba(233, 236, 239, 0.8));
     transform: scale(1);
     box-shadow: 0 2px 8px rgba(46, 125, 50, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-.data-table td {
+.table-container .data-table td {
     font-size: 0.85rem;
     vertical-align: top;
 }
@@ -3660,19 +3660,7 @@ body:has(.table-container) .tab-content.active {
     color: #2c3e50;
 }
 
-.schedule-table td {
-    text-align: center;
-    vertical-align: middle;
-    padding: 8px 4px;
-    font-size: 0.8rem;
-}
 
-.room-info {
-    font-size: 0.7rem;
-    color: #666;
-    margin-top: 2px;
-    font-style: italic;
-}
 
 .time-cell {
     font-weight: 500;

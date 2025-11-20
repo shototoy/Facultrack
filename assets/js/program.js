@@ -757,8 +757,8 @@ function generateMWFScheduleTable(schedules, clickableClass, clickHandler) {
             if (schedule) {
                 if (clickableClass) {
                     row.push(`<td class="${clickableClass}" ${clickHandler}>
-                        <div class="course-code">${schedule.course_code}</div>
-                        <div class="room-info">${schedule.room || 'TBA'}</div>
+                        <div class="sched-course-code">${schedule.course_code}</div>
+                        <div class="sched-room-info">${schedule.room || 'TBA'}</div>
                     </td>`);
                 } else {
                     const startHour = parseInt(schedule.time_start.split(':')[0]);
@@ -791,8 +791,8 @@ function generateMWFScheduleTable(schedules, clickableClass, clickHandler) {
                         }
                     }
                     row.push(`<td ${rowspan} ${colspan}>
-                        <div class="course-code">${schedule.course_code}</div>
-                        <div class="room-info">${schedule.room || 'TBA'}</div>
+                        <div class="sched-course-code">${schedule.course_code}</div>
+                        <div class="sched-room-info">${schedule.room || 'TBA'}</div>
                     </td>`);
                     if (colspanCount === 2) {
                         if (days === 'MW' && day === 'M') {
@@ -816,7 +816,7 @@ function generateMWFScheduleTable(schedules, clickableClass, clickHandler) {
     return html + '</tbody></table>';
 }
 function generateTTHScheduleTable(schedules, clickableClass, clickHandler) {
-    const times = ['07:30:00', '09:00:00', '10:30:00', '12:00:00', '13:00:00', '14:30:00', '16:00:00'];
+    const times = ['07:30:00', '09:00:00', '10:30:00', '13:00:00', '14:30:00', '16:00:00'];
     let html = `<table class="schedule-table"><thead><tr><th>Time</th><th>T</th><th>TH</th><th>S</th></tr></thead><tbody>`;
     const occupiedCells = new Map();
     times.forEach((time, timeIndex) => {
@@ -845,8 +845,8 @@ function generateTTHScheduleTable(schedules, clickableClass, clickHandler) {
             if (schedule) {
                 if (clickableClass) {
                     row.push(`<td class="${clickableClass}" ${clickHandler}>
-                        <div class="course-code">${schedule.course_code}</div>
-                        <div class="room-info">${schedule.room || 'TBA'}</div>
+                        <div class="sched-course-code">${schedule.course_code}</div>
+                        <div class="sched-room-info">${schedule.room || 'TBA'}</div>
                     </td>`);
                 } else {
                     const tthMap = {
@@ -881,8 +881,8 @@ function generateTTHScheduleTable(schedules, clickableClass, clickHandler) {
                         }
                     }
                     row.push(`<td ${rowspan} ${colspan}>
-                        <div class="course-code">${schedule.course_code}</div>
-                        <div class="room-info">${schedule.room || 'TBA'}</div>
+                        <div class="sched-course-code">${schedule.course_code}</div>
+                        <div class="sched-room-info">${schedule.room || 'TBA'}</div>
                     </td>`);
                     if (days === 'TTH' && day === 'T') {
                     }
@@ -1066,7 +1066,7 @@ function findCourseForTimeAndDay(schedules, timeSlot, day) {
         return dayMap[day]?.includes(daysValue) && s.time_start === timeSlot;
     });
     if (schedule) {
-        return `<div class="course-code">${schedule.course_code}</div><div class="room-info">${schedule.room || 'TBA'}</div>`;
+        return `<div class="sched-course-code">${schedule.course_code}</div><div class="sched-room-info">${schedule.room || 'TBA'}</div>`;
     }
     return '';
 }
