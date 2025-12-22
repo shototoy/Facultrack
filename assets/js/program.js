@@ -2105,35 +2105,53 @@ function handleDayCheckboxChange(checkbox) {
 
 
 function exportSchedule(facultyId) {
-    showNotification('Export functionality will be implemented soon', 'info');
+    const facultyName = facultyNames[facultyId] || 'Unknown Faculty';
+    const schedules = facultySchedules[facultyId] || [];
+
+    const { mwfSchedules, tthSchedules } = separateSchedulesByType(schedules);
+    const summary = calculateSummaryData(schedules);
+
+    const exportWindow = window.open('', '_blank', 'width=1200,height=800');
+    exportWindow.document.write(generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary));
+    exportWindow.document.close();
+
+    exportWindow.onload = () => {
+        if (typeof html2canvas === 'undefined') {
+            const script = exportWindow.document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            script.onload = () => {
+                captureAndDownload(exportWindow, facultyName);
+            };
+            exportWindow.document.head.appendChild(script);
+        } else {
+            captureAndDownload(exportWindow, facultyName);
+        }
+    };
 }
+
+function captureAndDownload(targetWindow, facultyName) {
+    targetWindow.html2canvas(targetWindow.document.body, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        width: targetWindow.document.body.scrollWidth,
+        height: targetWindow.document.body.scrollHeight
+    }).then(canvas => {
+        canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = targetWindow.document.createElement('a');
+            a.href = url;
+            a.download = `${facultyName.replace(/\s+/g, '_')}_Schedule.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            setTimeout(() => targetWindow.close(), 1000);
+        });
+    });
+}
+
 function printSchedule(facultyId) {
-    const facultyName = facultyNames[facultyId];
-    const printContent = document.querySelector('#scheduleContent').innerHTML;
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>${facultyName} Schedule</title>
-                <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
-                    .schedule-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                    .schedule-table th, .schedule-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-                    .schedule-table th { background-color: #f5f5f5; }
-                    .course-code { font-weight: bold; }
-                    .room-info { font-size: 0.8em; color: #666; }
-                    .right-panel { display: none; }
-                    @media print { body { margin: 0; } .right-panel { display: none; } }
-                </style>
-            </head>
-            <body>
-                <h2>${facultyName} - Schedule</h2>
-                ${printContent}
-            </body>
-        </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
+    printFacultySchedule(facultyId);
 }
 function formatTime(time) {
     const [hours, minutes] = time.split(':');
