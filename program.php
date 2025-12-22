@@ -49,13 +49,28 @@ if (!empty($class_ids)) {
 require_once 'assets/php/announcement_functions.php';
 $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 function checkDayOverlap($days1, $days2) {
-    $days1 = strtoupper($days1);
-    $days2 = strtoupper($days2);
-    $expand = ['MW' => 'M,W', 'TTH' => 'T,TH', 'MWF' => 'M,W,F', 'MTWTHF' => 'M,T,W,TH,F'];
-    if (isset($expand[$days1])) $days1 = $expand[$days1];
-    if (isset($expand[$days2])) $days2 = $expand[$days2];
-    $arr1 = explode(',', str_replace(['MW', 'TTH', 'MWF'], ['M,W', 'T,TH', 'M,W,F'], $days1));
-    $arr2 = explode(',', str_replace(['MW', 'TTH', 'MWF'], ['M,W', 'T,TH', 'M,W,F'], $days2));
+    $days1 = strtoupper(trim($days1));
+    $days2 = strtoupper(trim($days2));
+    
+    $parseDays = function($dayString) {
+        $dayString = str_replace(' ', '', $dayString);
+        $days = [];
+        $i = 0;
+        while ($i < strlen($dayString)) {
+            if ($i < strlen($dayString) - 1 && substr($dayString, $i, 2) === 'TH') {
+                $days[] = 'TH';
+                $i += 2;
+            } else {
+                $days[] = $dayString[$i];
+                $i++;
+            }
+        }
+        return $days;
+    };
+    
+    $arr1 = $parseDays($days1);
+    $arr2 = $parseDays($days2);
+    
     return count(array_intersect($arr1, $arr2)) > 0;
 }
 function checkTimeOverlap($start1, $end1, $start2, $end2) {
@@ -188,6 +203,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
         $original_course = $is_edit ? ($_POST['original_course_code'] ?? '') : '';
         $original_time_start = $is_edit ? ($_POST['original_time_start'] ?? '') : '';
         $original_days = $is_edit ? ($_POST['original_days'] ?? '') : '';
+        
+        if (strtotime($time_end) <= strtotime($time_start)) {
+            echo json_encode(['success' => false, 'message' => 'End time must be after start time']);
+            exit;
+        }
         $curriculum_check = "SELECT COUNT(*) as valid FROM curriculum cur
                            JOIN classes cl ON cur.year_level = cl.year_level AND cur.semester = cl.semester
                            WHERE cur.course_code = ? AND cl.class_id = ? AND cur.is_active = TRUE";
@@ -661,21 +681,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
     }
     exit;
 }
-if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
-    $rooms_query = "SELECT DISTINCT room FROM schedules WHERE room IS NOT NULL AND room != '' ORDER BY room";
-    $rooms_stmt = $pdo->prepare($rooms_query);
-    $rooms_stmt->execute();
-    $existing_rooms = $rooms_stmt->fetchAll(PDO::FETCH_COLUMN);
-    $predefined_rooms = ['NR102', 'NR103', 'NR104', 'NR105', 'NR106', 'NR107', 'NR108', 'NR109',
-                       'NR202', 'NR203', 'NR204', 'NR205', 'NR206', 'NR207', 'CL208', 'CL209',
-                       'NR302', 'NR303', 'NR304', 'NR305', 'NR306', 'NR307', 'CL308', 'CL309',
-                       'Computer Lab 1', 'Computer Lab 2', 'Physics Lab', 'Chemistry Lab',
-                       'Gymnasium', 'Auditorium', 'Library', 'Conference Room', 'TBA'];
-    $all_rooms = array_unique(array_merge($existing_rooms, $predefined_rooms));
-    sort($all_rooms);
-    echo json_encode(['success' => true, 'rooms' => $all_rooms]);
-    exit;
-}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1118,7 +1124,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
     <script src="assets/js/shared_functions.js"></script>
     <script src="assets/js/program.js"></script>
     <script>
-        const facultySchedules = <?php echo json_encode($faculty_schedules); ?>;
+        let facultySchedules = <?php echo json_encode($faculty_schedules); ?>;
         const facultyNames = <?php echo json_encode(array_column($faculty_data, 'full_name', 'faculty_id')); ?>;
         if (typeof window.toggleSearch !== 'function') {
             window.toggleSearch = function() {
