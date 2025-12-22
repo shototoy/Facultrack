@@ -376,47 +376,167 @@ function findExistingCourse(cell, day, timeSlot) {
     }
     return null;
 }
-function showAssignmentPanel(day, timeSlot, cell) {
-    const panel = document.getElementById('assignmentPanel');
-    const header = document.getElementById('selectedTimeSlot');
-    const content = document.getElementById('assignmentContent');
-    header.textContent = `${day} ${timeSlot}`;
-    content.innerHTML = `
-        <div class="assignment-form">
-            <div class="form-group">
-                <label>Course:</label>
-                <select id="courseSelect" class="form-control">
-                    <option value="">Select a course...</option>
-                    <!-- Course options will be loaded here -->
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Class:</label>
-                <select id="classSelect" class="form-control">
-                    <option value="">Select a class...</option>
-                    <!-- Class options will be loaded here -->
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Room:</label>
-                <input type="text" id="roomInput" class="form-control" placeholder="Enter room number">
-            </div>
-            <div class="form-actions">
-                <button onclick="assignCourse()" class="btn-primary">Assign Course</button>
-                <button onclick="removeAssignment()" class="btn-secondary">Remove Assignment</button>
-            </div>
-        </div>
-    `;
-    panel.style.display = 'block';
+function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
+    const isEditMode = existingCourse !== null;
+    console.log('showAssignmentPanel called:', { day, timeSlot, existingCourse, isEditMode });
+
+    const form = document.querySelector('.courseload-assignment-form');
+    if (!form) {
+        console.error('Course load form not found!');
+        return;
+    }
+
+    form.style.display = 'block';
+
+    const formTitle = form.querySelector('h4');
+    if (formTitle) {
+        formTitle.innerHTML = `${isEditMode ? 'Edit' : 'Assign'} Course to Faculty`;
+        formTitle.style.display = 'flex';
+        formTitle.style.alignItems = 'center';
+        formTitle.style.gap = '8px';
+        formTitle.style.marginBottom = '12px';
+        formTitle.style.fontSize = '1.1em';
+        if (isEditMode) {
+            const editBadge = document.createElement('span');
+            editBadge.className = 'edit-indicator';
+            editBadge.textContent = 'EDIT';
+            editBadge.style.cssText = 'background: #ff9800; color: white; padding: 3px 10px; border-radius: 4px; font-size: 0.75em; font-weight: 600;';
+            formTitle.appendChild(editBadge);
+        }
+    }
+
+    const notice = form.querySelector('.time-selection-notice');
+    if (notice) {
+        notice.innerHTML = `
+            <span class="day-indicator" style="background: #2e7d32; color: white; padding: 3px 10px; border-radius: 4px; font-weight: 600; margin-right: 6px; font-size: 0.85em;">${day}</span>
+            <span class="time-indicator" style="background: #2e7d32; color: white; padding: 3px 10px; border-radius: 4px; font-weight: 600; font-size: 0.85em;">${timeSlot}</span>
+        `;
+        notice.style.background = '#f5f5f5';
+        notice.style.borderColor = '#ddd';
+        notice.style.display = 'flex';
+        notice.style.alignItems = 'center';
+        notice.style.padding = '8px';
+        notice.style.marginBottom = '12px';
+    }
+
+    const formGroups = form.querySelectorAll('.form-group');
+    formGroups.forEach(group => {
+        group.style.marginBottom = '10px';
+        const label = group.querySelector('label');
+        if (label) {
+            label.style.marginBottom = '4px';
+            label.style.fontSize = '0.9em';
+        }
+        const select = group.querySelector('select');
+        if (select) {
+            select.style.padding = '6px 8px';
+            select.style.fontSize = '0.9em';
+        }
+    });
+
+    const formActions = form.querySelector('.form-actions');
+    if (formActions) {
+        formActions.style.marginTop = '12px';
+        formActions.style.display = 'flex';
+        formActions.style.gap = '8px';
+        formActions.style.flexWrap = 'wrap';
+        const buttons = formActions.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.style.padding = '8px 16px';
+            btn.style.fontSize = '0.9em';
+        });
+    }
+
+    const timeValue = convertTimeSlotToValue(timeSlot);
+    const hiddenTimeStart = document.getElementById('hiddenTimeStart');
+    if (hiddenTimeStart) {
+        hiddenTimeStart.value = timeValue;
+    }
+
+    const dayMap = { 'Monday': 'M', 'Tuesday': 'T', 'Wednesday': 'W', 'Thursday': 'TH', 'Friday': 'F', 'Saturday': 'S' };
+    const dayCheckboxes = form.querySelectorAll('input[name="days[]"]');
+    dayCheckboxes.forEach(cb => {
+        cb.checked = false;
+        cb.disabled = false;
+    });
+    const dayCheckbox = form.querySelector(`input[name="days[]"][value="${dayMap[day]}"]`);
+    if (dayCheckbox) {
+        dayCheckbox.checked = true;
+        if (!isEditMode) {
+            dayCheckbox.disabled = true;
+        }
+    }
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.textContent = isEditMode ? 'Update Course' : 'Assign Course';
+    }
+
+    let deleteBtn = form.querySelector('.btn-delete-desktop');
+    if (isEditMode) {
+        if (!deleteBtn) {
+            deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'btn-delete-desktop';
+            deleteBtn.style.cssText = 'background: #ff9800; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-left: 8px;';
+            deleteBtn.textContent = 'Delete Assignment';
+            deleteBtn.onclick = deleteDesktopAssignment;
+            const formActions = form.querySelector('.form-actions');
+            if (formActions) {
+                formActions.appendChild(deleteBtn);
+            }
+        }
+        deleteBtn.style.display = 'inline-block';
+
+        const hiddenOriginalCourse = document.getElementById('hiddenOriginalCourse') || document.createElement('input');
+        hiddenOriginalCourse.type = 'hidden';
+        hiddenOriginalCourse.id = 'hiddenOriginalCourse';
+        hiddenOriginalCourse.value = existingCourse.course_code;
+        if (!document.getElementById('hiddenOriginalCourse')) {
+            form.querySelector('form').appendChild(hiddenOriginalCourse);
+        }
+
+        const hiddenOriginalTime = document.getElementById('hiddenOriginalTime') || document.createElement('input');
+        hiddenOriginalTime.type = 'hidden';
+        hiddenOriginalTime.id = 'hiddenOriginalTime';
+        hiddenOriginalTime.value = existingCourse.time_start;
+        if (!document.getElementById('hiddenOriginalTime')) {
+            form.querySelector('form').appendChild(hiddenOriginalTime);
+        }
+
+        const hiddenOriginalDays = document.getElementById('hiddenOriginalDays') || document.createElement('input');
+        hiddenOriginalDays.type = 'hidden';
+        hiddenOriginalDays.id = 'hiddenOriginalDays';
+        hiddenOriginalDays.value = existingCourse.days;
+        if (!document.getElementById('hiddenOriginalDays')) {
+            form.querySelector('form').appendChild(hiddenOriginalDays);
+        }
+    } else if (deleteBtn) {
+        deleteBtn.style.display = 'none';
+    }
+
     loadCourseAndClassData();
+    if (existingCourse) {
+        setTimeout(() => {
+            const courseSelect = document.getElementById('courseSelect');
+            const classSelect = document.getElementById('classSelect');
+            const roomSelect = form.querySelector('select[name="room"]');
+            const endTimeSelect = document.getElementById('timeEndSelect');
+
+            if (courseSelect) courseSelect.value = existingCourse.course_code;
+            if (classSelect) classSelect.value = existingCourse.class_id;
+            if (roomSelect) roomSelect.value = existingCourse.room || '';
+            if (endTimeSelect) endTimeSelect.value = existingCourse.time_end;
+        }, 500);
+    }
 }
 function closeAssignmentPanel() {
     document.getElementById('assignmentPanel').style.display = 'none';
 }
 function showCourseAssignmentPage(day, timeSlot, cell, existingCourse = null) {
     const isEditMode = existingCourse !== null;
-    if (window.innerWidth > 768 && !isEditMode) {
-        showAssignmentPanel(day, timeSlot, cell);
+    if (window.innerWidth > 768) {
+        showAssignmentPanel(day, timeSlot, cell, existingCourse);
         return;
     }
     const paginationNav = document.querySelector('#facultyCourseLoadModal .mobile-pagination-nav');
@@ -511,26 +631,13 @@ function populateCourseAssignmentPage(day, timeSlot, cell, existingCourse = null
                             <select name="room" class="form-select" id="roomSelectPage">
                                 <option value="">Select room...</option>
                             </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Start Time ${isEditMode ? '*' : '(Fixed)'}</label>
-                            ${isEditMode ?
-            `<select name="time_start" class="form-select" required id="timeStartSelectPage" onchange="validateAndCheckConflicts()">
-                                     <option value="">Select start time...</option>
-                                 </select>` :
-            `<input type="text" id="displayTimeStartPage" class="form-input" value="${timeSlot}" readonly>
-                                 <input type="hidden" name="time_start" id="hiddenTimeStartPage" value="${timeValue}">`
-        }
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">End Time *</label>
+                            <label class="form-label" style="margin-top: 10px;">End Time *</label>
                             <select name="time_end" class="form-select" required id="timeEndSelectPage" onchange="validateAndCheckConflicts()">
                                 <option value="">Select end time...</option>
                             </select>
                         </div>
                     </div>
+                    <input type="hidden" name="time_start" id="hiddenTimeStartPage" value="${timeValue}">
                     <input type="hidden" name="faculty_id" value="${currentFacultyId}">
                     <input type="hidden" name="table_type" value="${tableType}">
                     <input type="hidden" name="is_edit_mode" value="${isEditMode}">
@@ -714,7 +821,7 @@ function generateScheduleTTHPageContent(schedules) {
 }
 function generateScheduleTables(schedules, isClickable = false) {
     const clickableClass = isClickable ? 'clickable-cell' : '';
-    const clickHandler = isClickable ? 'onclick="handleTimeSlotClick(this)"' : '';
+    const clickHandler = isClickable ? 'onclick="handleCourseLoadTimeSlotClick(this)"' : '';
     return `
         <div class="schedule-table-container">
             ${generateMWFScheduleTable(schedules, clickableClass, clickHandler)}
@@ -1034,13 +1141,11 @@ function generateCourseLoadForm(facultyId) {
                             <select name="room" class="form-select" required>
                                 <option value="">Select room...</option>
                             </select>
+                            <label class="form-label" style="margin-top: 10px;">End Time *</label>
+                            <select name="time_end" class="form-select" required id="timeEndSelect">
+                                <option value="">Select end time...</option>
+                            </select>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">End Time *</label>
-                        <select name="time_end" class="form-select" required id="timeEndSelect">
-                            <option value="">Select end time...</option>
-                        </select>
                     </div>
                     <input type="hidden" name="time_start" id="hiddenTimeStart">
                     <div class="form-actions">
@@ -2101,7 +2206,62 @@ function submitCourseAssignment(form, facultyId) {
     formData.append('days', selectedDays.join(''));
     formData.append('action', 'assign_course_load');
     formData.append('faculty_id', facultyId);
-    formData.append('is_edit_mode', 'false');
+
+    const hiddenOriginalCourse = document.getElementById('hiddenOriginalCourse');
+    const hiddenOriginalTime = document.getElementById('hiddenOriginalTime');
+    const hiddenOriginalDays = document.getElementById('hiddenOriginalDays');
+
+    if (hiddenOriginalCourse && hiddenOriginalTime && hiddenOriginalDays) {
+        formData.append('is_edit_mode', 'true');
+        formData.append('original_course_code', hiddenOriginalCourse.value);
+        formData.append('original_time_start', hiddenOriginalTime.value);
+        formData.append('original_days', hiddenOriginalDays.value);
+    } else {
+        formData.append('is_edit_mode', 'false');
+    }
+
+    console.log('Submitting course assignment:', Object.fromEntries(formData));
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Server response:', data);
+            if (data.success) {
+                showNotification('Course assigned successfully!', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 800);
+            } else {
+                showNotification(data.message || 'Failed to assign course', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred while assigning the course', 'error');
+        });
+}
+function deleteDesktopAssignment() {
+    if (!confirm('Are you sure you want to delete this course assignment?')) {
+        return;
+    }
+    const hiddenOriginalCourse = document.getElementById('hiddenOriginalCourse');
+    const hiddenOriginalTime = document.getElementById('hiddenOriginalTime');
+    const hiddenOriginalDays = document.getElementById('hiddenOriginalDays');
+
+    if (!hiddenOriginalCourse || !hiddenOriginalTime || !hiddenOriginalDays) {
+        showNotification('Missing assignment data', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('action', 'delete_schedule');
+    formData.append('faculty_id', currentFacultyId);
+    formData.append('course_code', hiddenOriginalCourse.value);
+    formData.append('time_start', hiddenOriginalTime.value);
+    formData.append('days', hiddenOriginalDays.value);
+
     fetch('program.php', {
         method: 'POST',
         body: formData
@@ -2109,14 +2269,15 @@ function submitCourseAssignment(form, facultyId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showNotification('Course assigned successfully!', 'success');
-                closeModal('facultyCourseLoadModal');
+                showNotification('Course assignment deleted successfully!', 'success');
+                setTimeout(() => location.reload(), 800);
             } else {
-                showNotification(data.message || 'Failed to assign course', 'error');
+                showNotification(data.message || 'Failed to delete assignment', 'error');
             }
         })
         .catch(error => {
-            showNotification('An error occurred while assigning the course', 'error');
+            console.error('Delete error:', error);
+            showNotification('An error occurred', 'error');
         });
 }
 function exportSchedule(facultyId) {
@@ -2155,6 +2316,190 @@ function formatTime(time) {
     const hour = parseInt(hours);
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
+}
+function loadCourseAndClassDataForPanel(existingCourse = null) {
+    fetch('program.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=get_courses_and_classes'
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const courseSelect = document.getElementById('courseSelect');
+                const classSelect = document.getElementById('classSelect');
+                if (courseSelect) {
+                    courseSelect.innerHTML = '<option value="">Choose a course...</option>';
+                    data.courses.forEach(course => {
+                        const selected = existingCourse && existingCourse.course_code === course.course_code ? 'selected' : '';
+                        courseSelect.innerHTML += `<option value="${course.course_code}" ${selected}>${course.course_code} - ${course.course_description}</option>`;
+                    });
+                    courseSelect.addEventListener('change', function () {
+                        updateClassDropdownForPanel(this.value, data.classes, existingCourse);
+                    });
+                    if (existingCourse) {
+                        updateClassDropdownForPanel(existingCourse.course_code, data.classes, existingCourse);
+                    }
+                }
+                if (classSelect && !existingCourse) {
+                    classSelect.disabled = true;
+                    classSelect.innerHTML = '<option value="">Select a course first...</option>';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading courses:', error);
+        });
+}
+function updateClassDropdownForPanel(courseCode, allClasses, existingCourse = null) {
+    const classSelect = document.getElementById('classSelect');
+    if (!courseCode) {
+        classSelect.disabled = true;
+        classSelect.innerHTML = '<option value="">Select a course first...</option>';
+        return;
+    }
+    classSelect.disabled = false;
+    classSelect.innerHTML = '<option value="">Loading classes...</option>';
+    fetch('program.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `action=get_classes_for_course&course_code=${courseCode}`
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                classSelect.innerHTML = '<option value="">Choose a class...</option>';
+                if (data.classes.length === 0) {
+                    classSelect.innerHTML += '<option value="" disabled>No classes have this course in their curriculum</option>';
+                } else {
+                    data.classes.forEach(cls => {
+                        const selected = existingCourse && existingCourse.class_id == cls.class_id ? 'selected' : '';
+                        classSelect.innerHTML += `<option value="${cls.class_id}" ${selected}>${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
+                    });
+                }
+            }
+        })
+        .catch(error => {
+            classSelect.innerHTML = '<option value="" disabled>Error loading classes</option>';
+        });
+}
+function loadRoomOptionsForPanel(existingCourse = null) {
+    const roomSelect = document.getElementById('roomSelect');
+    if (!roomSelect) return;
+    fetch('program.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=get_room_options'
+    })
+        .then(response => response.json())
+        .then(data => {
+            const rooms = data.success ? data.rooms : ['Room 101', 'Room 102', 'Room 103', 'Room 201', 'Room 202', 'Room 203', 'Computer Lab 1', 'Computer Lab 2', 'TBA'];
+            roomSelect.innerHTML = '<option value="">Select room...</option>';
+            rooms.forEach(room => {
+                const selected = existingCourse && existingCourse.room === room ? 'selected' : '';
+                roomSelect.innerHTML += `<option value="${room}" ${selected}>${room}</option>`;
+            });
+        })
+        .catch(error => {
+            roomSelect.innerHTML = '<option value="">Select room...</option>';
+        });
+}
+function populateEndTimeOptionsForPanel(startTime, existingCourse = null) {
+    const endTimeSelect = document.getElementById('endTimeSelect');
+    if (!endTimeSelect || !startTime) return;
+    const startHour = parseInt(startTime.split(':')[0]);
+    const allEndTimes = [
+        { value: '09:00:00', label: '9:00 AM' }, { value: '10:00:00', label: '10:00 AM' },
+        { value: '11:00:00', label: '11:00 AM' }, { value: '12:00:00', label: '12:00 PM' },
+        { value: '13:00:00', label: '1:00 PM' }, { value: '14:00:00', label: '2:00 PM' },
+        { value: '15:00:00', label: '3:00 PM' }, { value: '16:00:00', label: '4:00 PM' },
+        { value: '17:00:00', label: '5:00 PM' }
+    ];
+    endTimeSelect.innerHTML = '<option value="">Select end time...</option>';
+    allEndTimes.forEach(time => {
+        const timeHour = parseInt(time.value.split(':')[0]);
+        if (timeHour > startHour) {
+            const selected = existingCourse && existingCourse.time_end === time.value ? 'selected' : '';
+            endTimeSelect.innerHTML += `<option value="${time.value}" ${selected}>${time.label}</option>`;
+        }
+    });
+}
+function submitAssignmentFromPanel() {
+    const courseSelect = document.getElementById('courseSelect');
+    const classSelect = document.getElementById('classSelect');
+    const roomSelect = document.getElementById('roomSelect');
+    const endTimeSelect = document.getElementById('endTimeSelect');
+    const timeStart = document.getElementById('assignmentTimeStart').value;
+    const day = document.getElementById('assignmentDay').value;
+    const isEdit = document.getElementById('assignmentIsEdit').value === 'true';
+    if (!courseSelect.value || !classSelect.value || !endTimeSelect.value) {
+        showNotification('Please fill all required fields', 'error');
+        return;
+    }
+    const dayMap = { 'Monday': 'M', 'Tuesday': 'T', 'Wednesday': 'W', 'Thursday': 'TH', 'Friday': 'F', 'Saturday': 'S' };
+    const formData = new FormData();
+    formData.append('action', 'assign_course_load');
+    formData.append('faculty_id', currentFacultyId);
+    formData.append('course_code', courseSelect.value);
+    formData.append('class_id', classSelect.value);
+    formData.append('room', roomSelect.value);
+    formData.append('time_start', timeStart);
+    formData.append('time_end', endTimeSelect.value);
+    formData.append('days', dayMap[day]);
+    formData.append('is_edit_mode', isEdit);
+    if (isEdit) {
+        formData.append('original_course_code', document.getElementById('originalCourseCode').value);
+        formData.append('original_time_start', document.getElementById('originalTimeStart').value);
+        formData.append('original_days', document.getElementById('originalDays').value);
+    }
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(isEdit ? 'Course updated successfully!' : 'Course assigned successfully!', 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showNotification(data.message || 'Failed to assign course', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Assignment error:', error);
+            showNotification('An error occurred', 'error');
+        });
+}
+function deleteAssignmentFromPanel() {
+    if (!confirm('Are you sure you want to delete this course assignment?')) {
+        return;
+    }
+    const originalCourseCode = document.getElementById('originalCourseCode').value;
+    const originalTimeStart = document.getElementById('originalTimeStart').value;
+    const originalDays = document.getElementById('originalDays').value;
+    const formData = new FormData();
+    formData.append('action', 'delete_schedule');
+    formData.append('faculty_id', currentFacultyId);
+    formData.append('course_code', originalCourseCode);
+    formData.append('time_start', originalTimeStart);
+    formData.append('days', originalDays);
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Course assignment deleted successfully!', 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showNotification(data.message || 'Failed to delete assignment', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            showNotification('An error occurred', 'error');
+        });
 }
 function viewClassDetails(classId) {
     showNotification('Class details view will be implemented soon', 'info');
