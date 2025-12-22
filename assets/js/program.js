@@ -386,38 +386,32 @@ function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
         return;
     }
 
+    const timeValue = convertTimeSlotToValue(timeSlot);
+    const formHTML = generateAssignmentForm({
+        isEditMode,
+        existingCourse,
+        day,
+        timeSlot,
+        timeValue,
+        tableType: 'MWF',
+        context: 'desktop'
+    });
+
+    form.innerHTML = `
+        <div class="form-section">
+            <h4 style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 1.1em;">
+                ${isEditMode ? 'Edit' : 'Assign'} Course to Faculty
+                ${isEditMode ? '<span class="edit-indicator" style="background: #ff9800; color: white; padding: 3px 10px; border-radius: 4px; font-size: 0.75em; font-weight: 600;">EDIT</span>' : ''}
+            </h4>
+            <div class="time-selection-notice" style="padding: 8px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 12px; display: flex; align-items: center;">
+                <span class="day-indicator" style="background: #2e7d32; color: white; padding: 3px 10px; border-radius: 4px; font-weight: 600; margin-right: 6px; font-size: 0.85em;">${day}</span>
+                <span class="time-indicator" style="background: #2e7d32; color: white; padding: 3px 10px; border-radius: 4px; font-weight: 600; font-size: 0.85em;">${timeSlot}</span>
+            </div>
+            ${formHTML}
+        </div>
+    `;
+
     form.style.display = 'block';
-
-    const formTitle = form.querySelector('h4');
-    if (formTitle) {
-        formTitle.innerHTML = `${isEditMode ? 'Edit' : 'Assign'} Course to Faculty`;
-        formTitle.style.display = 'flex';
-        formTitle.style.alignItems = 'center';
-        formTitle.style.gap = '8px';
-        formTitle.style.marginBottom = '12px';
-        formTitle.style.fontSize = '1.1em';
-        if (isEditMode) {
-            const editBadge = document.createElement('span');
-            editBadge.className = 'edit-indicator';
-            editBadge.textContent = 'EDIT';
-            editBadge.style.cssText = 'background: #ff9800; color: white; padding: 3px 10px; border-radius: 4px; font-size: 0.75em; font-weight: 600;';
-            formTitle.appendChild(editBadge);
-        }
-    }
-
-    const notice = form.querySelector('.time-selection-notice');
-    if (notice) {
-        notice.innerHTML = `
-            <span class="day-indicator" style="background: #2e7d32; color: white; padding: 3px 10px; border-radius: 4px; font-weight: 600; margin-right: 6px; font-size: 0.85em;">${day}</span>
-            <span class="time-indicator" style="background: #2e7d32; color: white; padding: 3px 10px; border-radius: 4px; font-weight: 600; font-size: 0.85em;">${timeSlot}</span>
-        `;
-        notice.style.background = '#f5f5f5';
-        notice.style.borderColor = '#ddd';
-        notice.style.display = 'flex';
-        notice.style.alignItems = 'center';
-        notice.style.padding = '8px';
-        notice.style.marginBottom = '12px';
-    }
 
     const formGroups = form.querySelectorAll('.form-group');
     formGroups.forEach(group => {
@@ -447,12 +441,6 @@ function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
         });
     }
 
-    const timeValue = convertTimeSlotToValue(timeSlot);
-    const hiddenTimeStart = document.getElementById('hiddenTimeStart');
-    if (hiddenTimeStart) {
-        hiddenTimeStart.value = timeValue;
-    }
-
     const dayMap = { 'Monday': 'M', 'Tuesday': 'T', 'Wednesday': 'W', 'Thursday': 'TH', 'Friday': 'F', 'Saturday': 'S' };
     const dayCheckboxes = form.querySelectorAll('input[name="days[]"]');
     dayCheckboxes.forEach(cb => {
@@ -467,68 +455,7 @@ function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
         }
     }
 
-    const submitBtn = form.querySelector('button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.textContent = isEditMode ? 'Update Course' : 'Assign Course';
-    }
-
-    let deleteBtn = form.querySelector('.btn-delete-desktop');
-    if (isEditMode) {
-        if (!deleteBtn) {
-            deleteBtn = document.createElement('button');
-            deleteBtn.type = 'button';
-            deleteBtn.className = 'btn-delete-desktop';
-            deleteBtn.style.cssText = 'background: #ff9800; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-left: 8px;';
-            deleteBtn.textContent = 'Delete Assignment';
-            deleteBtn.onclick = deleteDesktopAssignment;
-            const formActions = form.querySelector('.form-actions');
-            if (formActions) {
-                formActions.appendChild(deleteBtn);
-            }
-        }
-        deleteBtn.style.display = 'inline-block';
-
-        const hiddenOriginalCourse = document.getElementById('hiddenOriginalCourse') || document.createElement('input');
-        hiddenOriginalCourse.type = 'hidden';
-        hiddenOriginalCourse.id = 'hiddenOriginalCourse';
-        hiddenOriginalCourse.value = existingCourse.course_code;
-        if (!document.getElementById('hiddenOriginalCourse')) {
-            form.querySelector('form').appendChild(hiddenOriginalCourse);
-        }
-
-        const hiddenOriginalTime = document.getElementById('hiddenOriginalTime') || document.createElement('input');
-        hiddenOriginalTime.type = 'hidden';
-        hiddenOriginalTime.id = 'hiddenOriginalTime';
-        hiddenOriginalTime.value = existingCourse.time_start;
-        if (!document.getElementById('hiddenOriginalTime')) {
-            form.querySelector('form').appendChild(hiddenOriginalTime);
-        }
-
-        const hiddenOriginalDays = document.getElementById('hiddenOriginalDays') || document.createElement('input');
-        hiddenOriginalDays.type = 'hidden';
-        hiddenOriginalDays.id = 'hiddenOriginalDays';
-        hiddenOriginalDays.value = existingCourse.days;
-        if (!document.getElementById('hiddenOriginalDays')) {
-            form.querySelector('form').appendChild(hiddenOriginalDays);
-        }
-    } else if (deleteBtn) {
-        deleteBtn.style.display = 'none';
-    }
-
-    loadCourseAndClassData();
-    if (existingCourse) {
-        setTimeout(() => {
-            const courseSelect = document.getElementById('courseSelect');
-            const classSelect = document.getElementById('classSelect');
-            const roomSelect = form.querySelector('select[name="room"]');
-            const endTimeSelect = document.getElementById('timeEndSelect');
-
-            if (courseSelect) courseSelect.value = existingCourse.course_code;
-            if (classSelect) classSelect.value = existingCourse.class_id;
-            if (roomSelect) roomSelect.value = existingCourse.room || '';
-            if (endTimeSelect) endTimeSelect.value = existingCourse.time_end;
-        }, 500);
-    }
+    loadAssignmentFormData('desktop', existingCourse);
 }
 function closeAssignmentPanel() {
     document.getElementById('assignmentPanel').style.display = 'none';
@@ -568,10 +495,17 @@ function populateCourseAssignmentPage(day, timeSlot, cell, existingCourse = null
     const isEditMode = existingCourse !== null;
     const timeValue = convertTimeSlotToValue(timeSlot);
     const tableType = getTableTypeFromDay(day);
-    const actionButtons = `
-        <button type="button" class="btn-secondary" onclick="closeCourseAssignmentPage()">Cancel</button>
-        <button type="submit" class="btn-primary">${isEditMode ? 'Update Course' : 'Assign Course'}</button>
-    `;
+
+    const formHTML = generateAssignmentForm({
+        isEditMode,
+        existingCourse,
+        day,
+        timeSlot,
+        timeValue,
+        tableType,
+        context: 'mobile'
+    });
+
     assignmentPage.innerHTML = `
         <div class="assignment-page-header">
             <button class="back-btn" onclick="closeCourseAssignmentPage()">
@@ -585,75 +519,12 @@ function populateCourseAssignmentPage(day, timeSlot, cell, existingCourse = null
             </div>
         </div>
         <div class="assignment-page-content">
-            <form id="courseAssignmentForm" onsubmit="event.preventDefault(); submitCourseAssignmentFromPage(this, ${isEditMode});" class="assignment-form-full">
-                <div class="form-section-main">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Course *</label>
-                            <select name="course_code" class="form-select" required id="courseSelectPage" onchange="validateAndCheckConflicts()">
-                                <option value="">Choose a course...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Class *</label>
-                            <select name="class_id" class="form-select" required id="classSelectPage" onchange="validateAndCheckConflicts()">
-                                <option value="">Choose a class...</option>
-                            </select>
-                        </div>
-                    </div>
-                    <!-- Course info removed for cleaner edit mode -->
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Days * (${tableType} schedule only)</label>
-                            <div class="days-checkbox-group">
-                                <label class="day-checkbox">
-                                    <input type="checkbox" name="days[]" value="M"> M
-                                </label>
-                                <label class="day-checkbox">
-                                    <input type="checkbox" name="days[]" value="T"> T
-                                </label>
-                                <label class="day-checkbox">
-                                    <input type="checkbox" name="days[]" value="W"> W
-                                </label>
-                                <label class="day-checkbox">
-                                    <input type="checkbox" name="days[]" value="TH"> TH
-                                </label>
-                                <label class="day-checkbox">
-                                    <input type="checkbox" name="days[]" value="F"> F
-                                </label>
-                                <label class="day-checkbox">
-                                    <input type="checkbox" name="days[]" value="S"> S
-                                </label>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Room</label>
-                            <select name="room" class="form-select" id="roomSelectPage">
-                                <option value="">Select room...</option>
-                            </select>
-                            <label class="form-label" style="margin-top: 10px;">End Time *</label>
-                            <select name="time_end" class="form-select" required id="timeEndSelectPage" onchange="validateAndCheckConflicts()">
-                                <option value="">Select end time...</option>
-                            </select>
-                        </div>
-                    </div>
-                    <input type="hidden" name="time_start" id="hiddenTimeStartPage" value="${timeValue}">
-                    <input type="hidden" name="faculty_id" value="${currentFacultyId}">
-                    <input type="hidden" name="table_type" value="${tableType}">
-                    <input type="hidden" name="is_edit_mode" value="${isEditMode}">
-                    ${isEditMode ? `<input type="hidden" name="original_course_code" value="${existingCourse.course_code}">` : ''}
-                    ${isEditMode ? `<input type="hidden" name="original_time_start" value="${existingCourse.time_start}">` : ''}
-                    ${isEditMode ? `<input type="hidden" name="original_days" value="${existingCourse.days}">` : ''}
-                    <div class="form-actions-page">
-                        ${actionButtons}
-                        ${isEditMode ? `<button type="button" class="btn-delete-orange" onclick="deleteCourseAssignment()">Delete Course Assignment</button>` : ''}
-                    </div>
-                </div>
-            </form>
+            ${formHTML}
         </div>
     `;
+
     initializeAssignmentPageForm(day, timeValue, tableType, existingCourse);
-    loadCourseAndClassDataPage(existingCourse);
+    loadAssignmentFormData('mobile', existingCourse);
 }
 function convertTimeSlotToValue(timeSlot) {
     const timeParts = timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
@@ -2733,3 +2604,264 @@ function loadRoomOptionsForCourseLoad() {
             });
         });
 }
+function generateAssignmentForm(options) {
+    const { isEditMode, existingCourse, day, timeSlot, timeValue, tableType, context } = options;
+    const idSuffix = context === 'mobile' ? 'Page' : '';
+
+    return `
+        <form id="assignmentForm${idSuffix}" onsubmit="event.preventDefault(); submitAssignment(this, ${isEditMode});" class="assignment-form-unified">
+            <div class="form-section-main">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Course *</label>
+                        <select name="course_code" class="form-select" required id="courseSelect${idSuffix}" onchange="validateAndCheckConflicts()">
+                            <option value="">Choose a course...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Class *</label>
+                        <select name="class_id" class="form-select" required id="classSelect${idSuffix}" onchange="validateAndCheckConflicts()">
+                            <option value="">Choose a class...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Days *${context === 'mobile' ? ` (${tableType} schedule only)` : ''}</label>
+                        <div class="days-checkbox-group">
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="days[]" value="M"> M
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="days[]" value="T"> T
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="days[]" value="W"> W
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="days[]" value="TH"> TH
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="days[]" value="F"> F
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="days[]" value="S"> S
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Room</label>
+                        <select name="room" class="form-select" id="roomSelect${idSuffix}">
+                            <option value="">Select room...</option>
+                        </select>
+                        <label class="form-label" style="margin-top: 10px;">End Time *</label>
+                        <select name="time_end" class="form-select" required id="timeEndSelect${idSuffix}" onchange="validateAndCheckConflicts()">
+                            <option value="">Select end time...</option>
+                        </select>
+                    </div>
+                </div>
+                <input type="hidden" name="time_start" id="hiddenTimeStart${idSuffix}" value="${timeValue}">
+                <input type="hidden" name="faculty_id" value="${currentFacultyId}">
+                ${context === 'mobile' ? `<input type="hidden" name="table_type" value="${tableType}">` : ''}
+                <input type="hidden" name="is_edit_mode" value="${isEditMode}">
+                ${isEditMode ? `<input type="hidden" name="original_course_code" value="${existingCourse.course_code}">` : ''}
+                ${isEditMode ? `<input type="hidden" name="original_time_start" value="${existingCourse.time_start}">` : ''}
+                ${isEditMode ? `<input type="hidden" name="original_days" value="${existingCourse.days}">` : ''}
+                <div class="form-actions${context === 'mobile' ? '-page' : ''}">
+                    ${context === 'mobile' ? '<button type="button" class="btn-secondary" onclick="closeCourseAssignmentPage()">Cancel</button>' : '<button type="button" class="btn-secondary" onclick="closeModal(\'facultyCourseLoadModal\')">Cancel</button>'}
+                    <button type="submit" class="btn-primary">${isEditMode ? 'Update Course' : 'Assign Course'}</button>
+                    ${isEditMode ? '<button type="button" class="btn-delete-orange" style="background: #ff9800; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;" onclick="deleteAssignment()">Delete Course Assignment</button>' : ''}
+                </div>
+            </div>
+        </form>
+    `;
+}
+function loadAssignmentFormData(context, existingCourse) {
+    const idSuffix = context === 'mobile' ? 'Page' : '';
+
+    fetch('program.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=get_courses_and_classes'
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const courseSelect = document.getElementById(`courseSelect${idSuffix}`);
+                const classSelect = document.getElementById(`classSelect${idSuffix}`);
+
+                if (courseSelect) {
+                    courseSelect.innerHTML = '<option value="">Choose a course...</option>';
+                    data.courses.forEach(course => {
+                        const selected = existingCourse && existingCourse.course_code === course.course_code ? 'selected' : '';
+                        courseSelect.innerHTML += `<option value="${course.course_code}" ${selected}>${course.course_code} - ${course.course_description}</option>`;
+                    });
+
+                    courseSelect.addEventListener('change', function () {
+                        updateClassDropdownUnified(this.value, context, existingCourse);
+                    });
+
+                    if (existingCourse) {
+                        updateClassDropdownUnified(existingCourse.course_code, context, existingCourse);
+                    }
+                }
+
+                if (classSelect && !existingCourse) {
+                    classSelect.disabled = true;
+                    classSelect.innerHTML = '<option value="">Select a course first...</option>';
+                }
+            }
+        })
+        .catch(error => console.error('Error loading courses:', error));
+
+    loadRoomOptionsUnified(context, existingCourse);
+    const timeStart = document.getElementById(`hiddenTimeStart${idSuffix}`).value;
+    populateEndTimeOptionsUnified(timeStart, context, existingCourse);
+}
+function updateClassDropdownUnified(courseCode, context, existingCourse = null) {
+    const idSuffix = context === 'mobile' ? 'Page' : '';
+    const classSelect = document.getElementById(`classSelect${idSuffix}`);
+
+    if (!courseCode) {
+        classSelect.disabled = true;
+        classSelect.innerHTML = '<option value="">Select a course first...</option>';
+        return;
+    }
+
+    classSelect.disabled = false;
+    classSelect.innerHTML = '<option value="">Loading classes...</option>';
+
+    fetch('program.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `action=get_classes_for_course&course_code=${courseCode}`
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                classSelect.innerHTML = '<option value="">Choose a class...</option>';
+                if (data.classes.length === 0) {
+                    classSelect.innerHTML += '<option value="" disabled>No classes have this course in their curriculum</option>';
+                } else {
+                    data.classes.forEach(cls => {
+                        const selected = existingCourse && existingCourse.class_id == cls.class_id ? 'selected' : '';
+                        classSelect.innerHTML += `<option value="${cls.class_id}" ${selected}>${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
+                    });
+                }
+            }
+        })
+        .catch(error => classSelect.innerHTML = '<option value="" disabled>Error loading classes</option>');
+}
+function loadRoomOptionsUnified(context, existingCourse = null) {
+    const idSuffix = context === 'mobile' ? 'Page' : '';
+    const roomSelect = document.getElementById(`roomSelect${idSuffix}`);
+    if (!roomSelect) return;
+
+    fetch('program.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=get_room_options'
+    })
+        .then(response => response.json())
+        .then(data => {
+            const rooms = data.success ? data.rooms : ['Room 101', 'Room 102', 'Room 103', 'Room 201', 'Room 202', 'Room 203', 'Computer Lab 1', 'Computer Lab 2', 'TBA'];
+            roomSelect.innerHTML = '<option value="">Select room...</option>';
+            rooms.forEach(room => {
+                const selected = existingCourse && existingCourse.room === room ? 'selected' : '';
+                roomSelect.innerHTML += `<option value="${room}" ${selected}>${room}</option>`;
+            });
+        })
+        .catch(error => roomSelect.innerHTML = '<option value="">Select room...</option>');
+}
+function populateEndTimeOptionsUnified(startTime, context, existingCourse = null) {
+    const idSuffix = context === 'mobile' ? 'Page' : '';
+    const endTimeSelect = document.getElementById(`timeEndSelect${idSuffix}`);
+    if (!endTimeSelect || !startTime) return;
+
+    const startHour = parseInt(startTime.split(':')[0]);
+    const allEndTimes = [
+        { value: '09:00:00', label: '9:00 AM' }, { value: '10:00:00', label: '10:00 AM' },
+        { value: '11:00:00', label: '11:00 AM' }, { value: '12:00:00', label: '12:00 PM' },
+        { value: '13:00:00', label: '1:00 PM' }, { value: '14:00:00', label: '2:00 PM' },
+        { value: '15:00:00', label: '3:00 PM' }, { value: '16:00:00', label: '4:00 PM' },
+        { value: '17:00:00', label: '5:00 PM' }
+    ];
+
+    endTimeSelect.innerHTML = '<option value="">Select end time...</option>';
+    allEndTimes.forEach(time => {
+        const timeHour = parseInt(time.value.split(':')[0]);
+        if (timeHour > startHour) {
+            const selected = existingCourse && existingCourse.time_end === time.value ? 'selected' : '';
+            endTimeSelect.innerHTML += `<option value="${time.value}" ${selected}>${time.label}</option>`;
+        }
+    });
+}
+function submitAssignment(formElement, isEditMode) {
+    const formData = new FormData(formElement);
+    const selectedDays = Array.from(formElement.querySelectorAll('input[name="days[]"]:checked'))
+        .map(checkbox => checkbox.value);
+
+    if (selectedDays.length === 0) {
+        showNotification('Please select at least one day', 'error');
+        return;
+    }
+
+    formData.delete('days[]');
+    formData.append('days', selectedDays.join(''));
+    formData.append('action', 'assign_course_load');
+    formData.append('faculty_id', currentFacultyId);
+
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(isEditMode ? 'Course updated successfully!' : 'Course assigned successfully!', 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showNotification(data.message || 'Failed to assign course', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Assignment error:', error);
+            showNotification('An error occurred', 'error');
+        });
+}
+function deleteAssignment() {
+    if (!confirm('Are you sure you want to delete this course assignment?')) {
+        return;
+    }
+
+    const form = document.querySelector('form[id^="assignmentForm"]');
+    const originalCourse = form.querySelector('input[name="original_course_code"]').value;
+    const originalTime = form.querySelector('input[name="original_time_start"]').value;
+    const originalDays = form.querySelector('input[name="original_days"]').value;
+
+    const formData = new FormData();
+    formData.append('action', 'delete_schedule');
+    formData.append('faculty_id', currentFacultyId);
+    formData.append('course_code', originalCourse);
+    formData.append('time_start', originalTime);
+    formData.append('days', originalDays);
+
+    fetch('program.php', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Course assignment deleted successfully!', 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showNotification(data.message || 'Failed to delete assignment', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            showNotification('An error occurred', 'error');
+        });
+}
+
