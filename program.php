@@ -6,13 +6,93 @@ $pdo->exec("SET time_zone = '+08:00'");
 validateUserSession('program_chair');
 $user_id = $_SESSION['user_id'];
 $program_chair_name = $_SESSION['full_name'];
-try {
-    $set_online_query = "UPDATE faculty SET is_active = 1, status = 'Available', last_location_update = NOW() WHERE user_id = ?";
-    $stmt = $pdo->prepare($set_online_query);
-    $stmt->execute([$user_id]);
-} catch (Exception $e) {
-    error_log("Failed to set program chair online status: " . $e->getMessage());
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+    
+    switch ($_POST['action']) {
+        case 'assign_course_load':
+            try {
+                $faculty_id = $_POST['faculty_id'];
+                $course_code = $_POST['course_code'];
+                $class_id = $_POST['class_id'];
+                $days = $_POST['days'];
+                $time_start = $_POST['time_start'];
+                $time_end = $_POST['time_end'];
+                $room = $_POST['room'] ?? null;
+                $is_edit_mode = $_POST['is_edit_mode'] === 'true';
+                
+                if ($is_edit_mode) {
+                    $original_course = $_POST['original_course_code'];
+                    $original_time = $_POST['original_time_start'];
+                    $original_days = $_POST['original_days'];
+                    
+                    $delete_stmt = $pdo->prepare("DELETE FROM schedules WHERE faculty_id = ? AND course_code = ? AND time_start = ? AND days = ? AND is_active = TRUE");
+                    $delete_stmt->execute([$faculty_id, $original_course, $original_time, $original_days]);
+                }
+                
+                $insert_stmt = $pdo->prepare("INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)");
+                $insert_stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room]);
+                
+                echo json_encode(['success' => true, 'message' => $is_edit_mode ? 'Course updated successfully' : 'Course assigned successfully']);
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+            exit;
+            
+        case 'delete_schedule':
+            try {
+                $faculty_id = $_POST['faculty_id'];
+                $course_code = $_POST['course_code'];
+                $time_start = $_POST['time_start'];
+                $days = $_POST['days'];
+                
+                $stmt = $pdo->prepare("DELETE FROM schedules WHERE faculty_id = ? AND course_code = ? AND time_start = ? AND days = ? AND is_active = TRUE");
+                $stmt->execute([$faculty_id, $course_code, $time_start, $days]);
+                
+                echo json_encode(['success' => true, 'message' => 'Schedule deleted successfully']);
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+            exit;
+            
+        case 'get_courses_and_classes':
+            try {
+                $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
+                $stmt->execute([$user_id]);
+                $program = $stmt->fetchColumn();
+                
+                $courses_query = "SELECT c.course_code, c.course_description FROM courses c LEFT JOIN programs p ON c.program_id = p.program_id WHERE c.is_active = TRUE AND p.program_name = ? ORDER BY c.course_code";
+                $stmt = $pdo->prepare($courses_query);
+                $stmt->execute([$program]);
+                $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                echo json_encode(['success' => true, 'courses' => $courses]);
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+            exit;
+            
+        case 'get_classes_for_course':
+            try {
+                $course_code = $_POST['course_code'];
+                $stmt = $pdo->prepare("SELECT DISTINCT c.class_id, c.class_code, c.class_name, c.year_level FROM classes c JOIN curriculum curr ON c.year_level = curr.year_level AND c.semester = curr.semester WHERE curr.course_code = ? AND c.is_active = TRUE AND curr.is_active = TRUE ORDER BY c.class_code");
+                $stmt->execute([$course_code]);
+                $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                echo json_encode(['success' => true, 'classes' => $classes]);
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+            exit;
+            
+        case 'get_room_options':
+            $rooms = ['Room 101', 'Room 102', 'Room 103', 'Room 201', 'Room 202', 'Room 203', 'Computer Lab 1', 'Computer Lab 2', 'TBA'];
+            echo json_encode(['success' => true, 'rooms' => $rooms]);
+            exit;
+    }
 }
+
 $chair_info = getProgramChairInfo($pdo, $user_id);
 $program = $chair_info ? $chair_info['program'] : 'Unknown Program';
 $classes_data = getProgramClasses($pdo, $user_id);

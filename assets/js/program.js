@@ -453,6 +453,7 @@ function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
         if (!isEditMode) {
             dayCheckbox.disabled = true;
         }
+        handleDayCheckboxChange(dayCheckbox);
     }
 
     loadAssignmentFormData('desktop', existingCourse);
@@ -589,6 +590,10 @@ function initializeAssignmentPageForm(day, timeValue, tableType, existingCourse 
                 checkbox.parentElement.style.opacity = '1';
             }
         });
+        const firstChecked = document.querySelector('#courseAssignmentPage input[name="days[]"]:checked');
+        if (firstChecked) {
+            handleDayCheckboxChange(firstChecked);
+        }
     } else {
         const dayValue = dayMap[day];
         if (dayValue) {
@@ -598,6 +603,7 @@ function initializeAssignmentPageForm(day, timeValue, tableType, existingCourse 
                 checkbox.disabled = false;
                 checkbox.parentElement.style.opacity = '1';
                 checkbox.dataset.required = 'true';
+                handleDayCheckboxChange(checkbox);
             }
         }
     }
@@ -2065,92 +2071,39 @@ function updateClassDropdownBasedOnCourse(courseCode, allClasses) {
             classSelect.innerHTML = '<option value="" disabled>Error loading classes</option>';
         });
 }
-function submitCourseAssignment(form, facultyId) {
-    const formData = new FormData(form);
-    const selectedDays = Array.from(form.querySelectorAll('input[name="days[]"]:checked'))
-        .map(checkbox => checkbox.value);
-    if (selectedDays.length === 0) {
-        showNotification('Please select at least one day', 'error');
-        return;
-    }
-    formData.delete('days[]');
-    formData.append('days', selectedDays.join(''));
-    formData.append('action', 'assign_course_load');
-    formData.append('faculty_id', facultyId);
+function handleDayCheckboxChange(checkbox) {
+    const mwfDays = ['M', 'W', 'F'];
+    const tthDays = ['T', 'TH', 'S'];
+    const form = checkbox.closest('form');
+    const allCheckboxes = form.querySelectorAll('input[name="days[]"]');
 
-    const hiddenOriginalCourse = document.getElementById('hiddenOriginalCourse');
-    const hiddenOriginalTime = document.getElementById('hiddenOriginalTime');
-    const hiddenOriginalDays = document.getElementById('hiddenOriginalDays');
+    const checkedMWF = Array.from(allCheckboxes).filter(cb =>
+        cb.checked && mwfDays.includes(cb.value)
+    );
+    const checkedTTH = Array.from(allCheckboxes).filter(cb =>
+        cb.checked && tthDays.includes(cb.value)
+    );
 
-    if (hiddenOriginalCourse && hiddenOriginalTime && hiddenOriginalDays) {
-        formData.append('is_edit_mode', 'true');
-        formData.append('original_course_code', hiddenOriginalCourse.value);
-        formData.append('original_time_start', hiddenOriginalTime.value);
-        formData.append('original_days', hiddenOriginalDays.value);
+    if (checkedMWF.length > 0) {
+        allCheckboxes.forEach(cb => {
+            if (tthDays.includes(cb.value) && !cb.checked) {
+                cb.disabled = true;
+            }
+        });
+    } else if (checkedTTH.length > 0) {
+        allCheckboxes.forEach(cb => {
+            if (mwfDays.includes(cb.value) && !cb.checked) {
+                cb.disabled = true;
+            }
+        });
     } else {
-        formData.append('is_edit_mode', 'false');
-    }
-
-    console.log('Submitting course assignment:', Object.fromEntries(formData));
-    fetch('program.php', {
-        method: 'POST',
-        body: formData
-    })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Server response:', data);
-            if (data.success) {
-                showNotification('Course assigned successfully!', 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 800);
-            } else {
-                showNotification(data.message || 'Failed to assign course', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('An error occurred while assigning the course', 'error');
+        allCheckboxes.forEach(cb => {
+            cb.disabled = false;
         });
-}
-function deleteDesktopAssignment() {
-    if (!confirm('Are you sure you want to delete this course assignment?')) {
-        return;
     }
-    const hiddenOriginalCourse = document.getElementById('hiddenOriginalCourse');
-    const hiddenOriginalTime = document.getElementById('hiddenOriginalTime');
-    const hiddenOriginalDays = document.getElementById('hiddenOriginalDays');
-
-    if (!hiddenOriginalCourse || !hiddenOriginalTime || !hiddenOriginalDays) {
-        showNotification('Missing assignment data', 'error');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('action', 'delete_schedule');
-    formData.append('faculty_id', currentFacultyId);
-    formData.append('course_code', hiddenOriginalCourse.value);
-    formData.append('time_start', hiddenOriginalTime.value);
-    formData.append('days', hiddenOriginalDays.value);
-
-    fetch('program.php', {
-        method: 'POST',
-        body: formData
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showNotification('Course assignment deleted successfully!', 'success');
-                setTimeout(() => location.reload(), 800);
-            } else {
-                showNotification(data.message || 'Failed to delete assignment', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Delete error:', error);
-            showNotification('An error occurred', 'error');
-        });
 }
+
+
 function exportSchedule(facultyId) {
     showNotification('Export functionality will be implemented soon', 'info');
 }
@@ -2187,72 +2140,6 @@ function formatTime(time) {
     const hour = parseInt(hours);
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
-}
-function loadCourseAndClassDataForPanel(existingCourse = null) {
-    fetch('program.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=get_courses_and_classes'
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const courseSelect = document.getElementById('courseSelect');
-                const classSelect = document.getElementById('classSelect');
-                if (courseSelect) {
-                    courseSelect.innerHTML = '<option value="">Choose a course...</option>';
-                    data.courses.forEach(course => {
-                        const selected = existingCourse && existingCourse.course_code === course.course_code ? 'selected' : '';
-                        courseSelect.innerHTML += `<option value="${course.course_code}" ${selected}>${course.course_code} - ${course.course_description}</option>`;
-                    });
-                    courseSelect.addEventListener('change', function () {
-                        updateClassDropdownForPanel(this.value, data.classes, existingCourse);
-                    });
-                    if (existingCourse) {
-                        updateClassDropdownForPanel(existingCourse.course_code, data.classes, existingCourse);
-                    }
-                }
-                if (classSelect && !existingCourse) {
-                    classSelect.disabled = true;
-                    classSelect.innerHTML = '<option value="">Select a course first...</option>';
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error loading courses:', error);
-        });
-}
-function updateClassDropdownForPanel(courseCode, allClasses, existingCourse = null) {
-    const classSelect = document.getElementById('classSelect');
-    if (!courseCode) {
-        classSelect.disabled = true;
-        classSelect.innerHTML = '<option value="">Select a course first...</option>';
-        return;
-    }
-    classSelect.disabled = false;
-    classSelect.innerHTML = '<option value="">Loading classes...</option>';
-    fetch('program.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `action=get_classes_for_course&course_code=${courseCode}`
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                classSelect.innerHTML = '<option value="">Choose a class...</option>';
-                if (data.classes.length === 0) {
-                    classSelect.innerHTML += '<option value="" disabled>No classes have this course in their curriculum</option>';
-                } else {
-                    data.classes.forEach(cls => {
-                        const selected = existingCourse && existingCourse.class_id == cls.class_id ? 'selected' : '';
-                        classSelect.innerHTML += `<option value="${cls.class_id}" ${selected}>${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
-                    });
-                }
-            }
-        })
-        .catch(error => {
-            classSelect.innerHTML = '<option value="" disabled>Error loading classes</option>';
-        });
 }
 function loadRoomOptionsForPanel(existingCourse = null) {
     const roomSelect = document.getElementById('roomSelect');
@@ -2630,22 +2517,22 @@ function generateAssignmentForm(options) {
                         <label class="form-label">Days *${context === 'mobile' ? ` (${tableType} schedule only)` : ''}</label>
                         <div class="days-checkbox-group">
                             <label class="day-checkbox">
-                                <input type="checkbox" name="days[]" value="M"> M
+                                <input type="checkbox" name="days[]" value="M" onchange="handleDayCheckboxChange(this)"> M
                             </label>
                             <label class="day-checkbox">
-                                <input type="checkbox" name="days[]" value="T"> T
+                                <input type="checkbox" name="days[]" value="T" onchange="handleDayCheckboxChange(this)"> T
                             </label>
                             <label class="day-checkbox">
-                                <input type="checkbox" name="days[]" value="W"> W
+                                <input type="checkbox" name="days[]" value="W" onchange="handleDayCheckboxChange(this)"> W
                             </label>
                             <label class="day-checkbox">
-                                <input type="checkbox" name="days[]" value="TH"> TH
+                                <input type="checkbox" name="days[]" value="TH" onchange="handleDayCheckboxChange(this)"> TH
                             </label>
                             <label class="day-checkbox">
-                                <input type="checkbox" name="days[]" value="F"> F
+                                <input type="checkbox" name="days[]" value="F" onchange="handleDayCheckboxChange(this)"> F
                             </label>
                             <label class="day-checkbox">
-                                <input type="checkbox" name="days[]" value="S"> S
+                                <input type="checkbox" name="days[]" value="S" onchange="handleDayCheckboxChange(this)"> S
                             </label>
                         </div>
                     </div>
@@ -2744,9 +2631,16 @@ function updateClassDropdownUnified(courseCode, context, existingCourse = null) 
                     classSelect.innerHTML += '<option value="" disabled>No classes have this course in their curriculum</option>';
                 } else {
                     data.classes.forEach(cls => {
-                        const selected = existingCourse && existingCourse.class_id == cls.class_id ? 'selected' : '';
-                        classSelect.innerHTML += `<option value="${cls.class_id}" ${selected}>${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
+                        classSelect.innerHTML += `<option value="${cls.class_id}">${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
                     });
+                    if (existingCourse && existingCourse.class_code) {
+                        const matchingClass = data.classes.find(cls => cls.class_code === existingCourse.class_code);
+                        if (matchingClass) {
+                            setTimeout(() => {
+                                classSelect.value = matchingClass.class_id;
+                            }, 50);
+                        }
+                    }
                 }
             }
         })
