@@ -8,6 +8,7 @@
 }
 
 @media (min-width: 769px) {
+
     #facultyScheduleModal .modal-header,
     #facultyCourseLoadModal .modal-header {
         margin-bottom: 2px !important;
@@ -116,33 +117,33 @@
     #facultyCourseLoadModal .modal {
         width: 100vw !important;
         height: 100vh !important;
-        max-height: 100vh !important; 
+        max-height: 100vh !important;
         border-radius: 0 !important;
         margin: 0 !important;
-        padding: 0 !important; 
+        padding: 0 !important;
         display: flex !important;
         flex-direction: column !important;
         overflow: hidden !important;
         box-sizing: border-box !important;
     }
-    
+
     #facultyCourseLoadModal .modal-header {
         margin-bottom: 0 !important;
-        padding: 8px 16px !important; 
+        padding: 8px 16px !important;
         flex-shrink: 0 !important;
         box-sizing: border-box !important;
     }
-    
+
     #facultyCourseLoadModal .modal-body {
         display: flex !important;
         flex-direction: column !important;
-        height: calc(100vh - 50px) !important; 
+        height: calc(100vh - 50px) !important;
         overflow: hidden !important;
         padding: 0 !important;
         flex: 1 !important;
         box-sizing: border-box !important;
     }
-    
+
     #facultyCourseLoadModal #courseLoadContent {
         flex: 1 !important;
         overflow: hidden !important;
@@ -153,6 +154,7 @@
 }
 
 @media (min-width: 769px) {
+
     #facultyScheduleModal .modal-grid-container,
     #facultyCourseLoadModal .modal-grid-container {
         display: flex;
@@ -162,7 +164,7 @@
         overflow: hidden;
         box-sizing: border-box;
     }
-    
+
     #facultyScheduleModal .schedule-tables,
     #facultyCourseLoadModal .schedule-tables {
         display: flex;
@@ -175,7 +177,7 @@
         padding: 2px;
         gap: 4px;
     }
-    
+
     #facultyScheduleModal .right-panel,
     #facultyCourseLoadModal .right-panel {
         flex: 1;
@@ -188,6 +190,7 @@
 
 
 @media (max-width: 1024px) {
+
     #facultyScheduleModal .modal,
     #facultyCourseLoadModal .modal {
         width: 98vw;
@@ -207,8 +210,8 @@
 
 
 @media (max-width: 768px) {
-    
-    
+
+
     #facultyScheduleModal .modal {
         width: 100vw;
         height: 100vh;
@@ -218,7 +221,7 @@
         flex-direction: column;
         overflow: hidden;
     }
-    
+
     #facultyScheduleModal .modal-body {
         display: flex;
         flex-direction: column;
@@ -227,31 +230,31 @@
         padding: 0;
         flex: 1;
     }
-    
+
     #facultyScheduleModal #scheduleContent {
         flex: 1;
         overflow: hidden;
         display: flex;
         flex-direction: column;
     }
-    
-    
+
+
     .mobile-pagination-nav,
     .mobile-page-content {
         display: flex;
     }
-    
+
     .mobile-page-content {
         flex-direction: column;
         flex: 1;
         overflow: hidden;
     }
-    
+
     .desktop-grid-content {
         display: none;
     }
-    
-    
+
+
     #facultyScheduleModal .mobile-pagination-nav,
     #facultyCourseLoadModal .mobile-pagination-nav {
         display: flex;
@@ -261,7 +264,7 @@
         gap: 4px;
         flex-shrink: 0;
     }
-    
+
     #facultyScheduleModal .pagination-btn,
     #facultyCourseLoadModal .pagination-btn {
         flex: 1;
@@ -274,15 +277,15 @@
         transition: all 0.2s;
         color: #666;
     }
-    
+
     #facultyScheduleModal .pagination-btn.active,
     #facultyCourseLoadModal .pagination-btn.active {
         background: #2e7d32;
         color: white;
         border-color: #2e7d32;
     }
-    
-    
+
+
     #facultyScheduleModal .mobile-page {
         display: none !important;
         height: 100%;
@@ -291,8 +294,8 @@
         position: relative;
         z-index: 1;
     }
-    
-    
+
+
     #facultyCourseLoadModal .mobile-page {
         display: none !important;
         height: 100%;
@@ -302,7 +305,7 @@
         position: relative;
         z-index: 1;
     }
-    
+
     #facultyScheduleModal .mobile-page.active,
     #facultyCourseLoadModal .mobile-page.active {
         display: flex !important;
@@ -312,8 +315,8 @@
         position: relative;
         z-index: 10;
     }
-    
-    
+
+
     #facultyScheduleModal .mobile-page:not(.active),
     #facultyCourseLoadModal .mobile-page:not(.active) {
         visibility: hidden !important;
@@ -323,8 +326,8 @@
         top: -9999px !important;
         z-index: -1 !important;
     }
-    
-    
+
+
     #facultyScheduleModal .page-1 .schedule-table-container,
     #facultyScheduleModal .page-2 .schedule-table-container {
         height: 100%;
@@ -333,11 +336,11 @@
         flex-direction: column;
         background: #fff;
         border-radius: 6px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         padding: 4px;
     }
-    
-    
+
+
     #facultyCourseLoadModal .page-1 .schedule-table-container,
     #facultyCourseLoadModal .page-2 .schedule-table-container {
         height: 100% !important;
@@ -352,7 +355,7 @@
         position: relative;
         box-sizing: border-box !important;
     }
-    
+
     #facultyScheduleModal .page-1 .schedule-table-wrapper,
     #facultyScheduleModal .page-2 .schedule-table-wrapper {
         flex: 1;
@@ -360,13 +363,13 @@
         display: flex;
         flex-direction: column;
         min-height: 0;
-        max-height: 75vh; 
+        max-height: 75vh;
     }
-    
-    
+
+
     #facultyCourseLoadModal .page-1 .schedule-table-wrapper,
     #facultyCourseLoadModal .page-2 .schedule-table-wrapper {
-        height: calc(100vh - 138px) !important; 
+        height: calc(100vh - 138px) !important;
         max-height: calc(100vh - 138px) !important;
         overflow: hidden !important;
         display: flex !important;
@@ -375,7 +378,7 @@
         padding: 0 !important;
         box-sizing: border-box !important;
     }
-    
+
     #facultyScheduleModal .page-1 .page-summary,
     #facultyScheduleModal .page-2 .page-summary {
         flex: 1;
@@ -388,8 +391,8 @@
         flex-direction: column;
         min-height: 120px;
     }
-    
-    
+
+
     #facultyCourseLoadModal .page-1 .page-summary,
     #facultyCourseLoadModal .page-2 .page-summary {
         position: fixed;
@@ -407,11 +410,11 @@
         min-height: 40px;
         max-height: 40px;
         justify-content: center;
-        box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
         flex-shrink: 0;
     }
-    
-    
+
+
     #facultyScheduleModal .page-summary .summary-header {
         font-size: 0.75rem;
         font-weight: 600;
@@ -421,8 +424,8 @@
         margin-bottom: 6px;
         flex-shrink: 0;
     }
-    
-    
+
+
     #facultyCourseLoadModal .page-summary .summary-header {
         font-size: 0.8rem;
         font-weight: 500;
@@ -442,8 +445,8 @@
         height: 100%;
         overflow: hidden;
     }
-    
-    
+
+
     #facultyScheduleModal .page-1 .schedule-summary-content,
     #facultyCourseLoadModal .page-1 .schedule-summary-content,
     #facultyScheduleModal .page-2 .schedule-summary-content,
@@ -469,8 +472,8 @@
         position: absolute !important;
         left: -9999px !important;
     }
-    
-    
+
+
     #facultyScheduleModal .page-1 .page-summary .subjects-list,
     #facultyCourseLoadModal .page-1 .page-summary .subjects-list,
     #facultyScheduleModal .page-2 .page-summary .subjects-list,
@@ -486,7 +489,7 @@
         left: auto !important;
         min-height: 0;
     }
-    
+
     #facultyScheduleModal .page-1 .page-summary .subject-item,
     #facultyCourseLoadModal .page-1 .page-summary .subject-item,
     #facultyScheduleModal .page-2 .page-summary .subject-item,
@@ -505,13 +508,13 @@
         margin-bottom: 3px;
         padding: 6px 8px;
         flex-shrink: 0;
-        
+
         min-height: 40px;
         max-height: 40px;
         font-size: 0.65rem;
     }
-    
-    
+
+
     #facultyScheduleModal .page-summary .subjects-list[data-count="1"] .subject-item,
     #facultyCourseLoadModal .page-summary .subjects-list[data-count="1"] .subject-item,
     #facultyScheduleModal .page-summary .subjects-list[data-count="2"] .subject-item,
@@ -521,7 +524,7 @@
         font-size: 0.8rem;
         padding: 12px;
     }
-    
+
     #facultyScheduleModal .page-summary .subjects-list[data-count="3"] .subject-item,
     #facultyCourseLoadModal .page-summary .subjects-list[data-count="3"] .subject-item,
     #facultyScheduleModal .page-summary .subjects-list[data-count="4"] .subject-item,
@@ -531,7 +534,7 @@
         font-size: 0.72rem;
         padding: 9px 10px;
     }
-    
+
     #facultyScheduleModal .page-summary .subject-code,
     #facultyCourseLoadModal .page-summary .subject-code {
         font-weight: 600;
@@ -540,7 +543,7 @@
         margin-right: 8px;
         flex-shrink: 0;
     }
-    
+
     #facultyScheduleModal .page-summary .subject-details,
     #facultyCourseLoadModal .page-summary .subject-details {
         flex: 1;
@@ -551,7 +554,7 @@
         color: #666;
         line-height: 1.2;
     }
-    
+
     #facultyScheduleModal .page-3 .schedule-table-container,
     #facultyCourseLoadModal .page-3 .schedule-table-container {
         flex: 1;
@@ -561,13 +564,13 @@
         flex-direction: column;
         background: #fff;
         border-radius: 8px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         padding: 8px;
         gap: 0;
         margin-bottom: 0;
     }
-    
-    
+
+
     #facultyScheduleModal .page-3 .right-panel,
     #facultyCourseLoadModal .page-3 .right-panel {
         flex: 1;
@@ -594,14 +597,14 @@
         min-height: 0;
         gap: 0;
     }
-    
+
     #facultyScheduleModal .page-3 .load-stats,
     #facultyCourseLoadModal .page-3 .load-stats {
         flex-shrink: 0;
         margin-bottom: 6px;
         padding: 0;
     }
-    
+
     #facultyScheduleModal .page-3 .subjects-list,
     #facultyCourseLoadModal .page-3 .subjects-list {
         flex: 1;
@@ -617,7 +620,7 @@
         display: flex;
         flex-direction: column;
     }
-    
+
     #facultyScheduleModal .page-3 .load-actions,
     #facultyCourseLoadModal .page-3 .load-actions {
         position: absolute;
@@ -631,8 +634,8 @@
         border-top: 1px solid #e0e0e0;
         padding-top: 6px;
     }
-    
-    
+
+
     #facultyScheduleModal .schedule-table {
         width: 100%;
         height: auto;
@@ -640,11 +643,11 @@
         min-height: fit-content;
         table-layout: fixed;
     }
-    
-    
+
+
     #facultyCourseLoadModal .schedule-table {
         width: 100%;
-        height: calc(100vh - 138px) !important; 
+        height: calc(100vh - 138px) !important;
         max-height: calc(100vh - 138px) !important;
         font-size: 0.65rem;
         table-layout: fixed;
@@ -655,14 +658,14 @@
         top: 0;
         left: 0;
     }
-    
+
     #facultyScheduleModal .schedule-table th,
     #facultyScheduleModal .schedule-table td {
         padding: 4px 2px;
         font-size: 0.6rem;
         height: auto;
     }
-    
+
     #facultyScheduleModal .schedule-table td {
         padding: 3px 1px;
         min-height: 30px;
@@ -671,46 +674,46 @@
         word-wrap: break-word;
         overflow-wrap: break-word;
     }
-    
-    
+
+
     #facultyCourseLoadModal .schedule-table th {
-        padding: 1px;
-        font-size: 0.6rem;
-        height: 35px !important;
-        max-height: 35px !important;
+        padding: 4px;
+        font-size: 1rem;
+        height: 40px !important;
+        max-height: 40px !important;
         vertical-align: middle;
         box-sizing: border-box;
         border: 1px solid #ddd;
     }
-    
+
     #facultyCourseLoadModal .schedule-table td {
-        padding: 1px;
-        height: 50px !important;
-        max-height: 50px !important;
-        font-size: 0.5rem;
+        padding: 4px;
+        height: 55px !important;
+        max-height: 55px !important;
+        font-size: 0.65rem;
         word-wrap: break-word;
         overflow-wrap: break-word;
         vertical-align: middle;
         box-sizing: border-box;
         overflow: hidden;
-        line-height: 1.1;
+        line-height: 1.0;
         border: 1px solid #ddd;
     }
-    
-    
+
+
     #facultyCourseLoadModal .schedule-table tbody {
         display: table-row-group;
     }
-    
+
     #facultyCourseLoadModal .schedule-table tbody tr {
-        height: 50px !important;
-        max-height: 50px !important;
+        height: 55px !important;
+        max-height: 55px !important;
         box-sizing: border-box;
     }
-    
+
     #facultyCourseLoadModal .schedule-table thead tr {
-        height: 35px !important;
-        max-height: 35px !important;
+        height: 40px !important;
+        max-height: 40px !important;
         box-sizing: border-box;
     }
 
@@ -723,14 +726,14 @@
         background: #fff;
         position: relative;
     }
-    
-    
+
+
     @media (min-width: 769px) {
         #facultyCourseLoadModal .course-assignment-page {
             display: none !important;
         }
     }
-    
+
     #facultyCourseLoadModal .assignment-page-header {
         flex-shrink: 0;
         background: #f8f9fa;
@@ -745,7 +748,7 @@
         gap: 4px;
         min-height: 44px;
     }
-    
+
     #facultyCourseLoadModal .back-btn {
         background: #6c757d;
         color: white;
@@ -757,11 +760,11 @@
         transition: background-color 0.2s;
         flex-shrink: 0;
     }
-    
+
     #facultyCourseLoadModal .back-btn:hover {
         background: #5a6268;
     }
-    
+
     #facultyCourseLoadModal .assignment-page-header h3 {
         margin: 0;
         color: #2e7d32;
@@ -770,14 +773,14 @@
         text-align: center;
         font-weight: 600;
     }
-    
+
     #facultyCourseLoadModal .selected-slot-info {
         display: flex;
         gap: 3px;
         align-items: center;
         flex-shrink: 0;
     }
-    
+
     #facultyCourseLoadModal .day-indicator,
     #facultyCourseLoadModal .time-indicator {
         background: #2e7d32;
@@ -787,21 +790,21 @@
         font-size: 0.65rem;
         font-weight: 600;
     }
-    
+
     #facultyCourseLoadModal .assignment-page-content {
         flex: 1;
         overflow: hidden;
         padding: 0;
-        margin-bottom: 60px; 
+        margin-bottom: 60px;
     }
-    
+
     #facultyCourseLoadModal .assignment-form-full {
         height: 100%;
         display: flex;
         flex-direction: column;
         overflow-y: auto;
     }
-    
+
     #facultyCourseLoadModal .form-section-main {
         flex: 1;
         display: flex;
@@ -809,19 +812,19 @@
         gap: 6px;
         padding: 0 2px;
     }
-    
-    
+
+
     #facultyCourseLoadModal .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 6px;
         margin-bottom: 6px;
     }
-    
+
     #facultyCourseLoadModal .form-group {
         margin-bottom: 6px;
     }
-    
+
     #facultyCourseLoadModal .form-label {
         display: block;
         margin-bottom: 2px;
@@ -829,7 +832,7 @@
         color: #333;
         font-size: 0.8rem;
     }
-    
+
     #facultyCourseLoadModal .form-input,
     #facultyCourseLoadModal .form-select {
         width: 100%;
@@ -841,7 +844,7 @@
         background: white;
         box-sizing: border-box;
     }
-    
+
     #facultyCourseLoadModal .course-info-display {
         background: #f8f9fa;
         border: 1px solid #e9ecef;
@@ -849,24 +852,24 @@
         padding: 6px;
         margin-bottom: 6px;
     }
-    
+
     #facultyCourseLoadModal .info-item {
         margin-bottom: 3px;
         font-size: 0.75rem;
         line-height: 1.2;
     }
-    
+
     #facultyCourseLoadModal .info-item:last-child {
         margin-bottom: 0;
     }
-    
+
     #facultyCourseLoadModal .days-checkbox-group {
         display: flex;
         flex-wrap: wrap;
         gap: 4px;
         margin-top: 3px;
     }
-    
+
     #facultyCourseLoadModal .day-checkbox {
         display: flex;
         align-items: center;
@@ -882,15 +885,15 @@
         min-width: 35px;
         justify-content: center;
     }
-    
+
     #facultyCourseLoadModal .day-checkbox input[type="checkbox"] {
         margin: 0;
         width: 12px;
         height: 12px;
         accent-color: #2E7D32;
     }
-    
-    
+
+
     #facultyCourseLoadModal .form-actions-page {
         position: fixed;
         bottom: 0;
@@ -902,19 +905,19 @@
         padding: 8px;
         background: white;
         border-top: 2px solid #e0e0e0;
-        box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
         z-index: 1000;
     }
-    
-    
+
+
     #facultyCourseLoadModal .form-actions-page:has(.btn-delete-orange) {
         grid-template-columns: 1fr 1fr;
         grid-template-rows: auto auto;
         gap: 8px;
     }
-    
+
     #facultyCourseLoadModal .btn-delete-orange {
-        grid-column: 1 / -1; 
+        grid-column: 1 / -1;
         grid-row: 1;
         width: 100%;
         padding: 10px;
@@ -927,22 +930,22 @@
         background-color: #ff9800;
         color: white;
     }
-    
+
     #facultyCourseLoadModal .btn-delete-orange:hover {
         background-color: #f57c00;
     }
-    
-    
+
+
     #facultyCourseLoadModal .form-actions-page:has(.btn-delete-orange) .btn-secondary {
         grid-column: 1;
         grid-row: 2;
     }
-    
+
     #facultyCourseLoadModal .form-actions-page:has(.btn-delete-orange) .btn-primary {
         grid-column: 2;
         grid-row: 2;
     }
-    
+
     #facultyCourseLoadModal .form-actions-page button {
         padding: 10px;
         font-size: 0.85rem;
@@ -952,26 +955,26 @@
         transition: background-color 0.2s;
         font-weight: 600;
     }
-    
+
     #facultyCourseLoadModal .form-actions-page .btn-secondary {
         background-color: #6c757d;
         color: white;
     }
-    
+
     #facultyCourseLoadModal .form-actions-page .btn-primary {
         background-color: #2e7d32;
         color: white;
     }
-    
+
     #facultyCourseLoadModal .form-actions-page .btn-secondary:hover {
         background-color: #5a6268;
     }
-    
+
     #facultyCourseLoadModal .form-actions-page .btn-primary:hover {
         background-color: #1b5e20;
     }
-    
-    
+
+
     #facultyCourseLoadModal .edit-indicator {
         background: #ff9800;
         color: white;
@@ -980,27 +983,27 @@
         font-size: 0.6rem;
         font-weight: 600;
     }
-    
+
     #facultyCourseLoadModal .form-actions-page.edit-mode {
         grid-template-columns: 1fr 1fr 1fr;
     }
-    
+
     #facultyCourseLoadModal .form-actions-page .btn-danger {
         background-color: #dc3545;
         color: white;
     }
-    
+
     #facultyCourseLoadModal .form-actions-page .btn-danger:hover {
         background-color: #c82333;
     }
-    
-    
+
+
     #facultyCourseLoadModal .delete-action-page {
         margin-bottom: 12px;
         padding-bottom: 12px;
         border-bottom: 1px solid #e0e0e0;
     }
-    
+
     #facultyCourseLoadModal .btn-delete-orange {
         width: 100%;
         padding: 10px;
@@ -1013,12 +1016,12 @@
         background-color: #ff9800;
         color: white;
     }
-    
+
     #facultyCourseLoadModal .btn-delete-orange:hover {
         background-color: #f57c00;
     }
 
-    
+
     #facultyScheduleModal .page-summary .subject-item,
     #facultyCourseLoadModal .page-summary .subject-item {
         background: white;
@@ -1034,7 +1037,7 @@
         font-size: 0.55rem;
         flex-shrink: 0;
     }
-    
+
     #facultyScheduleModal .page-summary .subject-code,
     #facultyCourseLoadModal .page-summary .subject-code {
         font-weight: 600;
@@ -1043,7 +1046,7 @@
         margin-right: 4px;
         flex-shrink: 0;
     }
-    
+
     #facultyScheduleModal .page-summary .subject-details,
     #facultyCourseLoadModal .page-summary .subject-details {
         flex: 1;
@@ -1054,8 +1057,8 @@
         color: #666;
         line-height: 1;
     }
-    
-    
+
+
     #facultyScheduleModal .page-3 .subject-item,
     #facultyCourseLoadModal .page-3 .subject-item {
         background: white;
@@ -1071,8 +1074,8 @@
         font-size: 0.6rem;
         flex-shrink: 0;
     }
-    
-    
+
+
     #facultyScheduleModal .page-3 .subjects-list[data-count="1"] .subject-item,
     #facultyCourseLoadModal .page-3 .subjects-list[data-count="1"] .subject-item,
     #facultyScheduleModal .page-3 .subjects-list[data-count="2"] .subject-item,
@@ -1082,7 +1085,7 @@
         font-size: 0.7rem;
         padding: 6px 8px;
     }
-    
+
     #facultyScheduleModal .page-3 .subjects-list[data-count="3"] .subject-item,
     #facultyCourseLoadModal .page-3 .subjects-list[data-count="3"] .subject-item,
     #facultyScheduleModal .page-3 .subjects-list[data-count="4"] .subject-item,
@@ -1092,7 +1095,7 @@
         font-size: 0.65rem;
         padding: 5px 7px;
     }
-    
+
     #facultyScheduleModal .page-3 .subject-code,
     #facultyCourseLoadModal .page-3 .subject-code {
         font-weight: 600;
@@ -1100,7 +1103,7 @@
         margin-bottom: 4px;
         color: #2e7d32;
     }
-    
+
     #facultyScheduleModal .page-3 .subject-desc,
     #facultyCourseLoadModal .page-3 .subject-desc {
         font-size: calc(100% - 0.05rem);
@@ -1110,7 +1113,7 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-    
+
     #facultyScheduleModal .page-3 .subject-info,
     #facultyCourseLoadModal .page-3 .subject-info {
         font-size: calc(100% - 0.1rem);
@@ -1120,7 +1123,7 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-    
+
     #facultyScheduleModal .page-3 .subject-class,
     #facultyCourseLoadModal .page-3 .subject-class {
         font-size: calc(100% - 0.1rem);
@@ -1129,11 +1132,12 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-    
+
 }
 
 
 @media (max-width: 768px) {
+
     #facultyScheduleModal .schedule-tables,
     #facultyCourseLoadModal .schedule-tables {
         display: flex;
@@ -1154,12 +1158,13 @@
 }
 
 
-#facultyScheduleModal .schedule-tables > .schedule-table-container:last-child,
-#facultyCourseLoadModal .schedule-tables > .schedule-table-container:last-child {
+#facultyScheduleModal .schedule-tables>.schedule-table-container:last-child,
+#facultyCourseLoadModal .schedule-tables>.schedule-table-container:last-child {
     margin-bottom: 5px;
 }
 
 @media (min-width: 769px) {
+
     #facultyScheduleModal .schedule-table-container,
     #facultyCourseLoadModal .schedule-table-container {
         flex: 1;
@@ -1171,12 +1176,13 @@
 }
 
 @media (max-width: 768px) {
+
     #facultyScheduleModal .schedule-table-container,
     #facultyCourseLoadModal .schedule-table-container {
         background: #fff;
         border-radius: 8px;
         padding: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         margin-bottom: 8px;
         height: auto;
         display: flex;
@@ -1191,6 +1197,7 @@
 }
 
 @media (max-width: 768px) {
+
     #facultyScheduleModal .schedule-table-container h4,
     #facultyCourseLoadModal .schedule-table-container h4 {
         margin: 0 0 6px 0;
@@ -1204,6 +1211,7 @@
 }
 
 @media (min-width: 769px) {
+
     #facultyScheduleModal .schedule-table,
     #facultyCourseLoadModal .schedule-table {
         width: 100%;
@@ -1214,14 +1222,14 @@
         box-sizing: border-box;
         table-layout: fixed;
     }
-    
+
     #facultyScheduleModal .schedule-table th:first-child,
     #facultyCourseLoadModal .schedule-table th:first-child,
     #facultyScheduleModal .schedule-table td:first-child,
     #facultyCourseLoadModal .schedule-table td:first-child {
         width: 15%;
     }
-    
+
     #facultyScheduleModal .schedule-table th:not(:first-child),
     #facultyCourseLoadModal .schedule-table th:not(:first-child),
     #facultyScheduleModal .schedule-table td:not(:first-child),
@@ -1231,6 +1239,7 @@
 }
 
 @media (max-width: 768px) {
+
     #facultyScheduleModal .schedule-table,
     #facultyCourseLoadModal .schedule-table {
         width: 100%;
@@ -1259,6 +1268,7 @@
 }
 
 @media (max-width: 768px) {
+
     #facultyScheduleModal .schedule-table th,
     #facultyCourseLoadModal .schedule-table th {
         height: 28px;
@@ -1294,6 +1304,7 @@
 }
 
 @media (max-width: 768px) {
+
     #facultyScheduleModal .schedule-table td,
     #facultyCourseLoadModal .schedule-table td {
         height: 32px;
@@ -1310,42 +1321,43 @@
 
 
 @media (max-width: 768px) {
+
     #facultyScheduleModal .schedule-table,
     #facultyCourseLoadModal .schedule-table {
         font-size: 0.7rem;
-        height: calc(100% - 16px); 
+        height: calc(100% - 16px);
     }
-    
+
     #facultyScheduleModal .schedule-table th,
     #facultyCourseLoadModal .schedule-table th {
         padding: 6px 2px !important;
         font-size: 0.7rem;
         height: 32px;
     }
-    
+
     #facultyScheduleModal .schedule-table td,
     #facultyCourseLoadModal .schedule-table td {
         padding: 4px 2px !important;
         height: 40px;
         min-height: 40px;
     }
-    
-    
+
+
     #facultyScheduleModal .schedule-table-container,
     #facultyCourseLoadModal .schedule-table-container {
         padding: 8px;
         margin-bottom: 8px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         height: auto;
         min-height: 300px;
     }
-    
-    
+
+
     #facultyCourseLoadModal .schedule-table-container {
         margin-bottom: 50px !important;
     }
-    
-    
+
+
     #facultyCourseLoadModal .schedule-table {
         width: 100%;
         height: calc(100vh - 180px) !important;
@@ -1359,44 +1371,44 @@
         top: 0;
         left: 0;
     }
-    
+
     #facultyScheduleModal .schedule-table-container h4,
     #facultyCourseLoadModal .schedule-table-container h4 {
         font-size: 0.85rem;
         margin-bottom: 8px;
         padding-bottom: 6px;
     }
-    
-    
+
+
     #facultyScheduleModal .right-panel .schedule-summary-content,
     #facultyCourseLoadModal .right-panel .schedule-summary-content {
         padding: 0;
     }
-    
+
     #facultyScheduleModal .right-panel .stat-container,
     #facultyCourseLoadModal .right-panel .stat-container {
         margin-bottom: 8px;
     }
-    
+
     #facultyScheduleModal .right-panel .stat-item,
     #facultyCourseLoadModal .right-panel .stat-item {
         padding: 6px 8px;
         margin: 2px 0;
     }
-    
+
     #facultyScheduleModal .right-panel .subjects-list,
     #facultyCourseLoadModal .right-panel .subjects-list {
         padding: 0;
         margin: 8px 0;
     }
-    
+
     #facultyScheduleModal .right-panel .subjects-list h5,
     #facultyCourseLoadModal .right-panel .subjects-list h5 {
         font-size: 0.8rem;
         margin-bottom: 6px;
         color: #2e7d32;
     }
-    
+
     #facultyScheduleModal .right-panel .subject-item,
     #facultyCourseLoadModal .right-panel .subject-item {
         background: white;
@@ -1405,17 +1417,17 @@
         padding: 8px;
         margin-bottom: 6px;
         font-size: 0.75rem;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         display: block !important;
         width: 100%;
     }
-    
+
     #facultyScheduleModal .right-panel .subject-details,
     #facultyCourseLoadModal .right-panel .subject-details {
         display: block;
         width: 100%;
     }
-    
+
     #facultyScheduleModal .right-panel .subject-desc,
     #facultyCourseLoadModal .right-panel .subject-desc {
         font-size: 0.65rem;
@@ -1423,27 +1435,27 @@
         margin: 2px 0 4px 0;
         line-height: 1.2;
     }
-    
+
     #facultyScheduleModal .right-panel .subject-class,
     #facultyCourseLoadModal .right-panel .subject-class {
         font-size: 0.6rem;
         color: #888;
         margin-top: 4px;
     }
-    
+
     #facultyScheduleModal .right-panel .subject-code,
     #facultyCourseLoadModal .right-panel .subject-code {
         font-size: 0.8rem;
         font-weight: 600;
     }
-    
+
     #facultyScheduleModal .right-panel .subject-info,
     #facultyCourseLoadModal .right-panel .subject-info {
         font-size: 0.65rem;
         margin: 2px 0;
     }
-    
-    
+
+
     #facultyScheduleModal .right-panel .load-actions,
     #facultyCourseLoadModal .right-panel .load-actions {
         display: flex;
@@ -1451,7 +1463,7 @@
         gap: 6px;
         margin-top: 12px;
     }
-    
+
     #facultyScheduleModal .right-panel .load-actions button,
     #facultyCourseLoadModal .right-panel .load-actions button {
         padding: 8px 12px;
@@ -1461,24 +1473,24 @@
         cursor: pointer;
         transition: background-color 0.2s;
     }
-    
+
     #facultyScheduleModal .right-panel .btn-secondary,
     #facultyCourseLoadModal .right-panel .btn-secondary {
         background-color: #6c757d;
         color: white;
     }
-    
+
     #facultyScheduleModal .right-panel .btn-primary,
     #facultyCourseLoadModal .right-panel .btn-primary {
         background-color: #2e7d32;
         color: white;
     }
-    
+
     #facultyScheduleModal .right-panel .btn-secondary:hover,
     #facultyCourseLoadModal .right-panel .btn-secondary:hover {
         background-color: #5a6268;
     }
-    
+
     #facultyScheduleModal .right-panel .btn-primary:hover,
     #facultyCourseLoadModal .right-panel .btn-primary:hover {
         background-color: #1b5e20;
@@ -1487,24 +1499,25 @@
 
 
 @media (max-width: 480px) {
+
     #facultyScheduleModal .schedule-table,
     #facultyCourseLoadModal .schedule-table {
         font-size: 0.6rem;
     }
-    
+
     #facultyScheduleModal .schedule-table th,
     #facultyCourseLoadModal .schedule-table th {
         padding: 4px 1px !important;
         font-size: 0.6rem;
     }
-    
+
     #facultyScheduleModal .schedule-table td,
     #facultyCourseLoadModal .schedule-table td {
         padding: 3px 1px !important;
         min-height: 30px;
     }
-    
-    
+
+
     #facultyScheduleModal .schedule-table-container,
     #facultyCourseLoadModal .schedule-table-container {
         padding: 8px;
@@ -1585,7 +1598,7 @@
     background: white;
     border-radius: 8px;
     border: 1px solid #e0e0e0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 #facultyScheduleModal .stat-number {
@@ -1621,7 +1634,7 @@
         border-radius: 6px;
         padding: 12px;
         margin-bottom: 10px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         transition: all 0.2s ease;
     }
 
@@ -1654,8 +1667,8 @@
         color: #888;
         font-style: italic;
     }
-    
-    
+
+
     #facultyCourseLoadModal .course-assignment-page {
         display: none !important;
     }
@@ -1663,20 +1676,20 @@
 
 
 @media (max-width: 768px) {
-    
+
     #facultyCourseLoadModal .desktop-grid-content {
         display: none !important;
     }
-    
+
     #facultyCourseLoadModal .right-panel {
         display: none !important;
     }
-    
+
     #facultyCourseLoadModal .modal-grid-container {
         display: none !important;
     }
-    
-    
+
+
     #facultyCourseLoadModal #assignmentPanel {
         display: none !important;
     }
@@ -1807,7 +1820,7 @@
     accent-color: #2E7D32;
 }
 
-#facultyCourseLoadModal .day-checkbox input[type="checkbox"]:checked + span,
+#facultyCourseLoadModal .day-checkbox input[type="checkbox"]:checked+span,
 #facultyCourseLoadModal .day-checkbox:has(input:checked) {
     background: #E8F5E8;
     border-color: #2E7D32;
@@ -1820,4 +1833,28 @@
     background: #f5f5f5;
     border-color: #ddd;
     color: #999;
+}
+
+/* Course code and room info - room displayed inline after course code */
+#facultyCourseLoadModal .schedule-table .sched-course-code,
+#facultyCourseLoadModal .schedule-table .sched-room-info {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap;
+    line-height: 1.2 !important;
+}
+
+#facultyCourseLoadModal .schedule-table .sched-course-code {
+    font-size: 0.9rem !important;
+    font-weight: 600;
+    color: #2E7D32;
+}
+
+#facultyCourseLoadModal .schedule-table .sched-room-info {
+    font-size: 0.8rem !important;
+    font-weight: 400;
+    font-style: italic;
+    color: #999;
+    margin-left: 4px !important;
 }
