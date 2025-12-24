@@ -63,14 +63,20 @@ if (!function_exists('renderAnnouncementCard')) {
         $priority_icon = getAnnouncementPriorityIcon($announcement['priority']);
         $category = getAnnouncementCategory($announcement['target_audience']);
         $created_at = $announcement['time_ago'] ?? date('M j, Y', strtotime($announcement['created_at']));
+        $full_date = date('F d, Y', strtotime($announcement['created_at']));
         return "
-        <div class='announcement-card priority-{$priority_class}'>
+        <div class='announcement-card priority-{$priority_class}' id='announcement-{$announcement['announcement_id']}'>
             <div class='announcement-header'>
                 <div class='announcement-priority'>
                     <span class='priority-icon'>{$priority_icon}</span>
                     <span class='priority-text'>" . ucfirst($announcement['priority']) . "</span>
                 </div>
-                <div class='announcement-date'>{$created_at}</div>
+                <div class='announcement-date' data-full-date='{$full_date}'>
+                    {$created_at}
+                    <button onclick='printAnnouncement({$announcement['announcement_id']})' title='Print Announcement' style='background: none; border: none; cursor: pointer; margin-left: 8px; padding: 4px; color: inherit; vertical-align: middle; opacity: 0.7; transition: opacity 0.2s;' onmouseover='this.style.opacity=1' onmouseout='this.style.opacity=0.7'>
+                        <svg class='feather' style='width: 14px; height: 14px;'><use href='#printer'></use></svg>
+                    </button>
+                </div>
             </div>
             <h4 class='announcement-title'>" . htmlspecialchars($announcement['title']) . "</h4>
             <p class='announcement-content'>" . htmlspecialchars($announcement['content']) . "</p>

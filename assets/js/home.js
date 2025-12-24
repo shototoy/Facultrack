@@ -14,7 +14,6 @@ function formatTime(timeString) {
     const ampm = hour24 >= 12 ? 'PM' : 'AM';
     return `${hour12}:${minutes} ${ampm}`;
 }
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('Class Dashboard loaded');
 });
-// Live polling updates now handled automatically by live_polling.js

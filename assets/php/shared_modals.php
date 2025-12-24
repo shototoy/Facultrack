@@ -230,15 +230,15 @@ $role = $_SESSION['role'] ?? '';
             <button type="button" class="modal-close" onclick="closeModal('facultyScheduleModal')">&times;</button>
         </div>
         <div class="modal-body">
-            <!-- Mobile pagination navigation -->
+
             <div class="mobile-pagination-nav">
                 <button class="pagination-btn active" onclick="showMobilePage(1)" data-page="1">MWF Schedule</button>
                 <button class="pagination-btn" onclick="showMobilePage(2)" data-page="2">TTH Schedule</button>
                 <button class="pagination-btn" onclick="showMobilePage(3)" data-page="3">Summary</button>
             </div>
-            <!-- Content area with both mobile pages and desktop grid -->
+
             <div id="scheduleContent">
-                <!-- Mobile paginated content -->
+
                 <div class="mobile-page-content">
                     <div class="mobile-page page-1 active">
                         <div class="schedule-table-container" id="mwfTableContainer">
@@ -258,7 +258,7 @@ $role = $_SESSION['role'] ?? '';
                         </div>
                     </div>
                 </div>
-                <!-- Desktop/tablet grid content -->
+
                 <div class="desktop-grid-content">
                     <div class="loading">Loading schedule...</div>
                 </div>
@@ -273,14 +273,14 @@ $role = $_SESSION['role'] ?? '';
             <button type="button" class="modal-close" onclick="closeModal('facultyCourseLoadModal')">&times;</button>
         </div>
         <div class="modal-body">
-            <!-- Mobile pagination navigation - 2 pages for course load -->
+
             <div class="mobile-pagination-nav">
                 <button class="pagination-btn active" onclick="showCourseLoadPage(1)" data-page="1">MWF Schedule</button>
                 <button class="pagination-btn" onclick="showCourseLoadPage(2)" data-page="2">TTH Schedule</button>
             </div>
             <!-- Content area -->
             <div id="courseLoadContent">
-                <!-- Mobile paginated content -->
+
                 <div class="mobile-page-content">
                     <div class="mobile-page page-1 active">
                         <div class="schedule-table-container" id="courseLoadMwfTableContainer">
@@ -293,18 +293,18 @@ $role = $_SESSION['role'] ?? '';
                         </div>
                     </div>
                 </div>
-                <!-- Desktop/tablet grid content -->
+
                 <div class="desktop-grid-content">
                     <div class="loading">Loading course load...</div>
                 </div>
-                <!-- Assignment panel at bottom -->
+
                 <div id="assignmentPanel" class="assignment-panel" style="display: none;">
                     <div class="assignment-header">
                         <span id="selectedTimeSlot">Select a time slot to assign courses</span>
                         <button onclick="closeAssignmentPanel()" class="close-btn">×</button>
                     </div>
                     <div id="assignmentContent" class="assignment-content">
-                        <!-- Assignment form will be loaded here -->
+
                     </div>
                 </div>
             </div>
@@ -357,7 +357,7 @@ $role = $_SESSION['role'] ?? '';
             <div id="classesPreview" class="form-group" style="display: none;">
                 <label class="form-label">Classes to Update</label>
                 <div id="classesPreviewContent" class="preview-content">
-                    <!-- Classes will be loaded here -->
+
                 </div>
             </div>
             <div class="form-group">

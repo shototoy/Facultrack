@@ -823,33 +823,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 <body class="faculty-page">
     <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
-        <div class="sidebar-overlay" onclick="closeSidebar()"></div>
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <button class="close-btn" onclick="closeSidebar()">×</button>
-                <div class="sidebar-title">Announcements</div>
-                <div class="sidebar-subtitle">Latest Updates</div>
-            </div>
-            <div class="announcements-container" id="announcementsContainer">
-                <?php foreach ($announcements as $announcement): ?>
-                <div class="announcement-card">
-                    <div class="announcement-header">
-                        <div>
-                            <div class="announcement-title"><?php echo htmlspecialchars($announcement['title']); ?></div>
-                            <div class="announcement-category"><?php echo getAnnouncementCategory($announcement['target_audience']); ?></div>
-                        </div>
-                    </div>
-                    <div class="announcement-content"><?php echo htmlspecialchars($announcement['content']); ?></div>
-                    <div class="announcement-meta">
-                        <span class="announcement-time"><?php echo $announcement['time_ago']; ?></span>
-                        <span class="announcement-priority priority-<?php echo $announcement['priority']; ?>">
-                            <?php echo strtoupper($announcement['priority']); ?>
-                        </span>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
+
         <div class="content-wrapper" id="contentWrapper">
             <?php 
             $ongoing_classes = count(array_filter($today_schedule, function($schedule) {

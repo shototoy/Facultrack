@@ -163,7 +163,7 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
     $schedule_query = "
         SELECT s.*, c.course_description, cl.class_name, cl.class_code,
             CASE 
-                -- If viewing today's tab
+
                 WHEN '$viewing_day' = '$today_code' THEN
                     CASE 
                         WHEN TIME(NOW()) > s.time_end THEN 'finished'
@@ -171,23 +171,23 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
                         WHEN TIME(NOW()) < s.time_start THEN 'upcoming'
                         ELSE 'finished'
                     END
-                -- If viewing a day before today (using day numbers: M=1, T=2, W=3, TH=4, F=5, S=6)
+
                 WHEN (
                     ('$viewing_day' = 'M' AND '$today_code' IN ('T', 'W', 'TH', 'F', 'S')) OR
                     ('$viewing_day' = 'T' AND '$today_code' IN ('W', 'TH', 'F', 'S')) OR
                     ('$viewing_day' = 'W' AND '$today_code' IN ('TH', 'F', 'S')) OR
                     ('$viewing_day' = 'TH' AND '$today_code' IN ('F', 'S')) OR
                     ('$viewing_day' = 'F' AND '$today_code' = 'S') OR
-                    ('$viewing_day' = 'S' AND '$today_code' = 'M')  -- Sunday to Monday (week wrap)
+                    ('$viewing_day' = 'S' AND '$today_code' = 'M')
                 ) THEN 'finished'
-                -- If viewing a day after today
+
                 WHEN (
                     ('$viewing_day' = 'T' AND '$today_code' = 'M') OR
                     ('$viewing_day' = 'W' AND '$today_code' IN ('M', 'T')) OR
                     ('$viewing_day' = 'TH' AND '$today_code' IN ('M', 'T', 'W')) OR
                     ('$viewing_day' = 'F' AND '$today_code' IN ('M', 'T', 'W', 'TH')) OR
                     ('$viewing_day' = 'S' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F')) OR
-                    ('$viewing_day' = 'M' AND '$today_code' = 'S')  -- Monday after Sunday (week wrap)
+                    ('$viewing_day' = 'M' AND '$today_code' = 'S')
                 ) THEN 'not-today'
                 ELSE 'not-today'
             END as status

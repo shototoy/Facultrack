@@ -1109,19 +1109,19 @@ class LivePollingManager {
                 }
             }
 
-            // Update last_updated timestamp (outside conditional to ensure updates)
+
             if (data.last_updated !== undefined) {
                 const lastUpdatedElement = document.querySelector('.location-updated');
                 if (lastUpdatedElement) {
                     const originalText = lastUpdatedElement.textContent;
                     const newText = `Last updated: ${data.last_updated}`;
 
-                    // Always update to ensure consistency
+
                     lastUpdatedElement.textContent = newText;
 
-                    // Flash effect to show it's alive
+
                     lastUpdatedElement.style.transition = 'background-color 0.5s ease';
-                    lastUpdatedElement.style.backgroundColor = '#fffbeb'; // Light yellow
+                    lastUpdatedElement.style.backgroundColor = '#fffbeb';
                     lastUpdatedElement.style.padding = '2px 5px';
                     lastUpdatedElement.style.borderRadius = '4px';
 
@@ -1164,26 +1164,26 @@ class LivePollingManager {
 
         switch (entityType) {
             case 'faculty':
-                // Update status badge in director table
+
                 const statusBadge = row.querySelector('.status-badge');
                 if (statusBadge) {
                     statusBadge.className = `status-badge ${statusClass}`;
                     statusBadge.textContent = entityData.status || 'Offline';
                 }
 
-                // Update status dot for consistent color coding
+
                 const statusDot = row.querySelector('.status-dot');
                 if (statusDot) {
                     statusDot.className = `status-dot ${statusClass}`;
                 }
 
-                // Update location
+
                 const locationCell = row.querySelector('.location-column, .location-cell, .current-location');
                 if (locationCell && entityData.current_location !== undefined) {
                     locationCell.textContent = entityData.current_location || 'Not Available';
                 }
 
-                // Update last seen
+
                 const lastSeenCell = row.querySelector('.last-seen');
                 if (lastSeenCell && entityData.last_seen !== undefined) {
                     lastSeenCell.textContent = entityData.last_seen || 'Unknown';
@@ -1191,7 +1191,7 @@ class LivePollingManager {
                 break;
 
             default:
-                // Handle other entity types with consistent color coding
+
                 const defaultStatusBadge = row.querySelector('.status-badge');
                 if (defaultStatusBadge) {
                     defaultStatusBadge.className = `status-badge ${statusClass}`;
@@ -1210,44 +1210,44 @@ class LivePollingManager {
 
         switch (entityType) {
             case 'faculty':
-                // Update status badge in program/class cards for consistent color coding
+
                 const statusBadge = card.querySelector('.status-badge');
                 if (statusBadge) {
                     statusBadge.className = `status-badge ${statusClass}`;
                     statusBadge.textContent = entityData.status || 'Offline';
                 }
 
-                // Update status dot for consistent color coding
+
                 const statusDot = card.querySelector('.status-dot');
                 if (statusDot) {
                     statusDot.className = `status-dot ${statusClass}`;
                 }
 
-                // Update location text
+
                 const locationText = card.querySelector('.location-text');
                 if (locationText) {
                     locationText.textContent = entityData.status || 'Offline';
                 }
 
-                // Update location info
+
                 const locationDiv = card.querySelector('.location-info div:nth-child(2)');
                 if (locationDiv && entityData.current_location !== undefined) {
                     locationDiv.textContent = entityData.current_location || 'Not Available';
                 }
 
-                // Update current location elements
+
                 const currentLocationElement = card.querySelector('.current-location, .faculty-location');
                 if (currentLocationElement && entityData.current_location !== undefined) {
                     currentLocationElement.textContent = entityData.current_location || 'Not Available';
                 }
 
-                // Update time info
+
                 const timeInfo = card.querySelector('.time-info');
                 if (timeInfo && entityData.last_updated) {
                     timeInfo.textContent = `Last updated: ${entityData.last_updated}`;
                 }
 
-                // Update last seen
+
                 const lastSeenElement = card.querySelector('.last-seen, .faculty-last-seen');
                 if (lastSeenElement && entityData.last_seen !== undefined) {
                     lastSeenElement.textContent = entityData.last_seen || 'Unknown';
@@ -1255,7 +1255,7 @@ class LivePollingManager {
                 break;
 
             default:
-                // Handle other entity types with consistent color coding
+
                 const defaultStatusBadge = card.querySelector('.status-badge');
                 if (defaultStatusBadge) {
                     defaultStatusBadge.className = `status-badge ${statusClass}`;
@@ -2454,7 +2454,7 @@ class LivePollingManager {
             locationText.textContent = currentUser.current_location || 'No Location';
         }
 
-        // Update last_updated timestamp
+
         console.log('Current user data:', currentUser);
         console.log('last_updated value:', currentUser.last_updated);
 
