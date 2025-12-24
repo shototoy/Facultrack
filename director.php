@@ -166,6 +166,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                             <th class="id-column">Class Code</th>
                             <th class="name-column">Class Name</th>
                             <th class="id-column">Year Level</th>
+                            <th class="id-column">Students</th>
                             <th class="date-column">Academic Year</th>
                             <th class="actions-column">Actions</th>
                         </tr>
@@ -176,6 +177,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                 <td class="id-column"><?php echo htmlspecialchars($class['class_code']); ?></td>
                                 <td class="name-column"><?php echo htmlspecialchars($class['class_name']); ?></td>
                                 <td class="id-column"><?php echo $class['year_level']; ?></td>
+                                <td class="id-column"><?php echo $class['total_students'] ?? 0; ?></td>
                                 <td class="date-column"><?php echo htmlspecialchars($class['academic_year']); ?></td>
                                 <td class="actions-column">
                                     <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_class', <?php echo $class['class_id']; ?>)">Delete</button>

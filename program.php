@@ -168,7 +168,7 @@ function getProgramChairInfo($pdo, $user_id) {
 }
 function getProgramClasses($pdo, $user_id) {
     $classes_query = "
-        SELECT c.class_id, c.class_code, c.class_name, c.year_level, c.semester, c.academic_year,
+        SELECT c.class_id, c.class_code, c.class_name, c.year_level, c.semester, c.academic_year, c.total_students,
                u.full_name as class_account_name,
                COUNT(DISTINCT curr.course_code) as total_subjects,
                COUNT(DISTINCT s.faculty_id) as assigned_faculty
@@ -224,7 +224,7 @@ function getAllFacultyProgram($pdo) {
 function getFacultySchedulesProgram($pdo, $faculty_id) {
     $schedule_query = "
         SELECT s.course_code, c.course_description, c.units, s.days, s.time_start, s.time_end, s.room,
-               cl.class_name, cl.class_code
+               cl.class_name, cl.class_code, cl.total_students
         FROM schedules s
         JOIN courses c ON s.course_code = c.course_code
         JOIN classes cl ON s.class_id = cl.class_id
@@ -1188,6 +1188,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                                             <div class="class-stat">
                                                 <div class="class-stat-number">${classData.assigned_faculty || 0}</div>
                                                 <div class="class-stat-label">Faculty</div>
+                                            </div>
+                                            <div class="class-stat">
+                                                <div class="class-stat-number">${classData.total_students || 0}</div>
+                                                <div class="class-stat-label">Students</div>
                                             </div>
                                         </div>
                                     </div>

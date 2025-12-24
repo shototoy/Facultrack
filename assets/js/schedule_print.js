@@ -185,7 +185,7 @@ function generateScheduleGrid(type, schedules) {
                 html += `
                     <td${rowspanAttr}>${schedule.course_code || ''}</td>
                     <td${rowspanAttr}>${schedule.room || ''}</td>
-                    <td${rowspanAttr}></td>
+                    <td${rowspanAttr}>${schedule.total_students !== undefined && schedule.total_students !== null ? schedule.total_students : ''}</td>
                 `;
             } else {
                 html += `<td></td><td></td><td></td>`;

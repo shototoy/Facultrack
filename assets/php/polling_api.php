@@ -598,7 +598,7 @@ switch ($action) {
                         'unique' => ['users.username', 'classes.class_code'],
                         'user' => ['role' => 'class'],
                         'table' => 'classes',
-                        'fields' => ['class_code', 'class_name', 'year_level', 'semester', 'academic_year']
+                        'fields' => ['class_code', 'class_name', 'year_level', 'semester', 'academic_year', 'total_students']
                     ],
                     'add_announcement' => [
                         'required' => ['title', 'content', 'priority', 'target_audience'],
@@ -1241,7 +1241,7 @@ switch ($action) {
             $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
             $today_code = $day_mapping[$current_day];
             $schedule_query = "
-                SELECT s.*, c.course_description, cl.class_name, cl.class_code,
+                SELECT s.*, c.course_description, cl.class_name, cl.class_code, cl.total_students,
                     CASE 
                         WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end 
                              AND (
@@ -1381,7 +1381,7 @@ switch ($action) {
                 break;
             }
             $classes_query = "
-                SELECT c.class_id, c.class_code, c.class_name, c.year_level, 
+                SELECT c.class_id, c.class_code, c.class_name, c.year_level, c.total_students,
                        u.full_name as program_chair_name,
                        COUNT(s.schedule_id) as current_subjects,
                        c.semester as current_semester,

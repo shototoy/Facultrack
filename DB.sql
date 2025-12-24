@@ -50,6 +50,7 @@ CREATE TABLE `classes` (
   `semester` enum('1st','2nd','Summer') NOT NULL,
   `academic_year` varchar(10) NOT NULL,
   `program_chair_id` int(11) NOT NULL,
+  `total_students` int(11) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `is_active` tinyint(1) DEFAULT 1,

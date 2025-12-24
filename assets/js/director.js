@@ -2,7 +2,7 @@
 function createSearchResultActions() {
     if (document.querySelector('#searchInput')) {
         const searchInput = document.querySelector('#searchInput');
-        searchInput.addEventListener('input', function() {
+        searchInput.addEventListener('input', function () {
             const query = this.value.toLowerCase();
             const activeTab = document.querySelector('.tab-content.active');
             if (activeTab.id === 'faculty-content') {
@@ -21,11 +21,11 @@ function createSearchResultActions() {
 async function loadProgramCourses(programId) {
     const container = document.getElementById(`program-courses-${programId}`);
     if (!container) return;
-    
+
     try {
         const response = await fetch(`assets/php/polling_api.php?action=get_program_courses&program_id=${programId}`);
         const data = await response.json();
-        
+
         if (data.success && data.courses) {
             if (data.courses.length === 0) {
                 container.innerHTML = '<div class="no-courses">No courses assigned to this program yet.</div>';
@@ -146,9 +146,9 @@ function createClassRow(classData) {
                     <div class="class-code">${classData.class_code}</div>
                 </div>
             </td>
-            <td>Year ${classData.year_level}</td>
-            <td>${classData.semester}</td>
-            <td>${classData.academic_year}</td>
+            <td class="id-column">${classData.year_level}</td>
+            <td class="id-column">${classData.total_students || 0}</td>
+            <td class="date-column">${classData.academic_year}</td>
             <td>${classData.program_chair_name || 'N/A'}</td>
             <td class="actions-cell">
                 <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_class', ${classData.class_id})">Delete</button>
@@ -248,7 +248,7 @@ function createProgramRow(program) {
     `;
 }
 function removeEntityFromUI(entityType, entityId) {
-    switch(entityType) {
+    switch (entityType) {
         case 'faculty':
             removeFacultyFromTable(entityId);
             break;
@@ -306,7 +306,7 @@ function removeFacultyFromTable(facultyId) {
 }
 function removeClassFromTable(classId) {
     const targetRow = document.querySelector(`button[onclick*="'delete_class', ${classId}"]`)?.closest('tr') ||
-                     document.querySelector(`button[onclick*="delete_class, ${classId}"]`)?.closest('tr');
+        document.querySelector(`button[onclick*="delete_class, ${classId}"]`)?.closest('tr');
     if (targetRow) {
         const expansionRow = targetRow.nextElementSibling;
         if (expansionRow && expansionRow.classList.contains('expansion-row')) {
@@ -323,7 +323,7 @@ function removeClassFromTable(classId) {
 }
 function removeCourseFromTable(courseId) {
     const targetRow = document.querySelector(`button[onclick*="'delete_course', ${courseId}"]`)?.closest('tr') ||
-                     document.querySelector(`button[onclick*="delete_course, ${courseId}"]`)?.closest('tr');
+        document.querySelector(`button[onclick*="delete_course, ${courseId}"]`)?.closest('tr');
     if (targetRow) {
         targetRow.style.transition = 'all 0.3s ease';
         targetRow.style.opacity = '0';
@@ -336,7 +336,7 @@ function removeCourseFromTable(courseId) {
 }
 function removeAnnouncementFromTable(announcementId) {
     const targetRow = document.querySelector(`button[onclick*="'delete_announcement', ${announcementId}"]`)?.closest('tr') ||
-                     document.querySelector(`button[onclick*="delete_announcement, ${announcementId}"]`)?.closest('tr');
+        document.querySelector(`button[onclick*="delete_announcement, ${announcementId}"]`)?.closest('tr');
     if (targetRow) {
         targetRow.style.transition = 'all 0.3s ease';
         targetRow.style.opacity = '0';
@@ -350,7 +350,7 @@ function removeAnnouncementFromTable(announcementId) {
 function updateHeaderStatistics(entityType, delta) {
     const elementMap = {
         'faculty': 'totalFaculty',
-        'class': 'totalClasses', 
+        'class': 'totalClasses',
         'course': 'totalCourses',
         'announcement': 'totalAnnouncements',
         'program': 'totalPrograms'
@@ -386,7 +386,7 @@ function toggleRowExpansion(row) {
         }
     }
 }
-window.loadClassesForSemester = async function(semester) {
+window.loadClassesForSemester = async function (semester) {
     const academicYearSelect = document.querySelector('[name="academic_year"]');
     const academicYear = academicYearSelect.value;
     const previewDiv = document.getElementById('classesPreview');
@@ -434,7 +434,7 @@ window.loadClassesForSemester = async function(semester) {
     } catch (error) {
     }
 }
-window.updateSemester = async function(form) {
+window.updateSemester = async function (form) {
     const submitBtn = document.getElementById('updateSemesterBtn');
     const originalText = submitBtn.textContent;
     try {
@@ -488,11 +488,11 @@ window.updateSemester = async function(form) {
         submitBtn.textContent = originalText;
     }
 }
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
         const updateForm = document.getElementById('updateSemesterForm');
         if (updateForm) {
-            updateForm.addEventListener('submit', function(e) {
+            updateForm.addEventListener('submit', function (e) {
                 e.preventDefault();
                 window.updateSemester(this);
             });
@@ -556,14 +556,14 @@ function removeProgramFromTable(programId) {
 
 function addNewRowToTable(tabName, data) {
     if (!data) return;
-    
+
     const tableSelector = `#${tabName}-content .data-table tbody`;
     const tableBody = document.querySelector(tableSelector);
-    
+
     if (!tableBody) return;
-    
+
     let newRowHtml = '';
-    
+
     switch (tabName) {
         case 'faculty':
             newRowHtml = createFacultyRow(data);
@@ -584,10 +584,10 @@ function addNewRowToTable(tabName, data) {
             console.warn('Unknown tab for addNewRowToTable:', tabName);
             return;
     }
-    
+
     if (newRowHtml) {
         tableBody.insertAdjacentHTML('afterbegin', newRowHtml);
-        
+
         const newRow = tableBody.firstElementChild;
         if (newRow) {
             newRow.style.opacity = '0';
@@ -597,7 +597,7 @@ function addNewRowToTable(tabName, data) {
             newRow.style.opacity = '1';
             newRow.style.transform = 'translateY(0)';
         }
-        
+
         updateHeaderStatistics(tabName.replace('s', ''), 1);
     }
 }

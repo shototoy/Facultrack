@@ -1460,6 +1460,7 @@ class LivePollingManager {
                 <td class="id-column">${escapeHtml(classData.class_code)}</td>
                 <td class="name-column">${escapeHtml(classData.class_name)}</td>
                 <td class="id-column">${classData.year_level}</td>
+                <td class="id-column">${classData.total_students || 0}</td>
                 <td class="date-column">${escapeHtml(classData.academic_year)}</td>
                 <td class="actions-column">
                     <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_class', ${classData.class_id})">Delete</button>

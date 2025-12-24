@@ -145,9 +145,15 @@ $role = $_SESSION['role'] ?? '';
                     </select>
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Academic Year *</label>
-                <input type="text" name="academic_year" class="form-input" required>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Academic Year *</label>
+                    <input type="text" name="academic_year" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Number of Students</label>
+                    <input type="number" name="total_students" class="form-input" min="0" value="0">
+                </div>
             </div>
             <?php if ($role === 'campus_director'): ?>
             <div class="form-group">
