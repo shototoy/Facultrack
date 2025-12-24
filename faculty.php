@@ -16,7 +16,27 @@ $current_time = date('H:i:s');
 $current_date = date('Y-m-d');
 $current_day = date('w');
 function getFacultyInfo($pdo, $user_id) {
-    $faculty_query = "SELECT f.*, u.full_name FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.user_id = ? AND u.is_active = TRUE";
+    $faculty_query = "
+        SELECT 
+            f.*, 
+            u.full_name,
+            COALESCE(
+                (SELECT CASE 
+                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 1 MINUTE) THEN 'Just now'
+                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 60 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
+                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
+                    ELSE 'Over a week ago'
+                END
+                FROM location_history lh 
+                WHERE lh.faculty_id = f.faculty_id 
+                ORDER BY lh.time_set DESC 
+                LIMIT 1),
+                'No location history'
+            ) as last_updated
+        FROM faculty f 
+        JOIN users u ON f.user_id = u.user_id 
+        WHERE f.user_id = ? AND u.is_active = TRUE";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute([$user_id]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -282,24 +302,25 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 z-index: 1001 !important;
                 background: var(--primary-green) !important;
                 backdrop-filter: none !important;
-                transform: translateY(0) !important;
+                transform: none !important;
                 opacity: 1 !important;
-                transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease !important;
+                transition: opacity 0.3s ease !important;
             }
             .page-header.scroll-hidden {
-                transform: translateY(-100%) !important;
                 opacity: 0 !important;
+                pointer-events: none !important;
             }
             body {
                 overflow-y: auto !important;
-                padding-bottom: 100px !important;
+                padding-bottom: 120px !important; /* Increased space */
+                padding-top: 20px !important;
             }
             .dashboard-grid {
                 display: grid !important;
                 grid-template-columns: 1fr !important;
                 grid-template-rows: auto 1fr !important;
-                height: calc(100vh - 100px - 24px) !important;
-                min-height: calc(100vh - 100px - 24px) !important;
+                height: auto !important; /* Changed from calc to auto for relative flow */
+                min-height: calc(100vh - 120px) !important;
                 gap: 12px !important;
             }
             .location-section {
@@ -317,34 +338,37 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 order: 2 !important;
                 padding: 12px !important;
                 padding-bottom: 100px !important;
-                overflow-y: auto !important;
+                overflow-y: visible !important; /* Allow scroll */
                 border: none !important;
+                max-height: none !important; /* Remove constraints */
             }
             .schedule-section.scroll-mode-active {
-                max-height: calc(100vh - 220px) !important;
-                overflow-y: auto !important;
+                max-height: none !important;
                 padding-bottom: 20px !important;
             }
             .actions-section {
                 position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
+                bottom: 20px !important; /* Added gap from bottom */
+                left: 20px !important; /* Added gap from sides */
+                right: 20px !important;
+                width: auto !important;
                 z-index: 1000 !important;
                 background: rgba(255, 255, 255, 0.98) !important;
-                padding: 12px !important;
-                border-top: 1px solid rgba(46, 125, 50, 0.2) !important;
-                box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.15) !important;
+                border: 1px solid rgba(46, 125, 50, 0.2) !important; /* Full border */
+                border-radius: 12px !important; /* Rounded */
+                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15) !important;
                 backdrop-filter: blur(10px) !important;
-                height: 100px !important;
+                height: auto !important;
+                min-height: 80px !important; /* Reduced height */
                 order: 3 !important;
-                transform: translateY(100%) !important;
+                transform: none !important;
                 opacity: 0 !important;
-                transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease !important;
+                transition: opacity 0.3s ease !important;
+                pointer-events: none !important;
             }
             .actions-section.scroll-visible {
-                transform: translateY(0) !important;
                 opacity: 1 !important;
+                pointer-events: auto !important;
             }
             .quick-actions h3 {
                 display: none !important;
@@ -892,7 +916,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                             <div class="location-display">
                                 <div class="location-row">
                                     <div class="location-text" id="currentLocation">
-                                        <?php echo htmlspecialchars($faculty_info['current_location'] ?: 'Location not set'); ?>
+                                        <?php echo htmlspecialchars($faculty_info['current_location'] ?: 'No Location'); ?>
                                     </div>
                                     <div class="location-status location-status-mobile">
                                         <span class="status-dot"></span>
@@ -900,20 +924,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                                     </div>
                                 </div>
                                 <div class="location-updated">
-                                    Last updated: <?php 
-                                        if ($faculty_info['last_location_update']) {
-                                            $time_diff = time() - strtotime($faculty_info['last_location_update']);
-                                            if ($time_diff < 3600) {
-                                                echo floor($time_diff / 60) . ' minutes ago';
-                                            } elseif ($time_diff < 86400) {
-                                                echo floor($time_diff / 3600) . ' hours ago';
-                                            } else {
-                                                echo floor($time_diff / 86400) . ' days ago';
-                                            }
-                                        } else {
-                                            echo 'Never';
-                                        }
-                                    ?>
+                                    Last updated: <?php echo htmlspecialchars($faculty_info['last_updated'] ?? 'Never'); ?>
                                 </div>
                             </div>
                         </div>

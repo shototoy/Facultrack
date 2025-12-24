@@ -7,7 +7,7 @@ function escapeHtml(text) {
         '"': '&quot;',
         "'": '&#039;'
     };
-    return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
+    return text.toString().replace(/[&<>"']/g, function (m) { return map[m]; });
 }
 class LivePollingManager {
     constructor() {
@@ -62,7 +62,7 @@ class LivePollingManager {
         if (activeTab) {
             return activeTab.id.replace('-content', '');
         }
-        return 'faculty'; 
+        return 'faculty';
     }
     getObservableElementsForPage() {
         const elements = {};
@@ -340,7 +340,7 @@ class LivePollingManager {
     }
     startPolling() {
         if (!this.isOnline) return;
-        this.startLocationPolling();        
+        this.startLocationPolling();
         this.startAnnouncementsPolling();
         if (window.userRole === 'faculty') {
             this.startSchedulePolling();
@@ -348,15 +348,15 @@ class LivePollingManager {
             this.startTablePolling();
         }
         if (['program_chair', 'campus_director'].includes(window.userRole)) {
-            this.startStatisticsPolling();  
-            this.startTablePolling();       
+            this.startStatisticsPolling();
+            this.startTablePolling();
         }
         if (window.userRole === 'class') {
-            this.startTablePolling();       
+            this.startTablePolling();
         }
     }
     startSchedulePolling() {
-        if (this.intervals.schedules) return; 
+        if (this.intervals.schedules) return;
         this.intervals.schedules = setInterval(() => {
             if (this.pageType === 'faculty') {
                 this.fetchScheduleUpdates();
@@ -375,9 +375,9 @@ class LivePollingManager {
             }
             const domElement = document.querySelector(element.selector);
             if (domElement) {
-                return this.isElementVisible(domElement) || 
-                       this.visibleElements.has(domElement.id || domElement.className) ||
-                       (domElement.offsetParent !== null && domElement.offsetWidth > 0 && domElement.offsetHeight > 0);
+                return this.isElementVisible(domElement) ||
+                    this.visibleElements.has(domElement.id || domElement.className) ||
+                    (domElement.offsetParent !== null && domElement.offsetWidth > 0 && domElement.offsetHeight > 0);
             }
             return false;
         });
@@ -392,8 +392,8 @@ class LivePollingManager {
         }
         if (element && element.nodeType === Node.ELEMENT_NODE) {
             const elementId = element.id || element.className;
-            return this.visibleElements.has(elementId) || 
-                   (element.offsetParent !== null && element.offsetWidth > 0 && element.offsetHeight > 0);
+            return this.visibleElements.has(elementId) ||
+                (element.offsetParent !== null && element.offsetWidth > 0 && element.offsetHeight > 0);
         }
         return false;
     }
@@ -421,6 +421,24 @@ class LivePollingManager {
             this.fetchLocationUpdates();
         }, this.defaultIntervals.location);
         this.fetchLocationUpdates();
+    }
+    async fetchLocationUpdates() {
+        if (!this.isOnline) {
+            this.queueUpdate('location', { action: 'get_location_updates' });
+            return;
+        }
+        try {
+            const response = await fetch('assets/php/polling_api.php?action=get_location_updates', {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+            if (data.success) {
+                this.updateLocationDisplay(data);
+            }
+        } catch (error) {
+            this.handlePollingError('location', error);
+        }
     }
     hasLocationElements() {
         if (this.pageType === 'director') {
@@ -458,6 +476,9 @@ class LivePollingManager {
         }
     }
     updateScheduleDisplay(data) {
+        if (data.stats) {
+            this.updateFacultyStats(data.stats);
+        }
         if (data.schedules) {
             const scheduleContainers = document.querySelectorAll('.schedule-container, .schedule-section, .schedule-list');
             scheduleContainers.forEach(container => {
@@ -522,7 +543,7 @@ class LivePollingManager {
     }
 
     getStatusClass(status) {
-        switch(status) {
+        switch (status) {
             case 'Available':
                 return 'status-available';
             case 'In Meeting':
@@ -579,6 +600,34 @@ class LivePollingManager {
             }
         }
     }
+
+    updateStatisticsFromTableData(data) {
+        if (this.pageType === 'faculty' && data.stats) {
+            this.updateFacultyStats(data.stats);
+        } else if (data.total_count !== undefined && data.tab) {
+            this.updateTotalCount(data.tab, data.total_count);
+        } else if (data.count !== undefined && data.tab) {
+            this.updateTotalCount(data.tab, data.count);
+        }
+    }
+
+    updateFacultyStats(stats) {
+        const mapping = {
+            'Today': stats.today,
+            'Ongoing': stats.ongoing,
+            'Completed': stats.completed,
+            'Status': stats.status
+        };
+
+        document.querySelectorAll('.header-stat').forEach(card => {
+            const label = card.querySelector('.header-stat-label')?.textContent?.trim();
+            const numberEl = card.querySelector('.header-stat-number');
+            if (label && mapping[label] !== undefined && numberEl) {
+                numberEl.textContent = mapping[label];
+            }
+        });
+    }
+
     getActiveTab() {
         const activeTabElement = document.querySelector('.tab-content.active');
         if (activeTabElement) {
@@ -789,15 +838,15 @@ class LivePollingManager {
     checkTableChanges(containerSelector, newData, type) {
         const container = document.querySelector(containerSelector);
         if (!container || !Array.isArray(newData)) return null;
-        const currentRows = (type === 'faculty' || type === 'classes') ? 
-            container.querySelectorAll('tr.expandable-row').length : 
-            container.querySelectorAll('tr:not(.expansion-row)').length; 
+        const currentRows = (type === 'faculty' || type === 'classes') ?
+            container.querySelectorAll('tr.expandable-row').length :
+            container.querySelectorAll('tr:not(.expansion-row)').length;
         const newCount = newData.length;
         if (currentRows !== newCount) {
             const difference = newCount - currentRows;
             console.log(`${type} count change detected:`, {
                 currentRows,
-                newCount, 
+                newCount,
                 difference,
                 containerSelector
             });
@@ -885,12 +934,12 @@ class LivePollingManager {
         localStorage.setItem(`last_update_${tab}_${window.userRole}`, timestamp);
     }
     hasDataChanged(row, update, tableType) {
-        switch(tableType) {
+        switch (tableType) {
             case 'faculty':
                 const currentName = row.querySelector('.name-column')?.textContent.trim();
                 const currentLocation = row.querySelector('.location-column')?.textContent.trim();
                 return (update.full_name && update.full_name !== currentName) ||
-                       (update.location && update.location !== currentLocation);
+                    (update.location && update.location !== currentLocation);
             case 'classes':
                 const currentClassName = row.querySelector('.name-column')?.textContent.trim();
                 return update.class_name && update.class_name !== currentClassName;
@@ -898,7 +947,7 @@ class LivePollingManager {
                 const currentTitle = row.querySelector('.name-column')?.textContent.trim();
                 const currentPriority = row.querySelector('.status-column .status-badge')?.textContent.trim();
                 return (update.title && update.title !== currentTitle) ||
-                       (update.priority && update.priority.toUpperCase() !== currentPriority);
+                    (update.priority && update.priority.toUpperCase() !== currentPriority);
             default:
                 return true;
         }
@@ -1041,24 +1090,47 @@ class LivePollingManager {
                 const locationText = document.getElementById('currentLocation');
                 const statusDots = document.querySelectorAll('.status-dot');
                 const statusTexts = document.querySelectorAll('.location-status span:not(.status-dot)');
-                
+
                 if (data.current_location !== undefined && locationText) {
-                    locationText.textContent = data.current_location || 'Not Available';
+                    locationText.textContent = data.current_location || 'No Location';
                 }
-                
+
                 if (data.status !== undefined) {
                     const status = data.status || 'Offline';
                     const statusClass = this.getStatusClass(status);
-                    
+
                     statusDots.forEach(dot => {
                         dot.className = `status-dot ${statusClass}`;
                     });
-                    
+
                     statusTexts.forEach(text => {
                         text.textContent = status;
                     });
                 }
             }
+
+            // Update last_updated timestamp (outside conditional to ensure updates)
+            if (data.last_updated !== undefined) {
+                const lastUpdatedElement = document.querySelector('.location-updated');
+                if (lastUpdatedElement) {
+                    const originalText = lastUpdatedElement.textContent;
+                    const newText = `Last updated: ${data.last_updated}`;
+
+                    // Always update to ensure consistency
+                    lastUpdatedElement.textContent = newText;
+
+                    // Flash effect to show it's alive
+                    lastUpdatedElement.style.transition = 'background-color 0.5s ease';
+                    lastUpdatedElement.style.backgroundColor = '#fffbeb'; // Light yellow
+                    lastUpdatedElement.style.padding = '2px 5px';
+                    lastUpdatedElement.style.borderRadius = '4px';
+
+                    setTimeout(() => {
+                        lastUpdatedElement.style.backgroundColor = 'transparent';
+                    }, 500);
+                }
+            }
+
             if (data.faculty && Array.isArray(data.faculty)) {
                 this.updateFacultyOwnStatus(data.faculty);
             }
@@ -1089,7 +1161,7 @@ class LivePollingManager {
 
     updateTableRowStatus(row, entityData, entityType) {
         const statusClass = this.getStatusClass(entityData.status);
-        
+
         switch (entityType) {
             case 'faculty':
                 // Update status badge in director table
@@ -1098,26 +1170,26 @@ class LivePollingManager {
                     statusBadge.className = `status-badge ${statusClass}`;
                     statusBadge.textContent = entityData.status || 'Offline';
                 }
-                
+
                 // Update status dot for consistent color coding
                 const statusDot = row.querySelector('.status-dot');
                 if (statusDot) {
                     statusDot.className = `status-dot ${statusClass}`;
                 }
-                
+
                 // Update location
                 const locationCell = row.querySelector('.location-column, .location-cell, .current-location');
                 if (locationCell && entityData.current_location !== undefined) {
                     locationCell.textContent = entityData.current_location || 'Not Available';
                 }
-                
+
                 // Update last seen
                 const lastSeenCell = row.querySelector('.last-seen');
                 if (lastSeenCell && entityData.last_seen !== undefined) {
                     lastSeenCell.textContent = entityData.last_seen || 'Unknown';
                 }
                 break;
-                
+
             default:
                 // Handle other entity types with consistent color coding
                 const defaultStatusBadge = row.querySelector('.status-badge');
@@ -1125,7 +1197,7 @@ class LivePollingManager {
                     defaultStatusBadge.className = `status-badge ${statusClass}`;
                     defaultStatusBadge.textContent = entityData.status || 'Offline';
                 }
-                
+
                 const defaultStatusDot = row.querySelector('.status-dot');
                 if (defaultStatusDot) {
                     defaultStatusDot.className = `status-dot ${statusClass}`;
@@ -1135,7 +1207,7 @@ class LivePollingManager {
     }
     updateCardStatus(card, entityData, entityType) {
         const statusClass = this.getStatusClass(entityData.status);
-        
+
         switch (entityType) {
             case 'faculty':
                 // Update status badge in program/class cards for consistent color coding
@@ -1144,44 +1216,44 @@ class LivePollingManager {
                     statusBadge.className = `status-badge ${statusClass}`;
                     statusBadge.textContent = entityData.status || 'Offline';
                 }
-                
+
                 // Update status dot for consistent color coding
                 const statusDot = card.querySelector('.status-dot');
                 if (statusDot) {
                     statusDot.className = `status-dot ${statusClass}`;
                 }
-                
+
                 // Update location text
                 const locationText = card.querySelector('.location-text');
                 if (locationText) {
                     locationText.textContent = entityData.status || 'Offline';
                 }
-                
+
                 // Update location info
                 const locationDiv = card.querySelector('.location-info div:nth-child(2)');
                 if (locationDiv && entityData.current_location !== undefined) {
                     locationDiv.textContent = entityData.current_location || 'Not Available';
                 }
-                
+
                 // Update current location elements
                 const currentLocationElement = card.querySelector('.current-location, .faculty-location');
                 if (currentLocationElement && entityData.current_location !== undefined) {
                     currentLocationElement.textContent = entityData.current_location || 'Not Available';
                 }
-                
+
                 // Update time info
                 const timeInfo = card.querySelector('.time-info');
-                if (timeInfo) {
-                    timeInfo.textContent = 'Last updated: 0 minutes ago';
+                if (timeInfo && entityData.last_updated) {
+                    timeInfo.textContent = `Last updated: ${entityData.last_updated}`;
                 }
-                
+
                 // Update last seen
                 const lastSeenElement = card.querySelector('.last-seen, .faculty-last-seen');
                 if (lastSeenElement && entityData.last_seen !== undefined) {
                     lastSeenElement.textContent = entityData.last_seen || 'Unknown';
                 }
                 break;
-                
+
             default:
                 // Handle other entity types with consistent color coding
                 const defaultStatusBadge = card.querySelector('.status-badge');
@@ -1189,7 +1261,7 @@ class LivePollingManager {
                     defaultStatusBadge.className = `status-badge ${statusClass}`;
                     defaultStatusBadge.textContent = entityData.status || 'Offline';
                 }
-                
+
                 const defaultStatusDot = card.querySelector('.status-dot');
                 if (defaultStatusDot) {
                     defaultStatusDot.className = `status-dot ${statusClass}`;
@@ -1201,7 +1273,7 @@ class LivePollingManager {
         if (!entity.created_at) return false;
         const createdTime = new Date(entity.created_at);
         const currentTime = new Date();
-        const timeDifference = (currentTime - createdTime) / 1000; 
+        const timeDifference = (currentTime - createdTime) / 1000;
         return timeDifference <= 5;
     }
     entityExistsInUI(entityType, entity) {
@@ -1231,10 +1303,10 @@ class LivePollingManager {
         const selector = `[data-${entityType.replace('s', '')}-id="${entityData[entityType.replace('s', '') + '_id']}"]`;
         const existingRow = tableBody.querySelector(selector);
         if (existingRow) {
-            return; 
+            return;
         }
         let newRow = '';
-        switch(entityType) {
+        switch (entityType) {
             case 'courses':
                 newRow = this.createCourseRow(entityData);
                 break;
@@ -1285,9 +1357,9 @@ class LivePollingManager {
         if (!cardContainer) return;
         const idField = entityType.replace('s', '') + '_id';
         const existingCard = cardContainer.querySelector(`[data-${entityType.replace('s', '')}-id="${entityData[idField]}"]`);
-        if (existingCard) return; 
+        if (existingCard) return;
         let newCard = '';
-        switch(entityType) {
+        switch (entityType) {
             case 'faculty':
                 newCard = this.createFacultyCard(entityData);
                 break;
@@ -1313,7 +1385,7 @@ class LivePollingManager {
     updateCounts(entityType, delta) {
         const statLabels = {
             'faculty': 'Faculty',
-            'classes': 'Classes', 
+            'classes': 'Classes',
             'courses': 'Courses',
             'announcements': 'Announcements'
         };
@@ -1439,12 +1511,12 @@ class LivePollingManager {
                         <div class="detail-item">
                             <span class="detail-label">Created Date:</span>
                             <span class="detail-value">${new Date(announcement.created_at).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric', 
-                                year: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit'
-                            })}</span>
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        })}</span>
                         </div>
                     </div>
                 </td>
@@ -1469,7 +1541,7 @@ class LivePollingManager {
                     <div style="margin-left: 14px; color: #333; font-weight: 500; font-size: 0.85rem;">
                         ${escapeHtml(faculty.current_location || 'Not Available')}
                     </div>
-                    <div class="time-info">Last updated: 0 minutes ago</div>
+                    <div class="time-info">Last updated: ${faculty.last_updated || 'Unknown'}</div>
                 </div>
                 <div class="contact-info">
                     <div class="office-hours">
@@ -1534,7 +1606,7 @@ class LivePollingManager {
     }
     createEntity(entityData, entityType, viewType = 'auto') {
         const actualViewType = viewType === 'auto' ? this.pageType : viewType;
-        switch(actualViewType) {
+        switch (actualViewType) {
             case 'director':
                 return this.createTableRow(entityData, entityType);
             case 'program':
@@ -1605,7 +1677,7 @@ class LivePollingManager {
         if (!container) return;
     }
     createTableRow(item, type) {
-        switch(type) {
+        switch (type) {
             case 'faculty':
                 return this.createFacultyRow(item);
             case 'courses':
@@ -1619,7 +1691,7 @@ class LivePollingManager {
         }
     }
     createCard(item, type) {
-        switch(type) {
+        switch (type) {
             case 'faculty':
                 return this.createFacultyCard(item);
             case 'courses':
@@ -1677,7 +1749,7 @@ class LivePollingManager {
         const statElements = document.querySelectorAll('.header-stat');
         const statMappings = {
             'total_faculty': 'Faculty',
-            'total_classes': 'Classes', 
+            'total_classes': 'Classes',
             'total_courses': 'Courses',
             'active_announcements': 'Announcements',
             'available_faculty': 'Online'
@@ -1686,7 +1758,7 @@ class LivePollingManager {
             const label = element.querySelector('.header-stat-label');
             if (label) {
                 const labelText = label.textContent.trim();
-                const statKey = Object.keys(statMappings).find(key => 
+                const statKey = Object.keys(statMappings).find(key =>
                     statMappings[key] === labelText
                 );
                 if (statKey && stats[statKey] !== undefined) {
@@ -1771,7 +1843,7 @@ class LivePollingManager {
         if (!facultyGrid) return;
         facultyData.forEach(faculty => {
             const card = facultyGrid.querySelector(`.faculty-card[data-faculty-id="${faculty.faculty_id}"]`) ||
-                        facultyGrid.querySelector(`.faculty-card[data-name*="${faculty.faculty_name}"]`);
+                facultyGrid.querySelector(`.faculty-card[data-name*="${faculty.faculty_name}"]`);
             if (card) {
                 const statusDot = card.querySelector('.status-dot, .status-indicator');
                 const locationText = card.querySelector('.location-text, .status-text');
@@ -1947,9 +2019,9 @@ class LivePollingManager {
             } else {
                 const domElement = document.querySelector(element.selector);
                 if (domElement) {
-                    isVisible = this.isElementVisible(domElement) || 
-                               this.visibleElements.has(domElement.id || domElement.className) ||
-                               (domElement.offsetParent !== null && domElement.offsetWidth > 0 && domElement.offsetHeight > 0);
+                    isVisible = this.isElementVisible(domElement) ||
+                        this.visibleElements.has(domElement.id || domElement.className) ||
+                        (domElement.offsetParent !== null && domElement.offsetWidth > 0 && domElement.offsetHeight > 0);
                 }
             }
             elements.push(`${element.description}: ${isVisible}`);
@@ -1958,9 +2030,9 @@ class LivePollingManager {
         const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
         const currentTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
         const currentDate = now.toLocaleDateString('en-US');
-        const pageTitle = this.pageType === 'faculty' ? 'Faculty Dashboard' : 
-                          this.pageType === 'class' ? 'Class Dashboard' : 
-                          'Dashboard';
+        const pageTitle = this.pageType === 'faculty' ? 'Faculty Dashboard' :
+            this.pageType === 'class' ? 'Class Dashboard' :
+                'Dashboard';
         console.log(`Page: ${pageTitle}`);
         console.log(`${currentDay}, ${currentDate} ${currentTime}`);
         elements.forEach(element => console.log(element));
@@ -2038,7 +2110,7 @@ class LivePollingManager {
         } else {
             const possibleContainers = [
                 '.schedule-grid',
-                '.schedule-list', 
+                '.schedule-list',
                 '.today-schedule',
                 '.schedule-container',
                 '.tab-content.active',
@@ -2104,7 +2176,7 @@ class LivePollingManager {
             if (this.isOnline && !document.hidden) {
                 this.sendHeartbeat();
             }
-        }, 120000); 
+        }, 120000);
         this.sendHeartbeat();
     }
     stopHeartbeat() {
@@ -2163,7 +2235,7 @@ class LivePollingManager {
         }
     }
     updateTableRow(row, update, tableType) {
-        switch(tableType) {
+        switch (tableType) {
             case 'faculty':
                 const nameCell = row.querySelector('.name-column');
                 const statusCell = row.querySelector('.status-column .status-badge');
@@ -2221,9 +2293,9 @@ class LivePollingManager {
                         if (update.created_by_name) announcementDetailItems[1].textContent = update.created_by_name;
                         if (update.created_at) {
                             const date = new Date(update.created_at);
-                            announcementDetailItems[2].textContent = date.toLocaleDateString('en-US', { 
+                            announcementDetailItems[2].textContent = date.toLocaleDateString('en-US', {
                                 year: 'numeric', month: 'short', day: 'numeric',
-                                hour: 'numeric', minute: '2-digit', hour12: true 
+                                hour: 'numeric', minute: '2-digit', hour12: true
                             });
                         }
                     }
@@ -2241,7 +2313,7 @@ class LivePollingManager {
     addTableRow(tableBody, data, tableType) {
         let newRowHTML = '';
         let expansionRowHTML = '';
-        switch(tableType) {
+        switch (tableType) {
             case 'faculty':
                 newRowHTML = `
                     <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-faculty-id="${data.id}">
@@ -2300,7 +2372,7 @@ class LivePollingManager {
         const updates = [...this.updateQueue];
         this.updateQueue = [];
         updates.forEach(update => {
-            switch(update.type) {
+            switch (update.type) {
                 case 'statistics':
                     this.fetchStatistics();
                     break;
@@ -2318,7 +2390,7 @@ class LivePollingManager {
     }
     handlePollingError(type, error) {
         const currentInterval = this.defaultIntervals[type];
-        const newInterval = Math.min(currentInterval * 2, 30000); 
+        const newInterval = Math.min(currentInterval * 2, 30000);
         setTimeout(() => {
             this.defaultIntervals[type] = 3000;
         }, 300000);
@@ -2330,7 +2402,7 @@ class LivePollingManager {
         }
         this.defaultIntervals[type] = newInterval;
         if (this.isActive) {
-            switch(type) {
+            switch (type) {
                 case 'statistics':
                     this.startStatisticsPolling();
                     break;
@@ -2351,14 +2423,14 @@ class LivePollingManager {
         const currentUserId = window.userId || sessionStorage.getItem('userId');
         const currentUser = facultyData.find(faculty => faculty.user_id == currentUserId);
         if (!currentUser) return;
-        
+
         const statusDots = document.querySelectorAll('.status-dot');
         const statusTexts = document.querySelectorAll('.location-status span:not(.status-dot)');
         const locationText = document.getElementById('currentLocation');
-        
+
         const status = currentUser.status || 'Offline';
         const statusClass = this.getStatusClass(status);
-        
+
         statusDots.forEach(dot => {
             const oldClass = dot.className;
             const newClass = `status-dot ${statusClass}`;
@@ -2368,7 +2440,7 @@ class LivePollingManager {
                 setTimeout(() => dot.style.animation = '', 300);
             }
         });
-        
+
         statusTexts.forEach(text => {
             if (text.textContent.trim() !== status) {
                 text.textContent = status;
@@ -2376,9 +2448,24 @@ class LivePollingManager {
                 setTimeout(() => text.style.animation = '', 300);
             }
         });
-        
+
         if (locationText && currentUser.current_location) {
-            locationText.textContent = currentUser.current_location || 'Not Available';
+            locationText.textContent = currentUser.current_location || 'No Location';
+        }
+
+        // Update last_updated timestamp
+        console.log('Current user data:', currentUser);
+        console.log('last_updated value:', currentUser.last_updated);
+
+        if (currentUser.last_updated) {
+            const lastUpdatedElement = document.querySelector('.location-updated');
+            console.log('lastUpdatedElement found:', lastUpdatedElement);
+            if (lastUpdatedElement) {
+                lastUpdatedElement.textContent = `Last updated: ${currentUser.last_updated}`;
+                console.log('Updated timestamp to:', currentUser.last_updated);
+            }
+        } else {
+            console.log('No last_updated in currentUser object');
         }
     }
 }

@@ -112,7 +112,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                         <?php echo $faculty['status']; ?>
                                     </span>
                                 </td>
-                                <td class="location-column"><?php echo htmlspecialchars($faculty['current_location'] ?? 'Not Available'); ?></td>
+                                <td class="location-column"><?php echo htmlspecialchars($faculty['current_location'] ?? 'No Location'); ?></td>
                                 <td class="actions-column">
                                     <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_faculty', <?php echo $faculty['faculty_id']; ?>)">Delete</button>
                                 </td>

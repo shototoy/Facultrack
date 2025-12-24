@@ -75,7 +75,7 @@ async function updateStatus() {
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             showNotification(`Status updated to: ${selectedStatus}`, 'success');
             closeStatusModal();
@@ -108,8 +108,6 @@ async function updateLocation() {
         const result = await response.json();
         if (result.success) {
             document.getElementById('currentLocation').textContent = finalLocation;
-            const locationUpdated = document.querySelector('.location-updated');
-            locationUpdated.textContent = 'Last updated: Just now';
             closeLocationModal();
             showNotification('Location updated successfully!', 'success');
         } else {
@@ -131,8 +129,6 @@ async function markAttendance(scheduleId) {
         const result = await response.json();
         if (result.success) {
             document.getElementById('currentLocation').textContent = result.location;
-            const locationUpdated = document.querySelector('.location-updated');
-            locationUpdated.textContent = 'Last updated: Just now';
             showNotification(`Attendance marked! Location updated to ${result.location}`, 'success');
             setTimeout(() => location.reload(), 1500);
         } else {
@@ -206,11 +202,11 @@ function generateScheduleHTML(schedules) {
                     <span class="status-badge status-${statusInfo.class}">
                         ${statusInfo.text}
                     </span>
-                    ${schedule.status === 'ongoing' ? 
-                        `<button class="btn-small btn-primary" onclick="markAttendance(${schedule.schedule_id})">
+                    ${schedule.status === 'ongoing' ?
+                `<button class="btn-small btn-primary" onclick="markAttendance(${schedule.schedule_id})">
                             Mark Present
                         </button>` : ''
-                    }
+            }
                 </div>
             </div>
         `;
@@ -219,12 +215,12 @@ function generateScheduleHTML(schedules) {
 }
 function getScheduleStatusClient(status) {
     switch (status) {
-        case 'ongoing': return {text: 'In Progress', class: 'ongoing'};
-        case 'upcoming': return {text: 'Upcoming', class: 'upcoming'};
-        case 'finished': return {text: 'Completed', class: 'finished'};
-        case 'pending': return {text: 'Loading...', class: 'pending'};
-        case 'not-today': return {text: 'Not Today', class: 'not-today'};
-        default: return {text: 'Unknown', class: 'unknown'};
+        case 'ongoing': return { text: 'In Progress', class: 'ongoing' };
+        case 'upcoming': return { text: 'Upcoming', class: 'upcoming' };
+        case 'finished': return { text: 'Completed', class: 'finished' };
+        case 'pending': return { text: 'Loading...', class: 'pending' };
+        case 'not-today': return { text: 'Not Today', class: 'not-today' };
+        default: return { text: 'Unknown', class: 'unknown' };
     }
 }
 function calculateDuration(timeStart, timeEnd) {
@@ -247,16 +243,16 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const locationSelect = document.getElementById('locationSelect');
     const customLocationInput = document.getElementById('customLocation');
     if (locationSelect && customLocationInput) {
-        locationSelect.addEventListener('change', function() {
+        locationSelect.addEventListener('change', function () {
             if (this.value) {
                 customLocationInput.value = '';
             }
         });
-        customLocationInput.addEventListener('input', function() {
+        customLocationInput.addEventListener('input', function () {
             if (this.value) {
                 locationSelect.value = '';
             }
@@ -268,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
         switchScheduleTab(days, activeTab);
     }
 });
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     if (e.target.classList.contains('modal-overlay')) {
         if (e.target.id === 'locationModal') {
             closeLocationModal();
@@ -287,7 +283,7 @@ document.addEventListener('click', function(e) {
         closeSidebar();
     }
 });
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         const openModal = document.querySelector('.modal-overlay.show');
         if (openModal) {
@@ -365,7 +361,7 @@ function requestTick() {
         ticking = true;
     }
 }
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeContentPosition();
     window.addEventListener('resize', initializeContentPosition);
     window.addEventListener('scroll', requestTick, { passive: true });

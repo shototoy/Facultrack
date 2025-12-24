@@ -38,7 +38,20 @@ function getAllFaculty($pdo) {
                 ELSE 'Offline'
             END as status,
             f.is_active as connection_status,
-            f.status as activity_status
+            f.status as activity_status,
+            COALESCE(
+                (SELECT CASE 
+                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
+                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
+                    ELSE 'Over a week ago'
+                END
+                FROM location_history lh 
+                WHERE lh.faculty_id = f.faculty_id 
+                ORDER BY lh.time_set DESC 
+                LIMIT 1),
+                'No location history'
+            ) as last_updated
         FROM faculty f
         JOIN users u ON f.user_id = u.user_id
         ORDER BY u.full_name
@@ -795,7 +808,8 @@ switch ($action) {
                         END as status,
                         COALESCE(
                             (SELECT CASE 
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 1 MINUTE) THEN 'Just now'
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 60 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
                                 ELSE 'Over a week ago'
@@ -837,7 +851,8 @@ switch ($action) {
                         END as status,
                         COALESCE(
                             (SELECT CASE 
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 1 MINUTE) THEN 'Just now'
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 60 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
                                 ELSE 'Over a week ago'
@@ -871,7 +886,8 @@ switch ($action) {
                         END as status,
                         COALESCE(
                             (SELECT CASE 
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 1 MINUTE) THEN 'Just now'
+                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 60 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
                                 ELSE 'Over a week ago'
@@ -1273,9 +1289,27 @@ switch ($action) {
             $stmt = $pdo->prepare($schedule_query);
             $stmt->execute([$faculty_id]);
             $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Calculate stats
+            $stats = [
+                'today' => count($schedules),
+                'ongoing' => 0,
+                'completed' => 0
+            ];
+            foreach ($schedules as $s) {
+                if ($s['status'] === 'ongoing') $stats['ongoing']++;
+                if ($s['status'] === 'finished') $stats['completed']++;
+            }
+            
+            // Get faculty status
+            $status_stmt = $pdo->prepare("SELECT status FROM faculty WHERE faculty_id = ?");
+            $status_stmt->execute([$faculty_id]);
+            $stats['status'] = $status_stmt->fetchColumn() ?: 'Offline';
+
             sendJsonResponse([
                 'success' => true,
                 'schedules' => $schedules,
+                'stats' => $stats,
                 'current_time' => date('H:i:s'),
                 'current_day' => $today_code,
                 'timestamp' => date('Y-m-d H:i:s')

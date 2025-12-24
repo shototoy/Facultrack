@@ -24,7 +24,7 @@ CREATE TABLE `faculty` (
   `user_id` int(11) NOT NULL,
   `employee_id` varchar(20) DEFAULT NULL,
   `program` varchar(100) DEFAULT NULL,
-  `current_location` varchar(255) DEFAULT 'Not Available',
+  `current_location` varchar(255) DEFAULT NULL,
   `last_location_update` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_activity` timestamp NOT NULL DEFAULT current_timestamp(),
   `office_hours` varchar(100) DEFAULT NULL,
@@ -220,8 +220,8 @@ INSERT INTO `users` VALUES
 (57, 'is4b_class', 'class123', 'IS 4B Class Account', 'class', NOW(), NOW(), 1);
 
 INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `current_location`, `last_location_update`, `last_activity`, `office_hours`, `contact_email`, `contact_phone`, `status`, `created_at`, `updated_at`, `is_active`) VALUES 
-(1, 2, 'CHAIR-001', 'Information Technology', 'Dean Office - IT Building', NOW(), NOW(), '8:00 AM - 5:00 PM', 'chair.it@sksu.edu.ph', '09123456789', 'Available', NOW(), NOW(), 0),
-(2, 3, 'CHAIR-002', 'Information Systems', 'Dean Office - IS Building', NOW(), NOW(), '8:00 AM - 5:00 PM', 'chair.is@sksu.edu.ph', '09123456788', 'Available', NOW(), NOW(), 0),
+(1, 2, 'CHAIR-001', 'Information Technology', NULL, NOW(), NOW(), '8:00 AM - 5:00 PM', 'chair.it@sksu.edu.ph', '09123456789', 'Available', NOW(), NOW(), 0),
+(2, 3, 'CHAIR-002', 'Information Systems', NULL, NOW(), NOW(), '8:00 AM - 5:00 PM', 'chair.is@sksu.edu.ph', '09123456788', 'Available', NOW(), NOW(), 0),
 (3, 4, 'EMP-0001', 'Information Technology', 'Faculty Room A', NOW(), NOW(), '8:00 AM - 5:00 PM', 'alexis.apresto@sksu.edu.ph', '09123456701', 'Available', NOW(), NOW(), 0),
 (4, 5, 'EMP-0002', 'Information Technology', 'Faculty Room B', NOW(), NOW(), '8:00 AM - 5:00 PM', 'benedict.rabut@sksu.edu.ph', '09123456702', 'Available', NOW(), NOW(), 0),
 (5, 6, 'EMP-0003', 'Information Systems', 'Faculty Room C', NOW(), NOW(), '8:00 AM - 5:00 PM', 'cecilia.gener@sksu.edu.ph', '09123456703', 'Available', NOW(), NOW(), 0),
