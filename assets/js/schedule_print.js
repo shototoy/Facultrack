@@ -104,7 +104,16 @@ function generateTimeSlots(type) {
 
 function findScheduleForSlot(schedules, day, timeSlot) {
     const [slotStart] = timeSlot.split('-');
-    const slotStartTime = slotStart.includes(':30') ? slotStart : `${slotStart}:00`;
+
+    const normalizeTime = (time) => {
+        const parts = time.split(':');
+        const hours = parts[0].padStart(2, '0');
+        const minutes = parts[1] || '00';
+        const seconds = parts[2] || '00';
+        return `${hours}:${minutes}:${seconds}`;
+    };
+
+    const slotStartTime = normalizeTime(slotStart);
 
     const dayMap = {
         'MONDAY': 'M',
@@ -119,7 +128,7 @@ function findScheduleForSlot(schedules, day, timeSlot) {
         const scheduleDays = schedule.days.toUpperCase();
         const hasDayMatch = scheduleDays.includes(dayMap[day]);
 
-        const scheduleStart = schedule.time_start;
+        const scheduleStart = normalizeTime(schedule.time_start);
         const hasTimeMatch = scheduleStart === slotStartTime;
 
         return hasDayMatch && hasTimeMatch;
@@ -132,6 +141,8 @@ function generateScheduleGrid(type, schedules) {
         : ['TUESDAY', 'THURSDAY', 'SATURDAY'];
 
     const timeSlots = generateTimeSlots(type);
+
+    const occupiedCells = {};
 
     let html = `
         <table class="schedule-grid">
@@ -151,17 +162,30 @@ function generateScheduleGrid(type, schedules) {
             <tbody>
     `;
 
-    timeSlots.forEach(slot => {
+    timeSlots.forEach((slot, slotIndex) => {
         html += `<tr><td class="time-col">${slot}</td>`;
 
-        days.forEach(day => {
+        days.forEach((day, dayIndex) => {
+            const cellKey = `${slotIndex}-${dayIndex}`;
+
+            if (occupiedCells[cellKey]) {
+                return;
+            }
+
             const schedule = findScheduleForSlot(schedules, day, slot);
 
             if (schedule) {
+                const rowspan = calculateRowspan(schedule.time_start, schedule.time_end, type);
+
+                for (let i = 1; i < rowspan; i++) {
+                    occupiedCells[`${slotIndex + i}-${dayIndex}`] = true;
+                }
+
+                const rowspanAttr = rowspan > 1 ? ` rowspan="${rowspan}"` : '';
                 html += `
-                    <td>${schedule.course_code || ''}</td>
-                    <td>${schedule.room || ''}</td>
-                    <td></td>
+                    <td${rowspanAttr}>${schedule.course_code || ''}</td>
+                    <td${rowspanAttr}>${schedule.room || ''}</td>
+                    <td${rowspanAttr}></td>
                 `;
             } else {
                 html += `<td></td><td></td><td></td>`;
@@ -191,6 +215,15 @@ function generateScheduleGrid(type, schedules) {
     `;
 
     return html;
+}
+
+function calculateRowspan(startTime, endTime, scheduleType) {
+    const start = new Date(`2000-01-01 ${startTime}`);
+    const end = new Date(`2000-01-01 ${endTime}`);
+    const durationHours = (end - start) / (1000 * 60 * 60);
+
+    const slotDuration = scheduleType === 'MWF' ? 1 : 1.5;
+    return Math.ceil(durationHours / slotDuration);
 }
 
 function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
@@ -246,40 +279,42 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
         }
         
         .header {
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
             margin-bottom: 8px;
-            position: relative;
+            grid-column: 1 / -1;
+            width: 100%;
+        }
+
+        .header-text {
+            text-align: center;
         }
         
         .logo {
-            position: absolute;
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
         }
-        
-        .logo-left {
-            left: 10px;
-            top: 0;
-        }
-        
-        .logo-right {
-            right: 10px;
-            top: 0;
-        }
+
         
         .header h2 {
-            font-size: 10pt;
+            font-size: 11pt;
             margin: 2px 0;
+            font-weight: bold;
         }
         
         .header h3 {
-            font-size: 9pt;
+            font-size: 10pt;
             margin: 2px 0;
+            font-weight: bold;
         }
         
         .header p {
-            font-size: 8pt;
+            font-size: 9pt;
             margin: 2px 0;
+            font-weight: bold;
         }
         
         .faculty-info {
@@ -399,16 +434,18 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
 </head>
 <body>
     <div class="container">
-        <div class="left-section">
-            <div class="header">
-                <img src="assets/images/logo1.png" alt="SKSU Logo" class="logo logo-left" onerror="this.style.display='none'">
-                <img src="assets/images/logo2.png" alt="ACCESS Logo" class="logo logo-right" onerror="this.style.display='none'">
-                
+        <div class="header">
+            <img src="assets/images/logo1.png" alt="SKSU Logo" class="logo" onerror="this.style.display='none'">
+            <div class="header-text">
                 <h2>SULTAN KUDARAT STATE UNIVERSITY</h2>
                 <h3>ACCESS Campus, EJC Montilla, Tacurong City</h3>
                 <h3>INDIVIDUAL FACULTY TIME AND LOCATION</h3>
                 <p>First Semester, AY 2022-2023</p>
             </div>
+            <img src="assets/images/logo2.png" alt="ACCESS Logo" class="logo" onerror="this.style.display='none'">
+        </div>
+        
+        <div class="left-section">
             
             <div class="faculty-info">
                 <div><strong>Name:</strong> <span>${facultyName}</span></div>
@@ -427,15 +464,12 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
                     <p>Faculty</p>
                 </div>
                 <div class="footer-section">
-                    <p>Verified by:</p>
-                    <p class="signature-line">Program Chairperson</p>
                     <p style="margin-top: 8px;">Recommending Approval:</p>
                     <p class="signature-line">Dean</p>
                 </div>
                 <div class="footer-section">
                     <p>Approved by:</p>
                     <p class="signature-line">Campus Director</p>
-                    <p style="margin-top: 8px;">CC: Faculty, Dean, VPAA</p>
                 </div>
             </div>
         </div>
