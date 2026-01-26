@@ -1496,7 +1496,7 @@ function fetchAddedRecord($pdo, $action, $id) {
                        END as status
                 FROM faculty f
                 JOIN users u ON f.user_id = u.user_id
-                WHERE f.faculty_id = ? AND f.is_active = TRUE
+                WHERE f.faculty_id = ?
             ");
             break;
         case 'add_course':
