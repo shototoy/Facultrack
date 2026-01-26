@@ -1631,10 +1631,6 @@ body:has(.table-container) .tab-content.active {
     font-style: italic;
 }
 
-transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-transform: translateY(-20px);
-}
-
 .expansion-row.expanding .expanded-details {
     max-height: 300px;
     padding: 16px 20px;
@@ -2695,11 +2691,6 @@ transform: translateY(-20px);
         grid-template-rows: auto 1fr !important;
         height: calc(100vh - 160px) !important;
     }
-
-    overflow-y: auto !important;
-    min-height: 100vh !important;
-    height: auto !important;
-    transition: padding-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
@@ -2823,7 +2814,7 @@ transform: translateY(-20px);
 .action-title {
     font-size: 0.75rem;
 }
-}
+
 
 .table-container::before {
     content: '';
