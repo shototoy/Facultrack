@@ -1290,7 +1290,7 @@ switch ($action) {
             $stmt->execute([$faculty_id]);
             $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Calculate stats
+
             $stats = [
                 'today' => count($schedules),
                 'ongoing' => 0,
@@ -1301,7 +1301,7 @@ switch ($action) {
                 if ($s['status'] === 'finished') $stats['completed']++;
             }
             
-            // Get faculty status
+
             $status_stmt = $pdo->prepare("SELECT status FROM faculty WHERE faculty_id = ?");
             $status_stmt->execute([$faculty_id]);
             $stats['status'] = $status_stmt->fetchColumn() ?: 'Offline';

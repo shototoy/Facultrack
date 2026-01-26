@@ -153,6 +153,25 @@ try {
             width: 100%;
             max-width: 400px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            background-image: url('assets/images/logo1.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: contain;
+            opacity: 0.05;
+            z-index: -1;
+            pointer-events: none;
         }
         .login-header {
             margin-bottom: 30px;
@@ -189,6 +208,7 @@ try {
             margin-top: 30px;
             padding-top: 20px;
             border-top: 1px solid #e0e0e0;
+            display: none;
         }
         .demo-title {
             color: #666;

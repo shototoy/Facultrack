@@ -13,7 +13,7 @@ function initializeDatabase() {
         die("Connection failed: " . $e->getMessage());
     }
 }
-function validateUserSession($allowed_roles, $redirect_url = "login.php") {
+function validateUserSession($allowed_roles, $redirect_url = "index.php") {
     if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
         header("Location: $redirect_url");
         exit();
