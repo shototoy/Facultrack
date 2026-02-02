@@ -66,6 +66,46 @@ $role = $_SESSION['role'] ?? '';
         </script>
     </div>
 </div>
+<div class="modal-overlay" id="confirmationModal" style="z-index: 20000 !important;">
+    <div class="modal" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3 class="modal-title" id="confirmationTitle">Confirmation</h3>
+            <button type="button" class="modal-close" onclick="closeConfirmationModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="confirmationMessage">Are you sure you want to proceed?</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeConfirmationModal()">Cancel</button>
+                <button type="button" class="btn-primary" id="confirmationConfirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    let confirmationCallback = null;
+
+    function showConfirmation(title, message, callback) {
+        document.getElementById('confirmationTitle').textContent = title || 'Confirmation';
+        document.getElementById('confirmationMessage').textContent = message || 'Are you sure you want to proceed?';
+        
+        confirmationCallback = callback;
+        
+        const modal = document.getElementById('confirmationModal');
+        modal.classList.add('show');
+    }
+
+    function closeConfirmationModal() {
+        document.getElementById('confirmationModal').classList.remove('show');
+        confirmationCallback = null;
+    }
+
+    document.getElementById('confirmationConfirmBtn').addEventListener('click', function() {
+        if (typeof confirmationCallback === 'function') {
+            confirmationCallback();
+        }
+        closeConfirmationModal();
+    });
+</script>
 <div class="modal-overlay" id="addCourseModal">
     <div class="modal">
         <div class="modal-header">

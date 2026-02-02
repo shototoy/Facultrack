@@ -1594,15 +1594,17 @@ body:has(.table-container) .tab-content.active {
     max-height: 0;
     padding: 0 20px;
     opacity: 0;
-    overflow: visible;
-    transition: all 0.4s ease;
+    overflow: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .expansion-row.expanded .expanded-details {
-    max-height: none;
-    padding: 20px;
+    max-height: 500px;
+    padding: 16px 20px;
     opacity: 1;
-    overflow: visible;
+    overflow: hidden;
+    transform: translateY(0);
 }
 
 .program-courses-list {
@@ -1637,15 +1639,9 @@ body:has(.table-container) .tab-content.active {
     font-style: italic;
 }
 
-.expansion-row.expanding .expanded-details {
-    max-height: 300px;
-    padding: 16px 20px;
-    opacity: 1;
-    transform: translateY(0);
-}
-
+.expansion-row.expanding .expanded-details,
 .expansion-row.expanded .expanded-details {
-    max-height: none;
+    max-height: 500px;
     padding: 16px 20px;
     opacity: 1;
     transform: translateY(0);
@@ -1655,39 +1651,7 @@ body:has(.table-container) .tab-content.active {
     max-height: 0;
     padding: 0 20px;
     opacity: 0;
-    transform: translateY(-20px);
-}
-
-.expansion-row.expanding .expanded-details {
-    animation: flowDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.15s both;
-}
-
-.expansion-row.collapsing .expanded-details {
-    animation: flowUp 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes flowDown {
-    0% {
-        opacity: 0;
-        transform: translateY(-30px);
-    }
-
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes flowUp {
-    0% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    100% {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
+    transform: translateY(-10px);
 }
 
 .detail-item {

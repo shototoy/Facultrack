@@ -366,3 +366,327 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('resize', initializeContentPosition);
     window.addEventListener('scroll', requestTick, { passive: true });
 });
+
+// IFTL Functions
+function openIFTLOverlay() {
+    const modal = document.getElementById('iftlModal');
+    if (modal) {
+        modal.classList.add('show');
+        loadIFTLWeeks();
+    }
+}
+
+function closeIFTLOverlay() {
+    const modal = document.getElementById('iftlModal');
+    if (modal) modal.classList.remove('show');
+}
+
+async function loadIFTLWeeks() {
+    const select = document.getElementById('facultyIFTLWeekSelect');
+    if (!select) return;
+
+    select.innerHTML = '<option>Loading weeks...</option>';
+
+    try {
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `action=get_iftl_weeks`
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            select.innerHTML = '';
+            result.weeks.forEach(week => {
+                const option = document.createElement('option');
+                option.value = week.identifier;
+                option.textContent = week.label;
+                option.dataset.startDate = week.start_date;
+                if (week.is_current) option.selected = true;
+                select.appendChild(option);
+            });
+            loadFacultyIFTLData();
+        }
+    } catch (e) {
+        console.error(e);
+        select.innerHTML = '<option>Error loading weeks</option>';
+    }
+}
+
+async function loadFacultyIFTLData() {
+    const weekSelect = document.getElementById('facultyIFTLWeekSelect');
+    if (!weekSelect) return;
+
+    const week = weekSelect.value;
+    const content = document.getElementById('facultyIFTLContent');
+    content.innerHTML = '<div class="loading">Loading schedule...</div>';
+
+    try {
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `action=get_faculty_iftl&week=${week}`
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            renderEditableIFTL(result.entries, result.compliance);
+        } else {
+            content.innerHTML = '<div class="error">Failed to load</div>';
+        }
+    } catch (e) {
+        content.innerHTML = '<div class="error">Error loading</div>';
+    }
+}
+
+function renderEditableIFTL(entries, compliance) {
+    const content = document.getElementById('facultyIFTLContent');
+    const status = compliance.status || 'Draft';
+    // Store entries globally or in DOM for saving
+    window.currentIFTLData = entries || [];
+    window.currentIFTLStatus = status;
+
+    let html = `
+        <div class="iftl-status-header" style="margin-bottom:5px;">
+            Status: <strong>${status}</strong>
+            ${status === 'Submitted' ? '<span class="status-badge" style="background:#2196F3;color:white;">Submitted - Locked</span>' : ''}
+             ${status === 'Approved' ? '<span class="status-badge" style="background:#4CAF50;color:white;">Approved</span>' : ''}
+        </div>
+        <table class="data-table iftl-table editable-grid">
+            <thead style="position: sticky; top: 0; background: white; z-index: 10;">
+                <tr>
+                    <th style="width: 12%; padding: 12px 4px;">Day</th>
+                    <th style="width: 20%; padding: 12px 4px;">Time</th>
+                    <th style="width: 20%; padding: 12px 4px;">Activity/Course</th>
+                    <th style="width: 15%; padding: 12px 4px;">Class</th>
+                    <th style="width: 15%; padding: 12px 4px;">Location</th>
+                    <th style="width: 13%; padding: 12px 4px;">Remarks</th>
+                    <th style="width: 5%; padding: 12px 4px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    window.currentIFTLData.forEach((entry, index) => {
+        const isDisabled = status === 'Submitted' || status === 'Approved';
+
+        const dayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            .map(day => `<option value="${day}" ${entry.day_of_week === day ? 'selected' : ''}>${day}</option>`)
+            .join('');
+
+        const timeStartOptions = generateTimeOptions(entry.time_start);
+        const timeEndOptions = generateTimeOptions(entry.time_end);
+
+        html += `
+            <tr data-index="${index}" class="${entry.is_modified == 1 ? 'modified-row' : ''}" style="padding: 2px;">
+                <td style="padding: 4px; vertical-align: middle;">
+                    <select class="form-select" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'day_of_week', this.value)" style="width: 100%; padding: 4px; font-size: 0.9rem;">
+                        ${dayOptions}
+                    </select>
+                </td>
+                <td style="padding: 4px; vertical-align: middle;">
+                    <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
+                       <select class="form-select" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'time_start', this.value)" style="flex: 1; padding: 4px; min-width: 0; font-size: 0.9rem;">${timeStartOptions}</select>
+                       <span style="font-size: 0.8rem; line-height: 1;">-</span>
+                       <select class="form-select" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'time_end', this.value)" style="flex: 1; padding: 4px; min-width: 0; font-size: 0.9rem;">${timeEndOptions}</select>
+                    </div>
+                </td>
+                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-course" value="${entry.course_code || entry.activity_type || ''}" ${isDisabled ? 'disabled' : ''} style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Activity/Course"></td>
+                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-class" value="${entry.activity_type !== 'Class' ? entry.activity_type : ''}" ${isDisabled ? 'disabled' : ''} style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Class/Sec"></td>
+                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-room" value="${entry.room || ''}" ${isDisabled ? 'disabled' : ''} style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Location"></td>
+                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-remarks" value="${entry.remarks || ''}" ${isDisabled ? 'disabled' : ''} placeholder="Remarks" style="width:100%; padding: 4px; font-size: 0.9rem;"></td>
+                <td style="padding: 4px; text-align: center; vertical-align: middle;">
+                    ${!isDisabled ? `<button class="btn-delete" style="background: #e53935; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" onclick="deleteIFTLEntry(${index})" title="Remove">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </button>` : ''}
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table>`;
+
+    // Add row button
+    if (status !== 'Submitted' && status !== 'Approved') {
+        html += `
+        <div style="position: sticky; bottom: 0; background: white; padding: 10px; border-top: 1px solid #eee; text-align: center; box-shadow: 0 -2px 5px rgba(0,0,0,0.05);">
+            <button class="btn-secondary" style="width: 100%; padding: 10px;" onclick="addIFTLEntry()">+ Add New Entry</button>
+        </div>
+        `;
+    }
+
+    content.innerHTML = html;
+}
+
+function addIFTLEntry() {
+    if (!window.currentIFTLData) window.currentIFTLData = [];
+    window.currentIFTLData.push({
+        day_of_week: 'Monday',
+        time_start: '08:00:00',
+        time_end: '09:00:00',
+        course_code: '', // Activity/Course
+        room: '', // Location
+        activity_type: '', // Class
+        status: 'Regular', // Hidden default
+        remarks: '',
+        is_modified: 1
+    });
+    sortIFTLData();
+    renderEditableIFTL(window.currentIFTLData, { status: window.currentIFTLStatus });
+}
+
+// Helper to generate time options
+function generateTimeOptions(selectedTime) {
+    let options = '';
+    const startHour = 7; // 7 AM
+    const endHour = 21; // 9 PM
+
+    for (let h = startHour; h <= endHour; h++) {
+        for (let m = 0; m < 60; m += 30) {
+            const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`;
+            const displayTime = formatTimeClient(timeStr);
+            // Handle null/undefined selectedTime
+            const safeSelected = selectedTime || '';
+            const isSelected = safeSelected.startsWith(timeStr.substring(0, 5)) ? 'selected' : '';
+            options += `<option value="${timeStr}" ${isSelected}>${displayTime}</option>`;
+        }
+    }
+    return options;
+}
+
+// Helper to sort IFTL data
+function sortIFTLData() {
+    const dayMap = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 7 };
+
+    if (!window.currentIFTLData) return;
+
+    window.currentIFTLData.sort((a, b) => {
+        const da = dayMap[a.day_of_week] || 8;
+        const db = dayMap[b.day_of_week] || 8;
+        if (da !== db) return da - db;
+        // If days are same, sort by time_start
+        return (a.time_start || '').localeCompare(b.time_start || '');
+    });
+}
+
+function updateIFTLEntry(index, field, value) {
+    if (window.currentIFTLData[index]) {
+        window.currentIFTLData[index][field] = value;
+        window.currentIFTLData[index].is_modified = 1;
+
+        // If day, time_start, or time_end changed, resort and re-render
+        if (field === 'day_of_week' || field === 'time_start' || field === 'time_end') {
+            sortIFTLData();
+            renderEditableIFTL(window.currentIFTLData, { status: window.currentIFTLStatus });
+        }
+    }
+}
+
+function deleteIFTLEntry(index) {
+    if (confirm('Remove this entry?')) {
+        window.currentIFTLData.splice(index, 1);
+        renderEditableIFTL(window.currentIFTLData, { status: window.currentIFTLStatus });
+    }
+}
+
+async function saveIFTLData(status) {
+    if (window.currentIFTLStatus === 'Submitted' && status === 'Submitted') {
+        // Maybe allow unsubmit? No, usually not.
+        return;
+    }
+
+    // Collect data from DOM inputs
+    const rows = document.querySelectorAll('.editable-grid tbody tr[data-index]');
+    rows.forEach(row => {
+        const index = row.dataset.index;
+        const entry = window.currentIFTLData[index];
+        if (entry) {
+            // Mapping fields to new structure
+            const courseInput = row.querySelector('.entry-course');
+            if (courseInput) entry.course_code = courseInput.value;
+
+            const classInput = row.querySelector('.entry-class');
+            if (classInput) entry.activity_type = classInput.value;
+
+            const roomInput = row.querySelector('.entry-room');
+            if (roomInput) entry.room = roomInput.value;
+
+            // Status removed, default to Regular
+            entry.status = 'Regular';
+
+            const remarksInput = row.querySelector('.entry-remarks');
+            if (remarksInput) entry.remarks = remarksInput.value;
+
+            entry.is_modified = 1;
+        }
+    });
+
+    const weekSelect = document.getElementById('facultyIFTLWeekSelect');
+    const weekIdentifier = weekSelect.value;
+    const weekStartDate = weekSelect.options[weekSelect.selectedIndex].dataset.startDate;
+
+    // Validate Submit
+    if (status === 'Submitted') {
+        if (!confirm('Are you sure you want to submit? This will lock your IFTL for this week.')) return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('action', 'save_iftl');
+        formData.append('week_identifier', weekIdentifier);
+        formData.append('week_start_date', weekStartDate);
+        formData.append('status', status);
+        formData.append('entries', JSON.stringify(window.currentIFTLData));
+
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            if (typeof showNotification === 'function') {
+                showNotification('IFTL Saved!', 'success');
+            } else {
+                alert('IFTL Saved!');
+            }
+            loadFacultyIFTLData();
+        } else {
+            if (typeof showNotification === 'function') {
+                showNotification('Error saving: ' + result.message, 'error');
+            } else {
+                alert('Error saving: ' + result.message);
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error saving IFTL');
+    }
+}
+
+async function regenerateIFTLWeek() {
+    if (!confirm("This will reset your custom entries for this week to the standard course load. Continue?")) return;
+
+    const weekSelect = document.getElementById('facultyIFTLWeekSelect');
+    const week = weekSelect.value;
+    const content = document.getElementById('facultyIFTLContent');
+    content.innerHTML = '<div class="loading">Resetting to standard schedule...</div>';
+
+    try {
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `action = get_faculty_iftl & week=${week}& reset=1`
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            renderEditableIFTL(result.entries, result.compliance);
+            if (typeof showNotification === 'function') showNotification('Schedule reset to standard load', 'success');
+        } else {
+            content.innerHTML = '<div class="error">Failed to reset</div>';
+        }
+    } catch (e) {
+        content.innerHTML = '<div class="error">Error resetting</div>';
+    }
+}

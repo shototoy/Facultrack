@@ -661,10 +661,24 @@ switch ($action) {
                             }
                         }
                         $prefix = $c['generate_id']['prefix']($_POST);
-                        $stmt = $pdo->prepare("SELECT COUNT(*) FROM {$c['generate_id']['table']} WHERE {$c['generate_id']['column']} LIKE ?");
-                        $stmt->execute([$prefix . '%']);
-                        $count = $stmt->fetchColumn();
-                        $insert_data['employee_id'] = $prefix . str_pad($count + 1, 4, '0', STR_PAD_LEFT);
+                        $unique = false;
+                        $attempts = 0;
+                        while (!$unique && $attempts < 5) {
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM {$c['generate_id']['table']} WHERE {$c['generate_id']['column']} LIKE ?");
+                            $stmt->execute([$prefix . '%']);
+                            $count = $stmt->fetchColumn();
+                            // If attempts > 0, it means the ID generated from count collided, so add attempt count to skip ahead
+                            $next_id = $prefix . str_pad($count + 1 + $attempts, 4, '0', STR_PAD_LEFT);
+                            
+                            $stmt = $pdo->prepare("SELECT 1 FROM {$c['generate_id']['table']} WHERE {$c['generate_id']['column']} = ?");
+                            $stmt->execute([$next_id]);
+                            if (!$stmt->fetch()) {
+                                $insert_data['employee_id'] = $next_id;
+                                $unique = true;
+                            }
+                            $attempts++;
+                        }
+                        if (!$unique) throw new Exception("Failed to generate unique Employee ID");
                     }
                     if ($action === 'add_class') {
                         if ($user_role === 'program_chair') {
@@ -1318,6 +1332,92 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         }
         break;
+    case 'get_full_faculty_schedule':
+        if ($_SESSION['role'] !== 'campus_director' && $_SESSION['role'] !== 'program_chair') {
+            sendJsonResponse(['success' => false, 'message' => 'Unauthorized access'], 403);
+            break;
+        }
+        $faculty_id = $_POST['faculty_id'] ?? '';
+        if (empty($faculty_id)) {
+            sendJsonResponse(['success' => false, 'message' => 'Faculty ID is required']);
+            break;
+        }
+        try {
+            // Check for IFTL compliance for the current week
+            $current_week = date('Y') . '-W' . date('W');
+            $compliance_query = "SELECT compliance_id FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ?";
+            $stmt = $pdo->prepare($compliance_query);
+            $stmt->execute([$faculty_id, $current_week]);
+            $compliance_id = $stmt->fetchColumn();
+
+            if ($compliance_id) {
+                // Fetch from IFTL entries
+                $schedule_query = "
+                    SELECT 
+                        e.entry_id as schedule_id,
+                        e.time_start,
+                        e.time_end,
+                        e.day_of_week,
+                        CASE 
+                            WHEN e.day_of_week = 'Monday' THEN 'M'
+                            WHEN e.day_of_week = 'Tuesday' THEN 'T'
+                            WHEN e.day_of_week = 'Wednesday' THEN 'W'
+                            WHEN e.day_of_week = 'Thursday' THEN 'TH'
+                            WHEN e.day_of_week = 'Friday' THEN 'F'
+                            WHEN e.day_of_week = 'Saturday' THEN 'S'
+                            WHEN e.day_of_week = 'Sunday' THEN 'SUN'
+                            ELSE '' 
+                        END as days,
+                        CASE 
+                            WHEN e.status = 'Leave' THEN 'LEAVE'
+                            WHEN e.status = 'Vacant' THEN 'VACANT'
+                            WHEN e.course_code IS NOT NULL AND e.course_code != '' THEN e.course_code
+                            ELSE e.activity_type
+                        END as course_code,
+                        e.room,
+                        e.class_name,
+                        e.status,
+                        c.course_description,
+                        c.units,
+                        cl.total_students,
+                        'iftl' as source
+                    FROM iftl_entries e
+                    LEFT JOIN courses c ON e.course_code = c.course_code
+                    LEFT JOIN classes cl ON e.class_name = cl.class_name
+                    WHERE e.compliance_id = ?
+                    ORDER BY e.time_start";
+                
+                $stmt = $pdo->prepare($schedule_query);
+                $stmt->execute([$compliance_id]);
+                $schedule_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                // Fallback to standard schedule
+                $schedule_query = "
+                    SELECT s.*, c.course_description, cl.class_name, cl.class_code, cl.total_students,
+                           'upcoming' as status, 'standard' as source
+                    FROM schedules s
+                    JOIN courses c ON s.course_code = c.course_code
+                    JOIN classes cl ON s.class_id = cl.class_id
+                    WHERE s.faculty_id = ? AND s.is_active = TRUE
+                    ORDER BY s.time_start";
+                
+                $stmt = $pdo->prepare($schedule_query);
+                $stmt->execute([$faculty_id]);
+                $schedule_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            sendJsonResponse([
+                'success' => true, 
+                'schedules' => $schedule_data,
+                'is_iftl' => !!$compliance_id,
+                'week' => $current_week,
+                'timestamp' => date('Y-m-d H:i:s')
+            ]);
+        } catch (Exception $e) {
+            sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+        break;
+
     case 'get_schedule':
         validateUserSession('faculty');
         $days = $_POST['days'] ?? '';
@@ -1479,6 +1579,175 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
+
+    case 'get_faculty_details':
+        validateUserSession('campus_director');
+        $faculty_id = $_GET['faculty_id'] ?? null;
+        if (!$faculty_id) {
+            sendJsonResponse(['success' => false, 'message' => 'Faculty ID is required']);
+        }
+        
+        $stmt = $pdo->prepare("SELECT f.*, u.username, u.full_name, u.role, u.is_active as user_active FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.faculty_id = ?");
+        $stmt->execute([$faculty_id]);
+        $faculty = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($faculty) {
+            sendJsonResponse(['success' => true, 'data' => $faculty]);
+        } else {
+            sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
+        }
+        break;
+
+    case 'update_faculty':
+        validateUserSession('campus_director');
+        try {
+            $pdo->beginTransaction();
+            
+            $faculty_id = $_POST['faculty_id'];
+            $full_name = trim($_POST['full_name']);
+            $username = trim($_POST['username']);
+            $program = $_POST['program'] ?? null;
+            $contact_email = $_POST['contact_email'] ?? null;
+            $contact_phone = $_POST['contact_phone'] ?? null;
+            // Password update is optional
+            $password = !empty($_POST['password']) ? password_hash($_POST['password'], PASSWORD_DEFAULT) : null;
+            
+            // Get user_id
+            $stmt = $pdo->prepare("SELECT user_id FROM faculty WHERE faculty_id = ?");
+            $stmt->execute([$faculty_id]);
+            $user_id = $stmt->fetchColumn();
+            
+            if (!$user_id) throw new Exception("Faculty not found");
+            
+            // Allow checking for duplicates (username) if username changed?
+            // Simplified for now.
+            
+            // Update users table
+            $user_sql = "UPDATE users SET full_name = ?, username = ? " . ($password ? ", password = ?" : "") . " WHERE user_id = ?";
+            $user_params = $password ? [$full_name, $username, $password, $user_id] : [$full_name, $username, $user_id];
+            
+            $stmt = $pdo->prepare($user_sql);
+            $stmt->execute($user_params);
+            
+            // Update faculty table
+            $faculty_sql = "UPDATE faculty SET program = ?, contact_email = ?, contact_phone = ? WHERE faculty_id = ?";
+            $stmt = $pdo->prepare($faculty_sql);
+            $stmt->execute([$program, $contact_email, $contact_phone, $faculty_id]);
+            
+            $pdo->commit();
+            sendJsonResponse(['success' => true, 'message' => 'Faculty updated successfully']);
+        } catch (Exception $e) {
+            $pdo->rollback();
+            sendJsonResponse(['success' => false, 'message' => 'Error updating faculty: ' . $e->getMessage()]);
+        }
+        break;
+    case 'get_iftl_weeks':
+        $weeks = [];
+        // Start from last Monday for consistency
+        $base_date = strtotime('last Monday', strtotime('tomorrow'));
+        // Current week + next 4 weeks + past 4 weeks
+        for ($i = -4; $i <= 4; $i++) {
+            $week_start = date('Y-m-d', strtotime("$i weeks", $base_date));
+            $week_end = date('Y-m-d', strtotime("$week_start +6 days"));
+            $week_identifier = date('Y-\WW', strtotime($week_start));
+            $is_current = (date('Y-m-d') >= $week_start && date('Y-m-d') <= $week_end);
+            $weeks[] = [
+                'identifier' => $week_identifier,
+                'label' => ($is_current ? "[Current] " : "") . date('M d', strtotime($week_start)) . " - " . date('M d', strtotime($week_end)),
+                'start_date' => $week_start,
+                'is_current' => $is_current
+            ];
+        }
+        sendJsonResponse(['success' => true, 'weeks' => $weeks]);
+        break;
+
+    case 'get_faculty_iftl':
+        $target_faculty_id = $_POST['faculty_id'] ?? $_SESSION['faculty_id'] ?? null;
+        if (!$target_faculty_id && $_SESSION['role'] === 'faculty') {
+             $stmt = $pdo->prepare("SELECT faculty_id FROM faculty WHERE user_id = ?");
+             $stmt->execute([$_SESSION['user_id']]);
+             $target_faculty_id = $stmt->fetchColumn();
+        }
+        $week = $_POST['week'] ?? date('Y-\WW');
+        
+        // Check if compliance record exists
+        $stmt = $pdo->prepare("SELECT * FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ?");
+        $stmt->execute([$target_faculty_id, $week]);
+        $compliance = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($compliance && !isset($_POST['reset'])) {
+            $stmt = $pdo->prepare("SELECT * FROM iftl_entries WHERE compliance_id = ? ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), time_start");
+            $stmt->execute([$compliance['compliance_id']]);
+            $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            $compliance = ['status' => 'None'];
+            $entries = generateIFTLFromStandard($pdo, $target_faculty_id);
+        }
+        sendJsonResponse(['success' => true, 'compliance' => $compliance, 'entries' => $entries]);
+        break;
+
+    case 'save_iftl':
+        $compliance_id = $_POST['compliance_id'] ?? null;
+        $faculty_id = $_POST['faculty_id'] ?? $_SESSION['faculty_id'] ?? null;
+        
+        if (!$faculty_id && $_SESSION['role'] === 'faculty') {
+             $stmt = $pdo->prepare("SELECT faculty_id FROM faculty WHERE user_id = ?");
+             $stmt->execute([$_SESSION['user_id']]);
+             $faculty_id = $stmt->fetchColumn();
+        }
+
+        $week_identifier = $_POST['week_identifier'];
+        $week_start_date = $_POST['week_start_date'];
+        $status = $_POST['status'] ?? 'Draft';
+        
+        try {
+            $pdo->beginTransaction();
+            
+            if ($compliance_id) {
+                // Determine if we need to update status (e.g. Draft -> Submitted)
+                $stmt = $pdo->prepare("UPDATE iftl_weekly_compliance SET status = ?, updated_at = NOW() WHERE compliance_id = ?");
+                $stmt->execute([$status, $compliance_id]);
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO iftl_weekly_compliance (faculty_id, week_identifier, week_start_date, status) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = NOW()");
+                $stmt->execute([$faculty_id, $week_identifier, $week_start_date, $status]);
+                $compliance_id = $pdo->lastInsertId();
+                 if ($compliance_id == 0) {
+                    $stmt = $pdo->prepare("SELECT compliance_id FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ?");
+                    $stmt->execute([$faculty_id, $week_identifier]);
+                    $compliance_id = $stmt->fetchColumn();
+                 }
+            }
+            
+            $stmt = $pdo->prepare("DELETE FROM iftl_entries WHERE compliance_id = ?");
+            $stmt->execute([$compliance_id]);
+            
+            $entries = json_decode($_POST['entries'], true);
+            if ($entries) {
+                $insert_stmt = $pdo->prepare("INSERT INTO iftl_entries (compliance_id, day_of_week, time_start, time_end, course_code, room, activity_type, status, remarks, is_modified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                foreach ($entries as $e) {
+                    $insert_stmt->execute([
+                        $compliance_id,
+                        $e['day_of_week'],
+                        $e['time_start'],
+                        $e['time_end'],
+                        $e['course_code'] ?? null,
+                        $e['room'] ?? null,
+                        $e['activity_type'] ?? 'Class',
+                        $e['status'] ?? 'Regular',
+                        $e['remarks'] ?? null,
+                        $e['is_modified'] ?? 0
+                    ]);
+                }
+            }
+            
+            $pdo->commit();
+            sendJsonResponse(['success' => true, 'message' => 'IFTL saved successfully']);
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            sendJsonResponse(['success' => false, 'message' => 'Error saving IFTL: ' . $e->getMessage()]);
+        }
+        break;
+
     default:
         sendJsonResponse(['success' => false, 'message' => 'Unknown action: ' . $action], 400);
         break;
@@ -1616,5 +1885,67 @@ function getAllCurrentEntities($pdo, $role, $tab = null) {
     } catch (Exception $e) {
         return [];
     }
+}
+
+function generateIFTLFromStandard($pdo, $faculty_id) {
+    if (!$faculty_id) return [];
+    
+    $stmt = $pdo->prepare("
+        SELECT s.*, c.class_name 
+        FROM schedules s 
+        LEFT JOIN classes c ON s.class_id = c.class_id 
+        WHERE s.faculty_id = ? AND s.is_active = 1
+    ");
+    $stmt->execute([$faculty_id]);
+    $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $entries = [];
+    $day_map = [
+        'M' => 'Monday', 'T' => 'Tuesday', 'W' => 'Wednesday', 'TH' => 'Thursday', 'F' => 'Friday', 'S' => 'Saturday', 'SAT' => 'Saturday'
+    ];
+    
+    foreach ($schedules as $sched) {
+        $days_str = strtoupper($sched['days']);
+        $parsed_days = [];
+        $i = 0;
+        while ($i < strlen($days_str)) {
+            if ($i < strlen($days_str) - 1 && substr($days_str, $i, 2) === 'TH') {
+                $parsed_days[] = 'TH'; $i += 2;
+            } else {
+                $valid_days = ['M', 'T', 'W', 'F', 'S'];
+                if (in_array($days_str[$i], $valid_days)) {
+                     $parsed_days[] = $days_str[$i]; 
+                }
+                $i++;
+            }
+        }
+        
+        foreach ($parsed_days as $d) {
+            if (isset($day_map[$d])) {
+                $entries[] = [
+                    'day_of_week' => $day_map[$d],
+                    'time_start' => $sched['time_start'],
+                    'time_end' => $sched['time_end'],
+                    'course_code' => $sched['course_code'],
+                    'room' => $sched['room'],
+                    // Using activity_type to store Class Name/Section
+                    'activity_type' => $sched['class_name'] ?? 'Class', 
+                    'status' => 'Regular',
+                    'remarks' => '',
+                    'is_modified' => 0
+                ];
+            }
+        }
+    }
+    
+    usort($entries, function($a, $b) {
+        $days = ['Monday'=>1, 'Tuesday'=>2, 'Wednesday'=>3, 'Thursday'=>4, 'Friday'=>5, 'Saturday'=>6, 'Sunday'=>7];
+        $da = $days[$a['day_of_week']] ?? 8;
+        $db = $days[$b['day_of_week']] ?? 8;
+        if ($da !== $db) return $da - $db;
+        return strcmp($a['time_start'], $b['time_start']);
+    });
+    
+    return $entries;
 }
 ?>

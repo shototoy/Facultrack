@@ -60,17 +60,8 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             <button class="tab-button active" onclick="switchTab('faculty')" data-tab="faculty">
                 Faculty Members
             </button>
-            <button class="tab-button" onclick="switchTab('classes')" data-tab="classes">
-                Classes
-            </button>
-            <button class="tab-button" onclick="switchTab('courses')" data-tab="courses">
-                Courses
-            </button>
             <button class="tab-button" onclick="switchTab('announcements')" data-tab="announcements">
-                Manage Announcements
-            </button>
-            <button class="tab-button" onclick="switchTab('programs')" data-tab="programs">
-                Programs
+                Announcements
             </button>
             <div class="search-bar">
                 <div class="search-container collapsed" id="searchContainer">
@@ -114,6 +105,12 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                 </td>
                                 <td class="location-column"><?php echo htmlspecialchars($faculty['current_location'] ?? 'No Location'); ?></td>
                                 <td class="actions-column">
+                                    <button class="action-btn view-btn" onclick="openIFTLModal(<?php echo $faculty['faculty_id']; ?>, '<?php echo htmlspecialchars($faculty['full_name']); ?>')" title="View IFTL">
+                                        <svg class="feather feather-sm"><use href="#calendar"></use></svg> IFTL
+                                    </button>
+                                    <button class="action-btn edit-btn" onclick="openEditFacultyModal(<?php echo $faculty['faculty_id']; ?>)" title="Edit">
+                                        <svg class="feather feather-sm"><use href="#edit"></use></svg> Edit
+                                    </button>
                                     <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_faculty', <?php echo $faculty['faculty_id']; ?>)">Delete</button>
                                 </td>
                             </tr>
@@ -144,107 +141,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </table>
             </div>
         </div>
-        <div class="tab-content" id="classes-content">
-            <div class="table-container">
-                <div class="table-header">
-                    <h3 class="table-title">Classes</h3>
-                    <div class="table-actions">
-                        <button class="export-btn" onclick="exportData('classes')" title="Export Classes Data">
-                            <svg class="feather feather-sm"><use href="#download"></use></svg> Export
-                        </button>
-                        <button class="add-btn" data-modal="updateSemesterModal" style="background-color: #4CAF50;">
-                            <svg class="feather feather-sm"><use href="#refresh-cw"></use></svg> Update Semester
-                        </button>
-                        <button class="add-btn" data-modal="addClassModal">
-                            <svg class="feather feather-sm"><use href="#plus"></use></svg> Add Class
-                        </button>
-                    </div>
-                </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th class="id-column">Class Code</th>
-                            <th class="name-column">Class Name</th>
-                            <th class="id-column">Year Level</th>
-                            <th class="id-column">Students</th>
-                            <th class="date-column">Academic Year</th>
-                            <th class="actions-column">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($classes_data as $class): ?>
-                            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-class-id="<?php echo $class['class_id']; ?>">
-                                <td class="id-column"><?php echo htmlspecialchars($class['class_code']); ?></td>
-                                <td class="name-column"><?php echo htmlspecialchars($class['class_name']); ?></td>
-                                <td class="id-column"><?php echo $class['year_level']; ?></td>
-                                <td class="id-column"><?php echo $class['total_students'] ?? 0; ?></td>
-                                <td class="date-column"><?php echo htmlspecialchars($class['academic_year']); ?></td>
-                                <td class="actions-column">
-                                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_class', <?php echo $class['class_id']; ?>)">Delete</button>
-                                </td>
-                            </tr>
-                            <tr class="expansion-row" id="class-expansion-<?php echo $class['class_id']; ?>" style="display: none;">
-                                <td colspan="5" class="expansion-content">
-                                    <div class="expanded-details">
-                                        <div class="detail-item">
-                                            <span class="detail-label">Semester:</span>
-                                            <span class="detail-value"><?php echo htmlspecialchars($class['semester']); ?></span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <span class="detail-label">Program Chair:</span>
-                                            <span class="detail-value"><?php echo htmlspecialchars($class['program_chair_name'] ?? 'Unassigned'); ?></span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <span class="detail-label">Total Subjects:</span>
-                                            <span class="detail-value"><?php echo $class['total_subjects']; ?></span>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="tab-content" id="courses-content">
-            <div class="table-container">
-                <div class="table-header">
-                    <h3 class="table-title">Courses</h3>
-                    <div class="table-actions">
-                        <button class="export-btn" onclick="exportData('courses')" title="Export Courses Data">
-                            <svg class="feather feather-sm"><use href="#download"></use></svg> Export
-                        </button>
-                        <button class="add-btn" data-modal="addCourseModal">
-                            <svg class="feather feather-sm"><use href="#plus"></use></svg> Add Course
-                        </button>
-                    </div>
-                </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th class="id-column">Course Code</th>
-                            <th class="description-column">Course Description</th>
-                            <th class="id-column">Units</th>
-                            <th class="id-column">Times Scheduled</th>
-                            <th class="actions-column">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($courses_data as $course): ?>
-                            <tr>
-                                <td class="id-column"><?php echo htmlspecialchars($course['course_code']); ?></td>
-                                <td class="description-column"><?php echo htmlspecialchars($course['course_description']); ?></td>
-                                <td class="id-column"><?php echo $course['units']; ?></td>
-                                <td class="id-column"><?php echo $course['times_scheduled']; ?></td>
-                                <td class="actions-column">
-                                    <button class="delete-btn" onclick="deleteEntity('delete_course', <?php echo $course['course_id']; ?>)">Delete</button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+
         <div class="tab-content" id="announcements-content">
             <div class="table-container">
                 <div class="table-header">
@@ -305,61 +202,25 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             </div>
         </div>
         
-        <div class="tab-content" id="programs-content">
-            <div class="table-container">
-                <div class="table-header">
-                    <h3 class="table-title">Programs</h3>
-                    <div class="table-actions">
-                        <button class="export-btn" onclick="exportData('programs')" title="Export Programs Data">
-                            <svg class="feather feather-sm"><use href="#download"></use></svg> Export
-                        </button>
-                        <button class="add-btn" onclick="openModal('addProgramModal')">
-                            <svg class="feather feather-sm"><use href="#plus"></use></svg> Add Program
-                        </button>
+
+        <div class="modal-overlay" id="directorIFTLModal">
+            <div class="modal large-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Faculty IFTL - <span id="iftlFacultyName"></span></h3>
+                    <button type="button" class="modal-close" onclick="closeModal('directorIFTLModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="iftl-controls" style="margin-bottom: 20px;">
+                        <label for="iftlWeekSelect">Select Week:</label>
+                        <select id="iftlWeekSelect" class="form-select" onchange="loadFacultyIFTL()">
+                            <!-- Options populated via JS -->
+                        </select>
+                    </div>
+                    <div id="iftlContent" class="schedule-table-container">
+                        <!-- Content loaded via JS -->
+                        <div class="loading">Select a week to view IFTL</div>
                     </div>
                 </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Code</th>
-                            <th>Program Name</th>
-                            <th>Description</th>
-                            <th>Courses</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($programs_data)): ?>
-                            <?php foreach ($programs_data as $program): ?>
-                                <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-program-id="<?= $program['program_id'] ?>">
-                                    <td><?= htmlspecialchars($program['program_code']) ?></td>
-                                    <td><?= htmlspecialchars($program['program_name']) ?></td>
-                                    <td><?= htmlspecialchars($program['program_description'] ?? '') ?></td>
-                                    <td><?= $program['course_count'] ?? 0 ?></td>
-                                    <td>
-                                        <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_program', <?= $program['program_id'] ?>)">Delete</button>
-                                    </td>
-                                </tr>
-                                <tr class="expansion-row" id="program-expansion-<?= $program['program_id'] ?>" style="display: none;">
-                                    <td colspan="5" class="expansion-content">
-                                        <div class="expanded-details">
-                                            <div class="detail-item">
-                                                <span class="detail-label">Courses in this Program:</span>
-                                                <div class="program-courses-list" id="program-courses-<?= $program['program_id'] ?>">
-                                                    <div class="loading">Loading courses...</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="5" style="text-align: center; padding: 20px;">No programs found</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
@@ -377,6 +238,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
     <script src="assets/js/shared_functions.js"></script>
     <script src="assets/js/program_chair_loader.js"></script>
     <script src="assets/js/director.js"></script>
+    <script src="assets/js/schedule_print.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const programChairSelect = document.querySelector('select[name="program_chair_id"]');
@@ -476,6 +338,144 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 }
             }
         };
+    </script>
+        <div class="modal-overlay" id="editFacultyModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Edit Faculty Member</h3>
+                    <button type="button" class="modal-close" onclick="closeModal('editFacultyModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="editFacultyForm" onsubmit="event.preventDefault(); submitEditFaculty();">
+                        <input type="hidden" name="faculty_id" id="editFacultyId">
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" name="full_name" id="editFullName" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Username *</label>
+                            <input type="text" name="username" id="editUsername" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Program *</label>
+                            <select name="program" id="editProgram" class="form-select">
+                                <option value="">Select Program</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Information Technology">Information Technology</option>
+                                <option value="Engineering">Engineering</option>
+                                <option value="Business Administration">Business Administration</option>
+                                <option value="Education">Education</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contact Email</label>
+                            <input type="email" name="contact_email" id="editContactEmail" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contact Phone</label>
+                            <input type="text" name="contact_phone" id="editContactPhone" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">New Password (leave blank to keep current)</label>
+                            <input type="password" name="password" id="editPassword" class="form-input">
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-secondary" onclick="closeModal('editFacultyModal')">Cancel</button>
+                            <button type="submit" class="btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    <script>
+        // Edit Faculty Logic
+        async function openEditFacultyModal(facultyId) {
+            // Prevent event propagation if triggered from row click
+            if(window.event) window.event.stopPropagation();
+            
+            const modal = document.getElementById('editFacultyModal');
+            const form = document.getElementById('editFacultyForm');
+            form.reset();
+            
+            try {
+                const response = await fetch(`assets/php/polling_api.php?action=get_faculty_details&faculty_id=${facultyId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    document.getElementById('editFacultyId').value = data.faculty_id;
+                    document.getElementById('editFullName').value = data.full_name;
+                    document.getElementById('editUsername').value = data.username;
+                    document.getElementById('editProgram').value = data.program;
+                    document.getElementById('editContactEmail').value = data.contact_email;
+                    document.getElementById('editContactPhone').value = data.contact_phone;
+                    
+                    modal.classList.add('show');
+                } else {
+                    alert('Error fetching faculty details: ' + result.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error fetching details');
+            }
+        }
+        
+        async function submitEditFaculty() {
+            if (typeof showConfirmation === 'function') {
+                showConfirmation(
+                    'Update Faculty Member',
+                    'Are you sure you want to update this faculty member?',
+                    async function() {
+                         const form = document.getElementById('editFacultyForm');
+                        const formData = new FormData(form);
+                        formData.append('action', 'update_faculty');
+                        
+                        try {
+                            const response = await fetch('assets/php/polling_api.php', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const result = await response.json();
+                            
+                            if (result.success) {
+                                alert('Faculty updated successfully');
+                                closeModal('editFacultyModal');
+                                location.reload(); // Simple reload to reflect changes
+                            } else {
+                                alert('Error updating faculty: ' + result.message);
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            alert('Error updating faculty');
+                        }
+                    }
+                );
+                return;
+            }
+
+            const form = document.getElementById('editFacultyForm');
+            const formData = new FormData(form);
+            formData.append('action', 'update_faculty');
+            
+            try {
+                const response = await fetch('assets/php/polling_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Faculty updated successfully');
+                    closeModal('editFacultyModal');
+                    location.reload(); // Simple reload to reflect changes
+                } else {
+                    alert('Error updating faculty: ' + result.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error updating faculty');
+            }
+        }
     </script>
 </body>
 </html>

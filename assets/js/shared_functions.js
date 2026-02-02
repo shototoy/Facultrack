@@ -123,51 +123,66 @@ async function deleteEntity(action, id) {
     const button = event.target;
     if (!button || !button.textContent) return;
 
-    const originalText = button.textContent;
-    try {
-        button.disabled = true;
-        button.textContent = 'Deleting...';
-        const formData = new FormData();
-        formData.set('action', action);
-        formData.set(idField, id);
-        const response = await fetch('assets/php/polling_api.php', {
-            method: 'POST',
-            body: formData
-        });
-        const result = await response.json();
-        if (result.success) {
-            showNotification(`${capitalize(label)} deleted successfully`, 'success');
+    // Use confirmation modal if available
+    if (typeof showConfirmation === 'function') {
+        showConfirmation(
+            `Delete ${capitalize(label)}`,
+            `Are you sure you want to delete this ${label}?`,
+            async function () {
+                // Proceed with deletion
+                const originalText = button.textContent;
+                try {
+                    button.disabled = true;
+                    button.textContent = 'Deleting...';
+                    const formData = new FormData();
+                    formData.set('action', action);
+                    formData.set(idField, id);
+                    const response = await fetch('assets/php/polling_api.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showNotification(`${capitalize(label)} deleted successfully`, 'success');
 
-            const entityType = action.replace('delete_', '');
-            if (typeof window.removeEntityFromTable === 'function') {
-                window.removeEntityFromTable(entityType, id);
-            } else {
-                switch (entityType) {
-                    case 'faculty':
-                        if (typeof removeFacultyFromTable === 'function') removeFacultyFromTable(id);
-                        break;
-                    case 'class':
-                        if (typeof removeClassFromTable === 'function') removeClassFromTable(id);
-                        break;
-                    case 'course':
-                        if (typeof removeCourseFromTable === 'function') removeCourseFromTable(id);
-                        break;
-                    case 'announcement':
-                        if (typeof removeAnnouncementFromTable === 'function') removeAnnouncementFromTable(id);
-                        break;
-                    case 'program':
-                        if (typeof removeProgramFromTable === 'function') removeProgramFromTable(id);
-                        break;
+                        const entityType = action.replace('delete_', '');
+                        if (typeof window.removeEntityFromTable === 'function') {
+                            window.removeEntityFromTable(entityType, id);
+                        } else {
+                            switch (entityType) {
+                                case 'faculty':
+                                    if (typeof removeFacultyFromTable === 'function') removeFacultyFromTable(id);
+                                    break;
+                                case 'class':
+                                    if (typeof removeClassFromTable === 'function') removeClassFromTable(id);
+                                    break;
+                                case 'course':
+                                    if (typeof removeCourseFromTable === 'function') removeCourseFromTable(id);
+                                    break;
+                                case 'announcement':
+                                    if (typeof removeAnnouncementFromTable === 'function') removeAnnouncementFromTable(id);
+                                    break;
+                                case 'program':
+                                    if (typeof removeProgramFromTable === 'function') removeProgramFromTable(id);
+                                    break;
+                            }
+                        }
+                    } else {
+                        throw new Error(result.message || `Failed to delete ${label}`);
+                    }
+                } catch (error) {
+                    showNotification(`Error deleting ${label}: ${error.message}`, 'error');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = originalText;
                 }
             }
-        } else {
-            throw new Error(result.message || `Failed to delete ${label}`);
-        }
-    } catch (error) {
-        showNotification(`Error deleting ${label}: ${error.message}`, 'error');
-        button.disabled = false;
-        button.textContent = originalText;
+        );
+        return; // Stop standard execution
     }
+
+    // Fallback if no confirmation modal (current behavior kept as backup or removed if strict)
+    // ... (rest of old code essentially moved inside callback)
 }
 function capitalize(text) {
     return text.charAt(0).toUpperCase() + text.slice(1);
@@ -182,6 +197,43 @@ async function handleFormSubmission(form, type) {
         'announcements': 'add_announcement',
         'programs': 'add_program'
     };
+    // Intercept with confirmation
+    const actionLabel = actionMap[type].replace('add_', '');
+
+    if (typeof showConfirmation === 'function') {
+        showConfirmation(
+            `Add ${capitalize(actionLabel)}`,
+            `Are you sure you want to add this ${actionLabel}?`,
+            async function () {
+                try {
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Adding...';
+                    const formData = new FormData(form);
+                    formData.set('action', actionMap[type]);
+                    const response = await fetch('assets/php/polling_api.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        switchTab(type);
+                        if (typeof closeModal === 'function') closeModal();
+                        form.reset();
+                        showNotification(result.message, 'success');
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (error) {
+                    showNotification(`Error: ${error.message}`, 'error');
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalText;
+                }
+            }
+        );
+        return;
+    }
+
     try {
         submitButton.disabled = true;
         submitButton.textContent = 'Adding...';

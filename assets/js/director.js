@@ -601,3 +601,197 @@ function addNewRowToTable(tabName, data) {
         updateHeaderStatistics(tabName.replace('s', ''), 1);
     }
 }
+
+// Global variables for print functionality
+window.facultyNames = {};
+window.facultySchedules = {};
+
+// Global variable to store current faculty ID for IFTL modal
+let currentIFTLFacultyId = null;
+
+async function openIFTLModal(facultyId, facultyName) {
+    // Save faculty name for print logic
+    window.facultyNames[facultyId] = facultyName;
+
+    // Show loading state
+    const originalText = event ? event.target.innerHTML : '';
+    const button = event ? event.target.closest('button') : null;
+
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="loading-spinner-sm"></span> Loading...';
+    }
+
+    try {
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `action=get_full_faculty_schedule&faculty_id=${facultyId}`
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            // Store schedule for print logic
+            window.facultySchedules[facultyId] = result.schedules;
+
+            // Execute print logic
+            if (typeof printFacultySchedule === 'function') {
+                printFacultySchedule(facultyId);
+            } else {
+                console.error('printFacultySchedule function not found');
+                alert('Printing function not loaded. Please refresh the page.');
+            }
+        } else {
+            alert('Error fetching schedule: ' + (result.message || 'Unknown error'));
+        }
+    } catch (e) {
+        console.error("Error fetching schedule for print", e);
+        alert('Error fetching schedule data');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = originalText || '<svg class="feather feather-sm"><use href="#calendar"></use></svg> IFTL';
+        }
+    }
+}
+// Retain old function for compatibility if needed, or remove completely.
+// For now, I'm replacing the logic entirely as requested.
+/*
+async function openIFTLModal_OLD(facultyId, facultyName) {
+    currentIFTLFacultyId = facultyId;
+    const nameEl = document.getElementById('iftlFacultyName');
+    if (nameEl) nameEl.textContent = facultyName;
+
+    const modal = document.getElementById('directorIFTLModal');
+    if (modal) modal.classList.add('show');
+
+    // Load weeks
+    const weekSelect = document.getElementById('iftlWeekSelect');
+    if (!weekSelect) return;
+
+    weekSelect.innerHTML = '<option>Loading weeks...</option>';
+
+    try {
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `action=get_iftl_weeks`
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            weekSelect.innerHTML = '';
+            let currentWeek = null;
+            result.weeks.forEach(week => {
+                const option = document.createElement('option');
+                option.value = week.identifier; // YYYY-Wxx
+                option.textContent = week.label;
+                if (week.is_current) {
+                    option.selected = true;
+                    currentWeek = week.identifier;
+                }
+                weekSelect.appendChild(option);
+            });
+
+            // Load content for selected (current) week
+            loadFacultyIFTL();
+        } else {
+            weekSelect.innerHTML = '<option>Error loading weeks</option>';
+        }
+    } catch (e) {
+        console.error("Error fetching weeks", e);
+        weekSelect.innerHTML = '<option>Error loading weeks</option>';
+    }
+}
+
+async function loadFacultyIFTL() {
+    if (!currentIFTLFacultyId) return;
+
+    const weekSelect = document.getElementById('iftlWeekSelect');
+    const selectedWeek = weekSelect ? weekSelect.value : '';
+    const contentDiv = document.getElementById('iftlContent');
+
+    if (contentDiv) contentDiv.innerHTML = '<div class="loading">Loading IFTL data...</div>';
+
+    try {
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `action=get_faculty_iftl&faculty_id=${currentIFTLFacultyId}&week=${selectedWeek}`
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            renderIFTLTable(result.entries, result.compliance);
+        } else {
+            if (contentDiv) contentDiv.innerHTML = '<div class="error">Failed to load data: ' + (result.message || 'Unknown error') + '</div>';
+        }
+    } catch (e) {
+        console.error("Error loading IFTL", e);
+        if (contentDiv) contentDiv.innerHTML = '<div class="error">Error loading data</div>';
+    }
+}
+
+function renderIFTLTable(entries, compliance) {
+    const contentDiv = document.getElementById('iftlContent');
+    if (!contentDiv) return;
+
+    const status = compliance ? (compliance.status || 'Draft') : 'Draft';
+
+    if (!entries || entries.length === 0) {
+        contentDiv.innerHTML = '<div class="no-data">No schedule available for this week.</div>';
+        return;
+    }
+
+    let html = `
+        <div class="iftl-status-bar" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: flex; justify-content: space-between;">
+            <span>Status: <strong>${status}</strong></span>
+            ${compliance && compliance.submitted_at ? `<span>Submitted: ${new Date(compliance.submitted_at).toLocaleDateString()}</span>` : ''}
+        </div>
+        <table class="data-table iftl-table" style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Day</th>
+                    <th>Time</th>
+                    <th>Course/Activity</th>
+                    <th>Room</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    entries.forEach(entry => {
+        const isModified = entry.is_modified == 1;
+        html += `
+            <tr class="${isModified ? 'modified-row' : ''}">
+                <td>${entry.day_of_week}</td>
+                <td>${formatTime(entry.time_start)} - ${formatTime(entry.time_end)}</td>
+                <td>${entry.course_code || entry.activity_type}</td>
+                <td>${entry.room || 'TBA'}</td>
+                <td>${entry.activity_type}</td>
+                <td>
+                    <span class="status-badge status-${(entry.status || 'regular').toLowerCase()}">${entry.status || 'Regular'}</span>
+                </td>
+                <td>${entry.remarks || ''}</td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table>`;
+    contentDiv.innerHTML = html;
+}
+
+function formatTime(timeStr) {
+    if (!timeStr) return '';
+    const [hours, minutes] = timeStr.split(':');
+    let h = parseInt(hours);
+    const m = minutes;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${h}:${m} ${ampm}`;
+}
+*/

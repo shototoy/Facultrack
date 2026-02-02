@@ -871,6 +871,9 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                                 </button>
                                 <?php endforeach; ?>
                             <?php endif; ?>
+                            <button class="schedule-tab iftl-tab" onclick="openIFTLOverlay()" style="background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%); color: white; border: none;">
+                                Weekly Load (IFTL)
+                            </button>
                         </div>
                         <div class="schedule-list" id="scheduleList">
                             <div class="loading-state">Loading schedule...</div>
@@ -1020,6 +1023,33 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         <button type="submit" class="btn-primary">Update Status</button>
                     </div>
                 </form>
+            </div>
+        </div>
+        <div class="modal-overlay" id="iftlModal">
+            <div class="modal large-modal" style="width: 95%; max-width: 1200px; height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+                <div class="modal-header" style="flex: 0 0 auto; margin-bottom: 0 !important; border-bottom: 1px solid #eee;">
+                    <h3 class="modal-title">Individual Faculty Time and Location (IFTL)</h3>
+                    <button type="button" class="modal-close" onclick="closeIFTLOverlay()">&times;</button>
+                </div>
+                <div class="modal-body" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 20px;">
+                    <div class="iftl-controls" style="flex: 0 0 auto; display: flex; gap: 10px; margin-bottom: 5px; align-items: center; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                            <label class="form-label">Select Week</label>
+                            <select id="facultyIFTLWeekSelect" class="form-select" onchange="loadFacultyIFTLData()">
+                                <!-- Loaded via JS -->
+                            </select>
+                        </div>
+                        <div class="iftl-actions" style="display: flex; gap: 10px;">
+                            <button class="btn-secondary" onclick="regenerateIFTLWeek()" title="Reset to standard schedule">Reset</button>
+                            <button class="btn-primary" onclick="saveIFTLData('Draft')">Save Draft</button>
+                            <button class="btn-primary" style="background: #e65100;" onclick="saveIFTLData('Submitted')">Submit</button>
+                        </div>
+                    </div>
+                    
+                    <div id="facultyIFTLContent" class="schedule-table-container" style="flex: 1; overflow-y: auto; border: 1px solid #eee; border-radius: 8px;">
+                        <div class="loading">Select a week...</div>
+                    </div>
+                </div>
             </div>
         </div>
     <script>
