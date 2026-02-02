@@ -446,17 +446,9 @@ function printAnnouncement(id) {
             </div>
 
             <div class="content-wrapper">
-                <div class="document-header">
-                    <div class="logos-left">
-                        <img src="assets/images/logo1.png" class="logo" alt="Logo">
-                        <img src="assets/images/logo2.png" class="logo" alt="Logo">
-                    </div>
-                    <div class="header-text">
-                        <p>Republic of the Philippines</p>
-                        <h2>SULTAN KUDARAT STATE UNIVERSITY</h2>
-                        <p>EJC Montilla, City of Tacurong, 9800</p>
-                        <p>General Admin, Province of Sultan Kudarat</p>
-                    </div>
+                <!-- Header removed as requested -->
+                <div class="document-header" style="display: none;">
+                    
                 </div>
 
                 <div class="office-title-block">
