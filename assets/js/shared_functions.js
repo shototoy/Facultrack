@@ -476,7 +476,8 @@ function printAnnouncement(id) {
                 </div>
             </div>
 
-            <div class="footer-text">
+            <!-- Footer removed as requested -->
+            <div class="footer-text" style="display: none;">
                 <span>VISION:</span> A leading University in advancing scholarly innovation, multi-cultural convergence, and responsive public service in a borderless Region. | 
                 <span>MISSION:</span> The University shall primarily provide advanced instruction and professional training in science and technology, agriculture, fisheries, education and other relevant fields of study. It shall also undertake research and extension services, and provide progressive leadership in its areas of specialization. | 
                 <span>MAXIM:</span> Generator of Solutions. | 
