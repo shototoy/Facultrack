@@ -639,7 +639,7 @@ switch ($action) {
                         $stmt = $pdo->prepare("INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)");
                         $stmt->execute([
                             $_POST['username'],
-                            password_hash($_POST['password'], PASSWORD_DEFAULT),
+                            $_POST['password'],
                             $_POST['full_name'] . ($role === 'class' ? ' Class Account' : ''),
                             $role
                         ]);
@@ -1610,7 +1610,7 @@ switch ($action) {
             $contact_email = $_POST['contact_email'] ?? null;
             $contact_phone = $_POST['contact_phone'] ?? null;
             // Password update is optional
-            $password = !empty($_POST['password']) ? password_hash($_POST['password'], PASSWORD_DEFAULT) : null;
+            $password = !empty($_POST['password']) ? $_POST['password'] : null;
             
             // Get user_id
             $stmt = $pdo->prepare("SELECT user_id FROM faculty WHERE faculty_id = ?");
