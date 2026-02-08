@@ -19,8 +19,12 @@ try {
     echo "Connecting to $servername...<br>";
     $pdo = new PDO($dsn, $username, $password, $options);
     
+    echo "Current directory: " . __DIR__ . "<br>";
+    echo "Files in directory:<br><pre>" . print_r(scandir(__DIR__), true) . "</pre>";
+    
     $sql_file = __DIR__ . '/facultrack.sql';
     if (!file_exists($sql_file)) {
+        // Try looking in assets or parent? No, it should be in root.
         die("Error: facultrack.sql not found at $sql_file");
     }
     
