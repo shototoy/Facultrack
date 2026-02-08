@@ -43,6 +43,19 @@ if (empty($sql)) {
 
 echo "Executing SQL using multi_query...<br>";
 
+// NUCLEAR OPTION: Wipe database clean first
+$mysqli->query("SET FOREIGN_KEY_CHECKS = 0");
+if ($result = $mysqli->query("SHOW TABLES")) {
+    while ($row = $result->fetch_row()) {
+        $table = $row[0];
+        echo "Dropping table $table...<br>";
+        $mysqli->query("DROP TABLE IF EXISTS `$table`");
+    }
+    $result->free();
+}
+$mysqli->query("SET FOREIGN_KEY_CHECKS = 1");
+
+// Proceed with import
 if ($mysqli->multi_query($sql)) {
     do {
         /* store first result set */
