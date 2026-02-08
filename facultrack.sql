@@ -361,7 +361,7 @@ INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `curre
 (32, 33, 'EMP-0030', 'Information Technology', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'marygrace.bialen@sksu.edu.ph', '09123456730', 'Available', '2025-11-27 10:06:45', '2025-12-24 12:53:15', 0),
 (33, 34, 'EMP-0031', 'Information Systems', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'maryjoy.carnazo@sksu.edu.ph', '09123456731', 'Available', '2025-11-27 10:06:45', '2025-12-24 12:53:15', 0),
 (34, 35, 'EMP-0032', 'Information Technology', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'may.gallano@sksu.edu.ph', '09123456732', 'Available', '2025-11-27 10:06:45', '2025-12-24 12:53:15', 0),
-(35, 36, 'EMP-0033', 'Information Systems', NULL, '2025-11-27 10:34:29', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'nora.moya@sksu.edu.ph', '09123456733', 'Available', '2025-11-27 10:06:45', '2025-12-24 12:53:15', 0);
+(35, 36, 'EMP-0033', 'Information Systems', NULL, '2025-11-27 10:34:29', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'nora.moya@sksu.edu.ph', '09123456733', 'Available', '2025-11-27 10:06:45', '2025-12-24 12:53:15', 0),
 (41, 1, 'DIR-1', 'Administration', NULL, '2026-02-03 03:35:01', '2025-11-27 10:06:48', NULL, NULL, NULL, 'Available', '2025-11-27 10:06:48', '2026-02-03 03:35:01', 1);
 
 -- --------------------------------------------------------
