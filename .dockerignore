@@ -1,0 +1,10 @@
+.git
+.gitignore
+Dockerfile
+facultrack.sql
+README.md
+docs
+test
+tests
+.env
+.DS_Store

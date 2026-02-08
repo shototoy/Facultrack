@@ -1,12 +1,15 @@
 <?php
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "facultrack_db";
+$servername = getenv('DB_HOST') ?: getenv('MYSQLHOST') ?: 'localhost';
+$username = getenv('DB_USER') ?: getenv('MYSQLUSER') ?: 'root';
+$password = getenv('DB_PASSWORD') ?: getenv('MYSQLPASSWORD') ?: '';
+$dbname = getenv('DB_NAME') ?: getenv('MYSQLDATABASE') ?: 'facultrack_db';
+$port = getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: 3306;
+
 function initializeDatabase() {
-    global $servername, $username, $password, $dbname;
+    global $servername, $username, $password, $dbname, $port;
     try {
-        $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+        $dsn = "mysql:host=$servername;port=$port;dbname=$dbname";
+        $pdo = new PDO($dsn, $username, $password);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         return $pdo;
     } catch(PDOException $e) {
