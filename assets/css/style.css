@@ -1350,7 +1350,7 @@ body:has(.table-container) .tab-content.active {
     padding: 12px 8px;
     text-align: left;
     border-bottom: 1px solid rgba(222, 226, 230, 0.4);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
@@ -1368,17 +1368,17 @@ body:has(.table-container) .tab-content.active {
 }
 
 .table-container .data-table tr {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
     position: relative;
 }
 
 .table-container .data-table tr {
-    transform: scale(0.98);
+    
 }
 
 .table-container .data-table tr:hover {
     background: linear-gradient(90deg, rgba(248, 249, 250, 0.8), rgba(233, 236, 239, 0.8));
-    transform: scale(1);
+    
     box-shadow: 0 2px 8px rgba(46, 125, 50, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
@@ -1514,8 +1514,8 @@ body:has(.table-container) .tab-content.active {
 .expandable-row {
     cursor: pointer;
     position: relative;
-    transform: scale(0.98);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .expandable-row .actions-column {
@@ -1560,7 +1560,7 @@ body:has(.table-container) .tab-content.active {
 
 .expandable-row:hover {
     background: linear-gradient(90deg, rgba(248, 249, 250, 0.9), rgba(233, 236, 239, 0.9)) !important;
-    transform: scale(1);
+    
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -1596,7 +1596,8 @@ body:has(.table-container) .tab-content.active {
     opacity: 0;
     overflow: hidden;
     transform: translateY(-10px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease, padding 0.3s ease;
+    will-change: max-height, opacity;
 }
 
 .expansion-row.expanded .expanded-details {
@@ -1978,7 +1979,7 @@ body:has(.table-container) .tab-content.active {
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 500;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9);
     text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
 }
@@ -2860,7 +2861,7 @@ body:has(.table-container) .tab-content.active {
     margin-right: 8px;
     transform: scale(1.1);
     filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1));
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .data-table .item-checkbox:hover {
@@ -2903,7 +2904,7 @@ body:has(.table-container) .tab-content.active {
     font-size: 0.8rem;
     box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
     border: 1px solid rgba(255, 255, 255, 0.1);
     position: relative;
     overflow: hidden;
@@ -3713,7 +3714,7 @@ body:has(.table-container) .tab-content.active {
 /* Status Update Animation */
 @keyframes statusUpdate {
     0% {
-        transform: scale(1);
+        
         opacity: 1;
     }
 
@@ -3723,7 +3724,7 @@ body:has(.table-container) .tab-content.active {
     }
 
     100% {
-        transform: scale(1);
+        
         opacity: 1;
     }
 }
@@ -3732,7 +3733,7 @@ body:has(.table-container) .tab-content.active {
 
     0%,
     100% {
-        transform: scale(1);
+        
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     }
 
@@ -3776,4 +3777,6 @@ body:has(.table-container) .tab-content.active {
     will-change: transform;
     backface-visibility: hidden;
 }
+
+
 

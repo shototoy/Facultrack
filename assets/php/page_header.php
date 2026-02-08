@@ -1083,3 +1083,128 @@ function closeSidebar() {
         <?php endif; ?>
     </div>
 </div>
+<style>
+/* Compact Mobile Header Override */
+@media (max-width: 768px) {
+    .page-header {
+        padding: 10px 15px !important;
+        margin-bottom: 15px !important;
+        border-radius: 0 0 15px 15px !important;
+    }
+    .header-content {
+        display: grid !important;
+        grid-template-columns: 1fr auto !important;
+        grid-template-areas: 
+            "title actions"
+            "user user"
+            "stats stats";
+        gap: 10px !important;
+        flex-direction: column !important; /* Base override */
+        align-items: stretch !important;
+    }
+    .header-middle {
+        grid-area: title;
+        order: unset !important;
+        width: auto !important;
+        padding: 0 !important;
+        text-align: left !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        flex: unset !important;
+    }
+    .page-title {
+        font-size: 1.1rem !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
+    }
+    .page-subtitle {
+        display: none !important;
+    }
+    .header-actions {
+        grid-area: actions;
+        order: unset !important;
+        width: auto !important;
+        justify-content: flex-end !important;
+        margin-top: 0 !important;
+    }
+    .header-right { 
+        display: contents !important; 
+        order: unset !important;
+        width: auto !important;
+        margin-top: 0 !important;
+    }
+    .header-left {
+        grid-area: user;
+        order: unset !important;
+        width: 100% !important;
+        padding: 8px !important;
+        background: rgba(255,255,255,0.1) !important;
+        border-radius: 8px !important;
+        justify-content: flex-start !important;
+        min-height: 0 !important;
+        flex: unset !important;
+        margin: 0 !important;
+        height: auto !important;
+    }
+    .user-avatar {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.9rem !important;
+    }
+    .user-info {
+        flex-direction: row !important;
+        align-items: center !important;
+        padding: 0 !important;
+        text-align: left !important;
+        gap: 10px !important;
+        width: auto !important;
+        height: auto !important;
+    }
+    .user-name {
+        font-size: 0.9rem !important;
+        margin: 0 !important;
+    }
+    .user-role {
+        font-size: 0.8rem !important;
+        opacity: 0.9 !important;
+        margin: 0 !important;
+    }
+    .user-details {
+        display: none !important;
+    }
+    .header-stats {
+        grid-area: stats;
+        order: unset !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        gap: 8px !important;
+        width: 100% !important;
+        padding-bottom: 5px !important; 
+        justify-content: flex-start !important;
+        margin-top: 0 !important;
+    }
+    .header-stat {
+        flex: 0 0 auto !important;
+        min-width: 60px !important;
+        padding: 4px 8px !important;
+        height: auto !important;
+    }
+    .header-stat-number {
+        font-size: 0.9em !important;
+    }
+    .header-stat-label {
+        font-size: 0.6em !important;
+    }
+    .logout-btn {
+        padding: 6px 12px !important;
+        font-size: 0.8rem !important;
+        height: auto !important;
+        flex: unset !important;
+    }
+    .header-stats::-webkit-scrollbar {
+        height: 0px;
+    }
+}
+</style>
