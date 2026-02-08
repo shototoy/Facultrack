@@ -554,7 +554,7 @@ INSERT INTO `users` (`user_id`, `username`, `password`, `full_name`, `role`, `cr
 (33, 'marygrace.bialen', 'prof123', 'Prof. Mary Grace Bialen', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (34, 'maryjoy.carnazo', 'prof123', 'Prof. Mary Joy Carnazo', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (35, 'may.gallano', 'prof123', 'Prof. May Gallano', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(36, 'nora.moya', 'prof123', 'Prof. Nora Moya', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
+(36, 'nora.moya', 'prof123', 'Prof. Nora Moya', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (42, 'it1a_class', 'class123', 'IT 1A Class Account', 'class', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (43, 'it1b_class', 'class123', 'IT 1B Class Account', 'class', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (44, 'it2a_class', 'class123', 'IT 2A Class Account', 'class', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
