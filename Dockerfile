@@ -8,6 +8,7 @@ COPY . /var/www/html/
 
 # Copy and set up entrypoint
 COPY docker-entrypoint.sh /usr/local/bin/
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Set permissions
