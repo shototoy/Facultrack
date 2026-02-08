@@ -30,79 +30,6 @@ SET time_zone = "+00:00";
 DROP TABLE IF EXISTS `announcements`;
 CREATE TABLE `announcements` (
   `announcement_id` int(11) NOT NULL,
-...
-
---
--- Table structure for table `classes`
---
-
-DROP TABLE IF EXISTS `classes`;
-CREATE TABLE `classes` (
-  `class_id` int(11) NOT NULL,
-...
-
---
--- Table structure for table `courses`
---
-
-DROP TABLE IF EXISTS `courses`;
-CREATE TABLE `courses` (
-  `course_id` int(11) NOT NULL,
-...
-
---
--- Table structure for table `curriculum`
---
-
-DROP TABLE IF EXISTS `curriculum`;
-CREATE TABLE `curriculum` (
-  `curriculum_id` int(11) NOT NULL,
-...
-
---
--- Table structure for table `faculty`
---
-
-DROP TABLE IF EXISTS `faculty`;
-CREATE TABLE `faculty` (
-  `faculty_id` int(11) NOT NULL,
-...
-
---
--- Table structure for table `location_history`
---
-
-DROP TABLE IF EXISTS `location_history`;
-CREATE TABLE `location_history` (
-  `history_id` int(11) NOT NULL,
-...
-
---
--- Table structure for table `programs`
---
-
-DROP TABLE IF EXISTS `programs`;
-CREATE TABLE `programs` (
-  `program_id` int(11) NOT NULL,
-...
-
---
--- Table structure for table `schedules`
---
-
-DROP TABLE IF EXISTS `schedules`;
-CREATE TABLE `schedules` (
-  `schedule_id` int(11) NOT NULL,
-...
-
---
--- Table structure for table `users`
---
-
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE `users` (
-  `user_id` int(11) NOT NULL,
-...
   `title` varchar(255) NOT NULL,
   `content` text NOT NULL,
   `priority` enum('high','medium','low') DEFAULT 'medium',
@@ -126,6 +53,7 @@ INSERT INTO `announcements` (`announcement_id`, `title`, `content`, `priority`, 
 -- Table structure for table `classes`
 --
 
+DROP TABLE IF EXISTS `classes`;
 CREATE TABLE `classes` (
   `class_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -169,6 +97,7 @@ INSERT INTO `classes` (`class_id`, `user_id`, `class_code`, `class_name`, `year_
 -- Table structure for table `courses`
 --
 
+DROP TABLE IF EXISTS `courses`;
 CREATE TABLE `courses` (
   `course_id` int(11) NOT NULL,
   `course_code` varchar(20) NOT NULL,
@@ -261,6 +190,7 @@ INSERT INTO `courses` (`course_id`, `course_code`, `course_description`, `units`
 -- Table structure for table `curriculum`
 --
 
+DROP TABLE IF EXISTS `curriculum`;
 CREATE TABLE `curriculum` (
   `curriculum_id` int(11) NOT NULL,
   `course_code` varchar(20) NOT NULL,
@@ -380,6 +310,7 @@ INSERT INTO `curriculum` (`curriculum_id`, `course_code`, `year_level`, `semeste
 -- Table structure for table `faculty`
 --
 
+DROP TABLE IF EXISTS `faculty`;
 CREATE TABLE `faculty` (
   `faculty_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -444,6 +375,7 @@ INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `curre
 -- Table structure for table `iftl_entries`
 --
 
+DROP TABLE IF EXISTS `iftl_entries`;
 CREATE TABLE `iftl_entries` (
   `entry_id` int(11) NOT NULL,
   `compliance_id` int(11) NOT NULL,
@@ -480,6 +412,7 @@ INSERT INTO `iftl_entries` (`entry_id`, `compliance_id`, `day_of_week`, `time_st
 -- Table structure for table `iftl_weekly_compliance`
 --
 
+DROP TABLE IF EXISTS `iftl_weekly_compliance`;
 CREATE TABLE `iftl_weekly_compliance` (
   `compliance_id` int(11) NOT NULL,
   `faculty_id` int(11) NOT NULL,
@@ -506,6 +439,7 @@ INSERT INTO `iftl_weekly_compliance` (`compliance_id`, `faculty_id`, `week_ident
 -- Table structure for table `location_history`
 --
 
+DROP TABLE IF EXISTS `location_history`;
 CREATE TABLE `location_history` (
   `location_history_id` int(11) NOT NULL,
   `faculty_id` int(11) NOT NULL,
@@ -520,6 +454,7 @@ CREATE TABLE `location_history` (
 -- Table structure for table `programs`
 --
 
+DROP TABLE IF EXISTS `programs`;
 CREATE TABLE `programs` (
   `program_id` int(11) NOT NULL,
   `program_code` varchar(20) NOT NULL,
@@ -545,6 +480,7 @@ INSERT INTO `programs` (`program_id`, `program_code`, `program_name`, `program_d
 -- Table structure for table `schedules`
 --
 
+DROP TABLE IF EXISTS `schedules`;
 CREATE TABLE `schedules` (
   `schedule_id` int(11) NOT NULL,
   `course_code` varchar(20) NOT NULL,
@@ -578,6 +514,7 @@ INSERT INTO `schedules` (`schedule_id`, `course_code`, `class_id`, `faculty_id`,
 -- Table structure for table `users`
 --
 
+DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `user_id` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
