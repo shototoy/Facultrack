@@ -41,22 +41,39 @@ if (empty($sql)) {
     die("Error: SQL file is empty");
 }
 
-echo "Executing SQL using multi_query...<br>";
-
 // NUCLEAR OPTION: Wipe database clean first
 $mysqli->query("SET FOREIGN_KEY_CHECKS = 0");
 if ($result = $mysqli->query("SHOW TABLES")) {
     while ($row = $result->fetch_row()) {
         $table = $row[0];
-        echo "Dropping table $table...<br>";
+        // echo "Dropping table $table...<br>"; // Silence drop output
         $mysqli->query("DROP TABLE IF EXISTS `$table`");
     }
     $result->free();
 }
 $mysqli->query("SET FOREIGN_KEY_CHECKS = 1");
 
+// DEBUG: Check file content for corruption
+$content = file_get_contents($sql_file);
+echo "<h3>File Integrity Check</h3>";
+echo "File size: " . strlen($content) . " bytes<br>";
+$pos = strpos($content, "DIR-1");
+if ($pos !== false) {
+    echo "Found 'DIR-1' at position $pos. Context:<br>";
+    echo "<pre>" . htmlspecialchars(substr($content, $pos - 100, 200)) . "</pre>";
+} else {
+    echo "DID NOT FIND 'DIR-1' in SQL file!<br>";
+}
+// Check for lines starting with (41,
+$pos2 = strpos($content, "\n(41,");
+if ($pos2 !== false) {
+    echo "Found line starting with (41, at position $pos2. Context:<br>";
+    echo "<pre>" . htmlspecialchars(substr($content, $pos2 - 50, 100)) . "</pre>";
+}
+
 // Proceed with import
-if ($mysqli->multi_query($sql)) {
+echo "Executing SQL...<br>";
+if ($mysqli->multi_query($content)) {
     do {
         /* store first result set */
         if ($result = $mysqli->store_result()) {
