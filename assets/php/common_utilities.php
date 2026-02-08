@@ -8,7 +8,10 @@ $port = getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: 3306;
 function initializeDatabase() {
     global $servername, $username, $password, $dbname, $port;
     try {
-        $dsn = "mysql:host=$servername;port=$port;dbname=$dbname";
+        if ($servername === 'localhost') {
+            $servername = '127.0.0.1';
+        }
+        $dsn = "mysql:host=$servername;port=$port;dbname=$dbname;charset=utf8mb4";
         $pdo = new PDO($dsn, $username, $password);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         return $pdo;
