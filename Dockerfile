@@ -3,9 +3,9 @@ FROM php:8.2-apache
 # Install PDO MySQL extension
 RUN docker-php-ext-install pdo pdo_mysql
 
-# configurations
-RUN a2dismod mpm_event && a2dismod mpm_worker 
-RUN a2enmod mpm_prefork rewrite
+# Forcefully disable all MPMs and enable prefork
+RUN rm -f /etc/apache2/mods-enabled/mpm_*.load \
+    && a2enmod mpm_prefork rewrite
 
 # Copy application files to the container
 COPY . /var/www/html/
