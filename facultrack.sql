@@ -27,8 +27,82 @@ SET time_zone = "+00:00";
 -- Table structure for table `announcements`
 --
 
+DROP TABLE IF EXISTS `announcements`;
 CREATE TABLE `announcements` (
   `announcement_id` int(11) NOT NULL,
+...
+
+--
+-- Table structure for table `classes`
+--
+
+DROP TABLE IF EXISTS `classes`;
+CREATE TABLE `classes` (
+  `class_id` int(11) NOT NULL,
+...
+
+--
+-- Table structure for table `courses`
+--
+
+DROP TABLE IF EXISTS `courses`;
+CREATE TABLE `courses` (
+  `course_id` int(11) NOT NULL,
+...
+
+--
+-- Table structure for table `curriculum`
+--
+
+DROP TABLE IF EXISTS `curriculum`;
+CREATE TABLE `curriculum` (
+  `curriculum_id` int(11) NOT NULL,
+...
+
+--
+-- Table structure for table `faculty`
+--
+
+DROP TABLE IF EXISTS `faculty`;
+CREATE TABLE `faculty` (
+  `faculty_id` int(11) NOT NULL,
+...
+
+--
+-- Table structure for table `location_history`
+--
+
+DROP TABLE IF EXISTS `location_history`;
+CREATE TABLE `location_history` (
+  `history_id` int(11) NOT NULL,
+...
+
+--
+-- Table structure for table `programs`
+--
+
+DROP TABLE IF EXISTS `programs`;
+CREATE TABLE `programs` (
+  `program_id` int(11) NOT NULL,
+...
+
+--
+-- Table structure for table `schedules`
+--
+
+DROP TABLE IF EXISTS `schedules`;
+CREATE TABLE `schedules` (
+  `schedule_id` int(11) NOT NULL,
+...
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE `users` (
+  `user_id` int(11) NOT NULL,
+...
   `title` varchar(255) NOT NULL,
   `content` text NOT NULL,
   `priority` enum('high','medium','low') DEFAULT 'medium',
