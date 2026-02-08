@@ -1,4 +1,4 @@
-* {
+﻿* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -155,7 +155,7 @@ body {
         aspect-ratio: 1;
         max-height: 50px;
         font-size: calc(100% * 0.4);
-        border-radius: 50%;
+        border-radius: var(--radius-round);
         background: var(--accent-color);
         color: white;
         display: flex;
@@ -351,7 +351,7 @@ body {
         aspect-ratio: 1;
         max-height: 60px;
         font-size: calc(100% * 0.4);
-        border-radius: 50%;
+        border-radius: var(--radius-round);
         background: var(--accent-color);
         color: white;
         display: flex;
@@ -588,7 +588,7 @@ body::before {
     backdrop-filter: blur(12px);
     background: rgba(0, 0, 0, 0.2);
     padding: 5px 15px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
     margin: 0 !important;
@@ -623,7 +623,7 @@ body::before {
 
 
 .user-avatar {
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     background: var(--accent-color);
     color: white;
     display: flex;
@@ -644,10 +644,10 @@ body::before {
     margin: 0;
     font-weight: 600;
     padding: 8px 16px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     border: none;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all var(--transition-normal);
     display: inline-block;
     text-align: center;
 }
@@ -675,7 +675,7 @@ body::before {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
     outline: none;
     background: var(--bg-glass);
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
@@ -694,14 +694,14 @@ body::before {
     border: none;
     width: 40px;
     height: 40px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     color: white;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
 }
 
 .search-btn:hover {
@@ -730,7 +730,7 @@ body::before {
     border: 1px solid var(--border-medium);
     border-radius: 8px;
     font-size: 16px;
-    transition: all 0.25s ease;
+    transition: all var(--transition-normal);
     box-sizing: border-box;
     background: var(--bg-glass);
     color: var(--text-primary);
@@ -758,7 +758,7 @@ body::before {
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     box-shadow: var(--shadow-light);
 }
 
@@ -778,7 +778,7 @@ body::before {
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    transition: all 0.25s ease;
+    transition: all var(--transition-normal);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
@@ -850,7 +850,7 @@ body::before {
 }
 
 .status-dot.status-available {
-    background-color: #4CAF50;
+    background-color: var(--primary-green-light);
 }
 
 .status-dot.status-in,
@@ -869,7 +869,7 @@ body::before {
 
 .status-badge {
     padding: 3px 8px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -904,10 +904,10 @@ body::before {
 
 .faculty-card {
     background: var(--faculty-card-bg);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     padding: 20px;
     box-shadow: var(--faculty-card-shadow);
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     cursor: pointer;
     border: 1px solid var(--border-dark);
     position: relative;
@@ -922,7 +922,7 @@ body::before {
 .faculty-avatar {
     width: 50px;
     height: 50px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     background: var(--faculty-avatar-bg);
     display: flex;
     align-items: center;
@@ -963,7 +963,7 @@ body::before {
     z-index: 10000;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     backdrop-filter: blur(3px);
 }
 
@@ -983,7 +983,7 @@ body::before {
     overflow-y: auto;
     box-shadow: var(--shadow-modal);
     transform: translateY(-15px) scale(0.95);
-    transition: transform 0.3s ease;
+    transition: transform var(--transition-normal);
     border: 1px solid var(--border-medium);
 }
 
@@ -1014,11 +1014,11 @@ body::before {
     cursor: pointer;
     width: 30px;
     height: 30px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.25s ease;
+    transition: all var(--transition-normal);
 }
 
 .modal-close:hover {
@@ -1125,7 +1125,7 @@ body::before {
     justify-content: center;
     color: rgba(255, 255, 255, 0.9);
     font-size: 1.1rem;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     flex-shrink: 0;
     z-index: 2;
 }
@@ -1137,7 +1137,7 @@ body::before {
 .dashboard-tabs .search-container.expanded .search-toggle {
     color: #666;
     background: rgba(0, 0, 0, 0.05);
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     margin: 3px;
     width: 36px;
     height: 36px;
@@ -1150,7 +1150,7 @@ body::before {
 }
 
 .dashboard-tabs .search-toggle svg {
-    transition: transform 0.3s ease;
+    transition: transform var(--transition-normal);
 }
 
 .dashboard-tabs .search-container.expanded .search-toggle svg {
@@ -1165,7 +1165,7 @@ body::before {
     font-weight: 500;
     color: white;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     border-bottom: 3px solid transparent;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     position: relative;
@@ -1248,7 +1248,7 @@ body:has(.table-container) .tab-content.active {
     border-radius: 12px;
     text-align: center;
     box-shadow: 0 4px 15px var(--text-green-secondary);
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     border: 6px solid var(--text-green-secondary);
     position: relative;
     overflow: hidden;
@@ -1547,7 +1547,7 @@ body:has(.table-container) .tab-content.active {
     transform: translateY(-50%);
     font-size: 0.7rem;
     color: #6c757d;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     pointer-events: none;
     z-index: 1;
     opacity: 0;
@@ -1617,7 +1617,7 @@ body:has(.table-container) .tab-content.active {
     padding: 8px 12px;
     background: rgba(248, 249, 250, 0.5);
     border: 1px solid rgba(222, 226, 230, 0.3);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     margin-bottom: 6px;
     display: flex;
     flex-direction: column;
@@ -1704,10 +1704,10 @@ body:has(.table-container) .tab-content.active {
     color: white;
     border: none;
     padding: 8px 16px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 0.9rem;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     box-shadow: var(--shadow-light);
 }
 
@@ -1735,7 +1735,7 @@ body:has(.table-container) .tab-content.active {
     cursor: pointer;
     font-size: 0.8rem;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-    transition: all 0.25s ease;
+    transition: all var(--transition-normal);
     white-space: nowrap;
     min-width: 70px;
     text-align: center;
@@ -1752,10 +1752,10 @@ body:has(.table-container) .tab-content.active {
     color: white;
     border: none;
     padding: 4px 10px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     cursor: pointer;
     font-size: 0.75rem;
-    transition: all 0.25s ease;
+    transition: all var(--transition-normal);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
@@ -1773,7 +1773,7 @@ body:has(.table-container) .tab-content.active {
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.75rem;
-    transition: all 0.25s ease;
+    transition: all var(--transition-normal);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
@@ -1801,7 +1801,7 @@ body:has(.table-container) .tab-content.active {
 .status-dot {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     margin-right: 6px;
     box-shadow: 0 0 6px currentColor;
     animation: pulse 2s infinite;
@@ -1872,11 +1872,11 @@ body:has(.table-container) .tab-content.active {
     cursor: pointer;
     width: 30px;
     height: 30px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.25s ease;
+    transition: all var(--transition-normal);
     backdrop-filter: blur(10px);
 }
 
@@ -1922,7 +1922,7 @@ body:has(.table-container) .tab-content.active {
 .location-display {
     background: var(--bg-glass-semi);
     padding: 12px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     border-left: 3px solid var(--warning-color);
     margin-bottom: 15px;
     flex: 1;
@@ -1984,7 +1984,7 @@ body:has(.table-container) .tab-content.active {
 }
 
 .schedule-tab.active {
-    background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+    background: linear-gradient(135deg, #2E7D32 0%, var(--primary-green-light) 100%);
     color: white;
     border-color: #2E7D32;
     box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -2064,7 +2064,7 @@ body:has(.table-container) .tab-content.active {
     margin-bottom: 12px;
     color: #2E7D32;
     filter: drop-shadow(0 2px 4px rgba(46, 125, 50, 0.3));
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
 }
 
 .action-icon svg {
@@ -2285,7 +2285,7 @@ body:has(.table-container) .tab-content.active {
     .location-section .location-display {
         background: var(--bg-glass-semi) !important;
         padding: 12px !important;
-        border-radius: 10px !important;
+        border-radius: var(--radius-md) !important;
         border-left: 3px solid var(--warning-color) !important;
         margin-bottom: 15px !important;
         flex: 1 !important;
@@ -2679,7 +2679,7 @@ body:has(.table-container) .tab-content.active {
 .location-section .location-display {
     background: var(--bg-glass-semi) !important;
     padding: 8px !important;
-    border-radius: 10px !important;
+    border-radius: var(--radius-md) !important;
     border-left: 3px solid var(--warning-color) !important;
     margin-bottom: 8px !important;
     flex: 1 !important;
@@ -2814,7 +2814,7 @@ body:has(.table-container) .tab-content.active {
     left: 0;
     width: 0;
     height: 2px;
-    background: linear-gradient(90deg, #2E7D32, #4CAF50);
+    background: linear-gradient(90deg, #2E7D32, var(--primary-green-light));
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -2897,7 +2897,7 @@ body:has(.table-container) .tab-content.active {
     color: var(--text-white);
     border: none;
     padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     margin-right: 8px;
     cursor: pointer;
     font-size: 0.8rem;
@@ -2944,7 +2944,7 @@ body:has(.table-container) .tab-content.active {
     padding: 8px;
     margin-bottom: 8px;
     border-radius: 4px;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     color: black;
 }
 
@@ -2978,12 +2978,12 @@ body:has(.table-container) .tab-content.active {
 
 .course-info.course-current {
     background-color: #c8e6c9;
-    border-left: 4px solid #4caf50;
+    border-left: 4px solid var(--primary-green-light);
     padding-left: 8px;
 }
 
 .course-status-label.status-current {
-    background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+    background: linear-gradient(135deg, var(--primary-green-light) 0%, #66BB6A 100%);
     color: white;
     animation: pulse-current 2s infinite;
 }
@@ -3100,7 +3100,7 @@ body:has(.table-container) .tab-content.active {
     padding: 6px 8px;
     text-align: center;
     font-size: 0.8rem;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
 }
 
 @media (max-width: 1400px) and (min-width: 1025px) {
@@ -3145,7 +3145,7 @@ body:has(.table-container) .tab-content.active {
         order: 1;
         padding: 8px;
         background: rgba(0, 0, 0, 0.05);
-        border-radius: 6px;
+        border-radius: var(--radius-sm);
     }
 
     .faculty-actions {
@@ -3194,7 +3194,7 @@ body:has(.table-container) .tab-content.active {
     padding: 0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-left: 4px solid var(--text-green-secondary);
-    transition: transform 0.3s ease;
+    transition: transform var(--transition-normal);
     position: relative;
 }
 
@@ -3242,7 +3242,7 @@ body:has(.table-container) .tab-content.active {
     text-align: center;
     padding: 8px;
     background: #f8f9fa;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     flex: 1;
 }
 
@@ -3263,9 +3263,9 @@ body:has(.table-container) .tab-content.active {
     border: 1px solid var(--border-dark);
     border-left: 4px solid var(--text-green-secondary);
     padding: 0;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     box-shadow: var(--faculty-card-shadow);
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     position: relative;
     min-height: 200px;
     width: 100%;
@@ -3297,7 +3297,7 @@ body:has(.table-container) .tab-content.active {
     font-weight: 600;
     background: rgba(46, 125, 50, 0.1);
     padding: 3px 6px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     white-space: nowrap;
 }
 
@@ -3317,8 +3317,8 @@ body:has(.table-container) .tab-content.active {
 .course-actions .action-btn {
     padding: 6px 12px;
     font-size: 0.8rem;
-    border-radius: 6px;
-    transition: all 0.3s ease;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-normal);
 }
 
 .course-actions .action-btn.primary {
@@ -3352,7 +3352,7 @@ body:has(.table-container) .tab-content.active {
     padding: 40px 20px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -3377,7 +3377,7 @@ body:has(.table-container) .tab-content.active {
     font-size: 3rem;
     color: var(--text-green-secondary);
     margin-bottom: 15px;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
 }
 
 .add-card-course-icon {
@@ -3428,7 +3428,7 @@ body:has(.table-container) .tab-content.active {
     border: 1px solid #e0e0e0;
     border-radius: 0 0 10px 10px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     font-size: 0.8rem;
     color: var(--text-secondary);
     z-index: 200;
@@ -3453,7 +3453,7 @@ body:has(.table-container) .tab-content.active {
     right: 0;
     bottom: 0;
     background: white;
-    border-radius: 10px 10px 0 0;
+    border-radius: var(--radius-md) 10px 0 0;
     z-index: 100;
     transform: translateY(-100%);
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -3474,7 +3474,7 @@ body:has(.table-container) .tab-content.active {
     padding: 8px 12px;
     border-bottom: 1px solid #e0e0e0;
     background: var(--faculty-card-bg);
-    border-radius: 10px 10px 0 0;
+    border-radius: var(--radius-md) 10px 0 0;
     flex-shrink: 0;
 }
 
@@ -3529,7 +3529,7 @@ body:has(.table-container) .tab-content.active {
     border: 1px solid #e0e0e0;
     border-radius: 0 0 12px 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     font-size: 0.8rem;
     color: var(--text-secondary);
     z-index: 200;
@@ -3700,7 +3700,7 @@ body:has(.table-container) .tab-content.active {
     height: 12px;
     margin-left: 8px;
     border: 2px solid #6c757d;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     border-top-color: transparent;
     animation: spin 1s linear infinite;
 }
@@ -3770,3 +3770,10 @@ body:has(.table-container) .tab-content.active {
     color: white !important;
     box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
 }
+
+/* Performance Optimizations */
+.hardware-accelerated, .btn, .course-card, .class-card, .faculty-card {
+    will-change: transform;
+    backface-visibility: hidden;
+}
+

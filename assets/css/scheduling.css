@@ -1,4 +1,4 @@
-#facultyScheduleModal .modal,
+﻿#facultyScheduleModal .modal,
 #facultyCourseLoadModal .modal {
     width: 95vw;
     max-width: 1400px;
@@ -335,7 +335,7 @@
         display: flex;
         flex-direction: column;
         background: #fff;
-        border-radius: 6px;
+        border-radius: var(--radius-sm);
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         padding: 4px;
     }
@@ -613,7 +613,7 @@
         min-height: 0;
         background: #f8f9fa;
         border: 1px solid #e0e0e0;
-        border-radius: 6px;
+        border-radius: var(--radius-sm);
         padding: 4px;
         margin: 0;
         margin-bottom: 50px;
@@ -738,7 +738,7 @@
         flex-shrink: 0;
         background: #f8f9fa;
         border: 1px solid #e0e0e0;
-        border-radius: 6px;
+        border-radius: var(--radius-sm);
         padding: 8px;
         margin-bottom: 6px;
         display: flex;
@@ -1413,7 +1413,7 @@
     #facultyCourseLoadModal .right-panel .subject-item {
         background: white;
         border: 1px solid #e0e0e0;
-        border-radius: 6px;
+        border-radius: var(--radius-sm);
         padding: 8px;
         margin-bottom: 6px;
         font-size: 0.75rem;
@@ -1631,7 +1631,7 @@
     #facultyScheduleModal .subject-item {
         background: white;
         border: 1px solid #e0e0e0;
-        border-radius: 6px;
+        border-radius: var(--radius-sm);
         padding: 12px;
         margin-bottom: 10px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -1747,7 +1747,7 @@
     width: 100%;
     padding: 10px 12px;
     border: 1px solid #ddd;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: 0.9rem;
     transition: all 0.2s ease;
     background: white;
@@ -1763,7 +1763,7 @@
 #facultyCourseLoadModal .course-info-display {
     background: #f8f9fa;
     border: 1px solid #e9ecef;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     padding: 12px;
 }
 
@@ -1801,7 +1801,7 @@
     padding: 8px 12px;
     background: #f8f9fa;
     border: 1px solid #dee2e6;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 0.9rem;
@@ -1879,3 +1879,10 @@
 #facultyScheduleModal .schedule-table td[colspan="4"] {
     font-size: 1.4rem !important;
 }
+
+/* Performance Optimizations */
+.hardware-accelerated, .btn, .course-card, .class-card, .faculty-card {
+    will-change: transform;
+    backface-visibility: hidden;
+}
+

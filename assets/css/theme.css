@@ -5,7 +5,7 @@
     --primary-green-dark: #1a5e20;
     --primary-green-light: #4caf50;
     --primary-green-lighter: #81c784;
-    
+
     /* Background Colors */
     --bg-primary: #2d7d32;
     --bg-overlay: rgba(26, 94, 32, 0.95);
@@ -14,7 +14,7 @@
     --bg-glass-semi: rgba(255, 255, 255, 0.9);
     --bg-dark-glass: rgba(0, 0, 0, 0.2);
     --bg-modal: rgba(255, 255, 255, 0.98);
-    
+
     /* Text Colors */
     --text-primary: #333;
     --text-secondary: #666;
@@ -23,7 +23,7 @@
     --text-white: #ffffff;
     --text-green-primary: #1a5e20;
     --text-green-secondary: #2d7d32;
-    
+
     /* Status Colors */
     --status-available-bg: rgba(232, 245, 232, 0.95);
     --status-available-text: #155724;
@@ -31,7 +31,7 @@
     --status-busy-text: #856404;
     --status-offline-bg: rgba(255, 235, 238, 0.95);
     --status-offline-text: #721c24;
-    
+
     /* Priority Colors */
     --priority-high-bg: rgba(255, 235, 238, 0.9);
     --priority-high-text: #d32f2f;
@@ -39,7 +39,7 @@
     --priority-medium-text: #f57c00;
     --priority-low-bg: rgba(232, 245, 232, 0.9);
     --priority-low-text: #388e3c;
-    
+
     /* Success/Error Colors */
     --success-bg: rgba(232, 245, 232, 0.95);
     --success-text: #1b5e20;
@@ -47,7 +47,7 @@
     --error-bg: rgba(255, 235, 238, 0.95);
     --error-text: #c62828;
     --error-border: #c62828;
-    
+
     /* Button Colors */
     --btn-primary-bg: rgba(45, 125, 50, 0.95);
     --btn-primary-hover: rgba(26, 94, 32, 0.95);
@@ -60,33 +60,46 @@
     --btn-blue-hover: rgba(0, 86, 179, 0.95);
     --btn-export-bg: rgba(40, 167, 69, 0.95);
     --btn-export-hover: rgba(33, 136, 56, 0.95);
-    
+
     /* Border Colors */
     --border-light: rgba(255, 255, 255, 0.08);
     --border-dark: rgba(0, 0, 0, 0.06);
     --border-medium: rgba(0, 0, 0, 0.12);
     --border-focus: rgba(45, 125, 50, 0.5);
-    
+
     /* Shadow Colors */
     --shadow-light: 0 2px 10px rgba(0, 0, 0, 0.08);
     --shadow-medium: 0 4px 15px rgba(0, 0, 0, 0.12);
     --shadow-heavy: 0 10px 30px rgba(0, 0, 0, 0.15);
     --shadow-modal: 0 10px 40px rgba(0, 0, 0, 0.25);
-    
+
     /* Special Colors */
     --warning-color: #ffc107;
     --warning-dark: #ff9800;
     --accent-gradient: linear-gradient(135deg, #2d7d32 0%, #4caf50 100%);
-    
+
     /* Faculty Card Colors */
     --faculty-card-bg: #ffffff;
     --faculty-card-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
     --faculty-card-hover-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     --faculty-avatar-bg: linear-gradient(135deg, #2d7d32 0%, #4caf50 100%);
     --faculty-avatar-border: #ffc107;
-    
+
     /* Action Button Colors */
     --action-btn-bg: rgba(255, 255, 255, 0.95);
     --action-btn-border: rgba(45, 125, 50, 0.5);
     --action-btn-hover-bg: rgba(45, 125, 50, 0.95);
+
+    /* Animation & Transitions */
+    --transition-fast: 0.15s cubic-bezier(0.4, 0.0, 0.2, 1);
+    --transition-normal: 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
+    --transition-slow: 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+    --transition-bounce: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 15px;
+    --radius-xl: 20px;
+    --radius-round: 50%;
 }
