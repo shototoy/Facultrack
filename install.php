@@ -13,7 +13,7 @@ try {
     $dsn = "mysql:host=$servername;port=$port;dbname=$dbname;charset=utf8mb4";
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::MYSQL_ATTR_MULTI_STATEMENTS => true
+        1002 => true /* PDO::MYSQL_ATTR_MULTI_STATEMENTS */
     ];
     
     echo "Connecting to $servername...<br>";

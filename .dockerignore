@@ -1,7 +1,7 @@
 .git
 .gitignore
 Dockerfile
-facultrack.sql
+
 README.md
 docs
 test
