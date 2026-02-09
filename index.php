@@ -7,23 +7,20 @@ if (!isset($_GET['ready']) && empty($_POST)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Loading</title>
-    <link rel="icon" type="image/png" href="assets/images/icon.png">
+    <link rel="icon" type="image/png" href="assets/images/favicon.png">
     <link rel="stylesheet" href="assets/css/theme.css">
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #2d7d32; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #075822; }
         .loader-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+            padding-bottom: 10vh;
+            box-sizing: border-box;
             z-index: 9999;
-            background: #2d7d32;
+            background: #075822 url('assets/images/icon.png') no-repeat center center;
+            background-size: contain;
         }
-        .logo-loader {
-            width: 120px; height: auto; margin-bottom: 2rem;
-            animation: pulse 2s infinite ease-in-out;
-            opacity: 1;
-            max-width: 80%;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-        }
+        /* .logo-loader removed as it is now background */
         .spinner {
             width: 50px; height: 50px;
             border: 4px solid rgba(255, 255, 255, 0.2);
@@ -31,6 +28,7 @@ if (!isset($_GET['ready']) && empty($_POST)) {
             border-top: 4px solid #ffffff;
             animation: spin 1s linear infinite;
             margin-bottom: 1.5rem;
+            z-index: 10000; /* Ensure on top */
         }
         .loading-text { 
             font-size: 1.2rem; 
@@ -39,13 +37,16 @@ if (!isset($_GET['ready']) && empty($_POST)) {
             font-weight: 500;
             letter-spacing: 0.5px;
             text-align: center;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5); /* Stronger shadow for readability over image */
+            z-index: 10000;
         }
         .progress-bar-bg {
             width: 240px; height: 6px; background: rgba(255, 255, 255, 0.2);
             border-radius: 3px; overflow: hidden;
             position: relative;
             max-width: 80%;
+            z-index: 10000;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
         .progress-bar {
             position: absolute; top: 0; left: 0; height: 100%; width: 30%;
@@ -54,12 +55,14 @@ if (!isset($_GET['ready']) && empty($_POST)) {
             animation: indeterminate 2s infinite ease-in-out;
         }
         .status-message {
-            margin-top: 15px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);
+            margin-top: 15px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.9);
             max-width: 300px; text-align: center; line-height: 1.4;
             padding: 0 20px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            z-index: 10000;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 0.9; } }
+        /* Removed pulse animation since image is static background */
         @keyframes indeterminate {
             0% { left: -100%; width: 100%; }
             100% { left: 100%; width: 10%; }
@@ -68,7 +71,6 @@ if (!isset($_GET['ready']) && empty($_POST)) {
 </head>
 <body>
     <div class="loader-container">
-        <img src="assets/images/icon.png" alt="FaculTrack" class="logo-loader">
         <div class="spinner"></div>
         <div class="loading-text" id="loading-text">Connecting to Server...</div>
         <div class="progress-bar-bg">
@@ -251,7 +253,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Login</title>
-    <link rel="icon" type="image/png" href="assets/images/icon.png">
+    <link rel="icon" type="image/png" href="assets/images/favicon.png">
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
