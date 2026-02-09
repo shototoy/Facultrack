@@ -269,22 +269,34 @@ try {
             padding: 20px;
         }
         .login-card {
-            /* Background image covers the card */
             background: url('assets/images/favicon.png') no-repeat center center;
-            background-size: contain; /* Ensures logo fits */
-            border-radius: 15px;
-            padding: 60px 40px; /* Increased padding */
-            /* box-shadow: 0 15px 35px rgba(0,0,0,0.1);  Keeping shadow for container feel */
-            box-shadow: none; 
+            background-size: contain;
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 500px; /* Increased width */
-            min-height: 500px; /* Increased height */
+            max-width: 400px;
+            min-height: 350px;
             text-align: center;
             position: relative;
             z-index: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
+        }
+        
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 15px;
+            z-index: -1;
         }
 
         .form-input {
@@ -313,17 +325,16 @@ try {
 
         .login-btn {
             width: 100%;
-            background: #075822; /* Same color */
+            background: #075822;
             color: white;
             border: 1px solid rgba(255,255,255,0.2);
             padding: 12px 24px;
             border-radius: 8px;
-            font-size: 1.5rem; /* Increased font size */
+            font-size: 1.5rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            margin-top: 3rem; /* Added margin top */
         }
         .login-btn:hover {
             background: #054018;
@@ -362,9 +373,7 @@ try {
                 margin-top: 10px !important;
                 padding: 12px;
             }
-            .form-group {
-                margin-bottom: 15px;
-            }
+
         }
     </style>
 </head>

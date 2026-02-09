@@ -807,29 +807,14 @@ class LivePollingManager {
             }
         } else if (this.pageType === 'program') {
             if (data.faculty_data) {
-                const changes = this.checkCardChanges('.faculty-grid', data.faculty_data, 'faculty');
-                if (changes && activeTabId === 'faculty') {
-                    this.logChanges('faculty', changes);
-                    changesDetected = true;
-                }
                 this.handleDeletions(this.previousData.faculty_data, data.faculty_data, 'faculty');
                 this.previousData.faculty_data = [...data.faculty_data];
             }
             if (data.classes_data) {
-                const changes = this.checkCardChanges('.classes-grid', data.classes_data, 'classes');
-                if (changes && activeTabId === 'classes') {
-                    this.logChanges('classes', changes);
-                    changesDetected = true;
-                }
                 this.handleDeletions(this.previousData.classes_data, data.classes_data, 'classes');
                 this.previousData.classes_data = [...data.classes_data];
             }
             if (data.courses_data) {
-                const changes = this.checkCardChanges('.courses-grid', data.courses_data, 'courses');
-                if (changes && activeTabId === 'courses') {
-                    this.logChanges('courses', changes);
-                    changesDetected = true;
-                }
                 this.handleDeletions(this.previousData.courses_data, data.courses_data, 'courses');
                 this.previousData.courses_data = [...data.courses_data];
             }
@@ -872,13 +857,27 @@ class LivePollingManager {
     checkCardChanges(containerSelector, newData, type) {
         const container = document.querySelector(containerSelector);
         if (!container || !Array.isArray(newData)) return null;
-        const currentCards = container.querySelectorAll('.faculty-card:not(.add-card), .class-card:not(.add-card), .course-card:not(.add-card)').length;
+
+        let cardSelector;
+        if (type === 'faculty') {
+            cardSelector = '.faculty-card:not(.add-card)';
+        } else if (type === 'classes') {
+            cardSelector = '.class-card:not(.add-card)';
+        } else if (type === 'courses') {
+            cardSelector = '.course-card:not(.add-card)';
+        } else {
+            return null;
+        }
+
+        const currentCards = container.querySelectorAll(cardSelector).length;
         const newCount = newData.length;
+
         if (currentCards !== newCount) {
-            console.log(`${type} (cards) count change detected. Reloading page...`);
+            console.log(`${type} (cards) count change detected. Current: ${currentCards}, New: ${newCount}. Reloading page...`);
             setTimeout(() => location.reload(), 500);
             return { type: 'reload_triggered' };
         }
+
         return null;
     }
     logCurrentStatus() {

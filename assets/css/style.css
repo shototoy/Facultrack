@@ -1345,6 +1345,11 @@ body:has(.table-container) .tab-content.active {
     height: auto;
 }
 
+.table-container .data-table th:nth-child(1),
+.table-container .data-table td:nth-child(1) {
+    width: 50%;
+}
+
 .table-container .data-table th,
 .table-container .data-table td {
     padding: 12px 8px;
@@ -3587,54 +3592,57 @@ body:has(.table-container) .tab-content.active {
     gap: 12px;
 }
 
-/* Action Buttons */
-.action-btn {
-    padding: 6px 14px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    background: white;
-    color: #555;
-    cursor: pointer;
+/* Action Buttons - Unified Styling */
+.action-btn,
+.delete-btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-    transition: all 0.2s;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
     font-weight: 500;
-}
-
-.action-btn:hover {
-    background: #f5f5f5;
-    color: #333;
-    border-color: #ccc;
-    transform: translateY(-1px);
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .action-btn.view-btn {
-    color: #0f5132;
-    border-color: #d1e7dd;
-    background: #f8fdfa;
+    background: #10b981;
+    color: white;
 }
 
 .action-btn.view-btn:hover {
-    background: #e9f7ef;
-    border-color: #badbcc;
+    background: #059669;
+    transform: translateY(-1px);
 }
 
 .action-btn.edit-btn {
-    color: #0d6efd;
-    border-color: #cfe2ff;
-    background: #f0f7ff;
+    background: #3b82f6;
+    color: white;
 }
 
 .action-btn.edit-btn:hover {
-    background: #e7f1ff;
-    border-color: #bcd4fb;
+    background: #2563eb;
+    transform: translateY(-1px);
 }
 
-.action-btn svg {
+.delete-btn {
+    background: #ef4444;
+    color: white;
+}
+
+.delete-btn:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.action-btn svg,
+.delete-btn svg {
     width: 16px;
     height: 16px;
+    flex-shrink: 0;
 }
 
 /* Responsive Modal Actions */

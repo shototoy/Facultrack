@@ -1047,7 +1047,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                         const nameParts = (faculty.full_name || '').split(' ');
                         const initials = nameParts.map(part => part.charAt(0)).join('').substring(0, 2);
                         return `
-                            <div class="faculty-card" data-name="${escapeHtml(faculty.full_name)}">
+                            <div class="faculty-card" data-faculty-id="${faculty.faculty_id}" data-name="${escapeHtml(faculty.full_name)}">
                                 <div class="faculty-avatar">${initials}</div>
                                 <div class="faculty-name">${escapeHtml(faculty.full_name)}</div>   
                                 <div class="location-info">

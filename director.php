@@ -448,18 +448,6 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                         <span>${faculty.contact_phone || 'N/A'}</span>
                     </div>
                 </div>
-
-                <div class="details-actions">
-                    <button class="action-btn view-btn" onclick="openIFTLModal(${faculty.faculty_id}, '${faculty.full_name.replace(/'/g, "\\'")}')">
-                        <svg class="feather"><use href="#calendar"></use></svg> IFTL
-                    </button>
-                    <button class="action-btn edit-btn" onclick="openEditFacultyModal(${faculty.faculty_id})">
-                        <svg class="feather"><use href="#edit"></use></svg> Edit
-                    </button>
-                     <button class="delete-btn" onclick="deleteEntity('delete_faculty', ${faculty.faculty_id})">
-                        <svg class="feather"><use href="#trash-2"></use></svg> Delete
-                    </button>
-                </div>
             `;
             
             const modal = document.getElementById('facultyDetailsModal');
@@ -503,15 +491,6 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                         <label>Date</label>
                         <span>${date}</span>
                     </div>
-                </div>
-
-                <div class="details-actions">
-                    <button class="action-btn edit-btn" onclick="openEditAnnouncementModal(${announcement.announcement_id})">
-                        <svg class="feather"><use href="#edit"></use></svg> Edit
-                    </button>
-                    <button class="delete-btn" onclick="deleteEntity('delete_announcement', ${announcement.announcement_id})">
-                        <svg class="feather"><use href="#trash-2"></use></svg> Delete
-                    </button>
                 </div>
             `;
             
