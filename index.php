@@ -1,4 +1,120 @@
 <?php
+if (!isset($_GET['ready']) && empty($_POST)) {
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FaculTrack - Loading</title>
+    <link rel="icon" type="image/png" href="assets/images/icon.png">
+    <link rel="stylesheet" href="assets/css/theme.css">
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #2d7d32; }
+        .loader-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999;
+            background: #2d7d32;
+        }
+        .logo-loader {
+            width: 120px; height: auto; margin-bottom: 2rem;
+            animation: pulse 2s infinite ease-in-out;
+            opacity: 1;
+            max-width: 80%;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            border-top: 4px solid #ffffff;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
+        }
+        .loading-text { 
+            font-size: 1.2rem; 
+            margin-bottom: 1rem; 
+            color: #ffffff;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-align: center;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .progress-bar-bg {
+            width: 240px; height: 6px; background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px; overflow: hidden;
+            position: relative;
+            max-width: 80%;
+        }
+        .progress-bar {
+            position: absolute; top: 0; left: 0; height: 100%; width: 30%;
+            background: #ffffff;
+            border-radius: 3px;
+            animation: indeterminate 2s infinite ease-in-out;
+        }
+        .status-message {
+            margin-top: 15px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);
+            max-width: 300px; text-align: center; line-height: 1.4;
+            padding: 0 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 0.9; } }
+        @keyframes indeterminate {
+            0% { left: -100%; width: 100%; }
+            100% { left: 100%; width: 10%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loader-container">
+        <img src="assets/images/icon.png" alt="FaculTrack" class="logo-loader">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loading-text">Connecting to Server...</div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar"></div>
+        </div>
+        <div class="status-message">Please wait while we wake up the server. This allows us to save resources when not in use.</div>
+    </div>
+    <script>
+        const texts = ["Connecting to Server...", "Waking up Database...", "Establishing Secure Connection...", "Almost Ready..."];
+        let textIdx = 0;
+        const textInterval = setInterval(() => {
+            textIdx = (textIdx + 1) % texts.length;
+            document.getElementById('loading-text').innerText = texts[textIdx];
+        }, 2000);
+
+        function checkServer() {
+            fetch('assets/php/polling_api.php?action=test', { cache: "no-store" })
+            .then(response => {
+                if (response.ok) return response.json();
+                throw new Error('Network response was not ok: ' + response.status);
+            })
+            .then(data => {
+                if (data.success) {
+                    clearInterval(textInterval);
+                    document.getElementById('loading-text').innerText = "Connected!";
+                    document.querySelector('.progress-bar').style.animation = 'none';
+                    document.querySelector('.progress-bar').style.width = '100%';
+                    setTimeout(() => {
+                        window.location.href = 'index.php?ready=1';
+                    }, 500);
+                } else {
+                    setTimeout(checkServer, 1000);
+                }
+            })
+            .catch(error => {
+                console.log('Polling...', error);
+                setTimeout(checkServer, 1000); 
+            });
+        }
+        checkServer();
+    </script>
+</body>
+</html>
+<?php
+exit();
+}
 require_once 'assets/php/common_utilities.php';
 initializeSession();
 $pdo = initializeDatabase();
@@ -135,6 +251,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaculTrack - Login</title>
+    <link rel="icon" type="image/png" href="assets/images/icon.png">
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
