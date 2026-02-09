@@ -29,6 +29,7 @@ if (!isset($_GET['ready']) && empty($_POST)) {
             animation: spin 1s linear infinite;
             margin-bottom: 1.5rem;
             z-index: 10000; /* Ensure on top */
+            margin-top: 2rem;
         }
         .loading-text { 
             font-size: 1.2rem; 
@@ -257,6 +258,9 @@ try {
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
+        body {
+            background-color: #075822 !important;
+        }
         .login-container {
             display: flex;
             justify-content: center;
@@ -265,121 +269,108 @@ try {
             padding: 20px;
         }
         .login-card {
-            background: white;
+            /* Background image covers the card */
+            background: url('assets/images/favicon.png') no-repeat center center;
+            background-size: contain; /* Ensures logo fits */
             border-radius: 15px;
-            padding: 40px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 60px 40px; /* Increased padding */
+            /* box-shadow: 0 15px 35px rgba(0,0,0,0.1);  Keeping shadow for container feel */
+            box-shadow: none; 
             width: 100%;
-            max-width: 400px;
+            max-width: 500px; /* Increased width */
+            min-height: 500px; /* Increased height */
             text-align: center;
             position: relative;
-            overflow: hidden;
             z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        .login-card::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            height: 80%;
-            background-image: url('assets/images/logo1.png');
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: contain;
-            opacity: 0.05;
-            z-index: -1;
-            pointer-events: none;
+
+        .form-input {
+            background: rgba(255, 255, 255, 0.6) !important;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: #000;
+            font-weight: 600;
+            font-size: 1.2rem; /* Increased font size */
+            padding: 16px; /* Increased height */
         }
-        .login-header {
-            margin-bottom: 30px;
+        .form-input:focus {
+            background: rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
         }
-        .login-title {
-            color: #1B5E20;
-            font-size: 2rem;
-            font-weight: bold;
+        
+        #password {
+            margin-bottom: 3rem; /* Gap before button */
+        }
+
+        .form-label {
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            font-size: 1.3rem; /* Increased label size */
             margin-bottom: 10px;
         }
-        .login-subtitle {
-            color: #666;
-            font-size: 1rem;
-        }
+
         .login-btn {
             width: 100%;
-            background: linear-gradient(45deg, #2E7D32, #388E3C);
+            background: #075822; /* Same color */
             color: white;
-            border: none;
+            border: 1px solid rgba(255,255,255,0.2);
             padding: 12px 24px;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 1.5rem; /* Increased font size */
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            margin-top: 3rem; /* Added margin top */
         }
         .login-btn:hover {
-            background: linear-gradient(45deg, #1B5E20, #2E7D32);
+            background: #054018;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
         }
         .demo-accounts {
             margin-top: 30px;
             padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid rgba(255,255,255,0.3);
             display: none;
         }
         .demo-title {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 15px;
+            color: #eee;
         }
-        .demo-account {
-            background: #f8f9fa;
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            font-size: 0.85rem;
-            color: #555;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-        .demo-account:hover {
-            background: #e9ecef;
-        }
-        .demo-account strong {
-            color: #2E7D32;
-        }
-        .demo-account.disabled {
-            background: #f5f5f5;
-            color: #999;
-            cursor: not-allowed;
-        }
-        .demo-account.disabled:hover {
-            background: #f5f5f5;
-        }
-        .demo-account.disabled strong {
-            color: #999;
-        }
-        .coming-soon {
-            font-size: 0.75rem;
-            color: #ff9800;
-            font-style: italic;
-        }
-        .available {
-            font-size: 0.75rem;
-            color: #4caf50;
-            font-style: italic;
+        
+        @media (max-width: 768px) {
+            .login-card {
+                padding: 30px; /* Uniform padding */
+                min-height: auto;
+                width: 90%;
+            }
+            .form-label {
+                font-size: 1rem;
+                margin-bottom: 5px;
+            }
+            .form-input {
+                font-size: 1rem !important;
+                padding: 12px !important;
+                height: auto;
+            }
+            #password {
+                margin-bottom: 0 !important;
+            }
+            .login-btn {
+                font-size: 1rem !important;
+                margin-top: 10px !important;
+                padding: 12px;
+            }
+            .form-group {
+                margin-bottom: 15px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-card">
-            <div class="login-header">
-                <h1 class="login-title">FaculTrack</h1>
-                <p class="login-subtitle">Sultan Kudarat State University - Isulan Campus</p>
-            </div>
             <?php if ($error_message): ?>
                 <div class="error-message">
                     <?php echo htmlspecialchars($error_message); ?>

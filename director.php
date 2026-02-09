@@ -111,7 +111,9 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                     <button class="action-btn edit-btn" onclick="openEditFacultyModal(<?php echo $faculty['faculty_id']; ?>)" title="Edit">
                                         <svg class="feather feather-sm"><use href="#edit"></use></svg> Edit
                                     </button>
-                                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_faculty', <?php echo $faculty['faculty_id']; ?>)">Delete</button>
+                                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_faculty', <?php echo $faculty['faculty_id']; ?>)">
+                                        <svg class="feather feather-sm"><use href="#trash-2"></use></svg> Delete
+                                    </button>
                                 </td>
                             </tr>
                             <tr class="expansion-row" id="faculty-expansion-<?php echo $faculty['faculty_id']; ?>" style="display: none;">
@@ -175,7 +177,9 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                 </td>
                                 <td class="program-column"><?php echo htmlspecialchars($announcement['target_audience']); ?></td>
                                 <td class="actions-column">
-                                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_announcement', <?php echo $announcement['announcement_id']; ?>)">Delete</button>
+                                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_announcement', <?php echo $announcement['announcement_id']; ?>)">
+                                        <svg class="feather feather-sm"><use href="#trash-2"></use></svg> Delete
+                                    </button>
                                 </td>
                             </tr>
                             <tr class="expansion-row" id="announcement-expansion-<?php echo $announcement['announcement_id']; ?>" style="display: none;">
