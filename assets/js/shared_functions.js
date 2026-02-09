@@ -144,29 +144,7 @@ async function deleteEntity(action, id) {
                     const result = await response.json();
                     if (result.success) {
                         showNotification(`${capitalize(label)} deleted successfully`, 'success');
-
-                        const entityType = action.replace('delete_', '');
-                        if (typeof window.removeEntityFromTable === 'function') {
-                            window.removeEntityFromTable(entityType, id);
-                        } else {
-                            switch (entityType) {
-                                case 'faculty':
-                                    if (typeof removeFacultyFromTable === 'function') removeFacultyFromTable(id);
-                                    break;
-                                case 'class':
-                                    if (typeof removeClassFromTable === 'function') removeClassFromTable(id);
-                                    break;
-                                case 'course':
-                                    if (typeof removeCourseFromTable === 'function') removeCourseFromTable(id);
-                                    break;
-                                case 'announcement':
-                                    if (typeof removeAnnouncementFromTable === 'function') removeAnnouncementFromTable(id);
-                                    break;
-                                case 'program':
-                                    if (typeof removeProgramFromTable === 'function') removeProgramFromTable(id);
-                                    break;
-                            }
-                        }
+                        setTimeout(() => location.reload(), 500);
                     } else {
                         throw new Error(result.message || `Failed to delete ${label}`);
                     }
@@ -216,10 +194,8 @@ async function handleFormSubmission(form, type) {
                     });
                     const result = await response.json();
                     if (result.success) {
-                        switchTab(type);
-                        if (typeof closeModal === 'function') closeModal();
-                        form.reset();
                         showNotification(result.message, 'success');
+                        setTimeout(() => location.reload(), 500);
                     } else {
                         throw new Error(result.message);
                     }
@@ -245,10 +221,8 @@ async function handleFormSubmission(form, type) {
         });
         const result = await response.json();
         if (result.success) {
-            switchTab(type);
-            if (typeof closeModal === 'function') closeModal();
-            form.reset();
             showNotification(result.message, 'success');
+            setTimeout(() => location.reload(), 500);
         } else {
             throw new Error(result.message);
         }

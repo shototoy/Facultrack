@@ -838,45 +838,35 @@ class LivePollingManager {
     checkTableChanges(containerSelector, newData, type) {
         const container = document.querySelector(containerSelector);
         if (!container || !Array.isArray(newData)) return null;
-        const currentRows = (type === 'faculty' || type === 'classes') ?
-            container.querySelectorAll('tr.expandable-row').length :
-            container.querySelectorAll('tr:not(.expansion-row)').length;
+
+        // Count rows that represent actual data (exclude expansion rows if any legacy ones remain)
+        const currentRows = container.querySelectorAll('tr:not(.expansion-row)').length;
         const newCount = newData.length;
+
         if (currentRows !== newCount) {
-            const difference = newCount - currentRows;
-            console.log(`${type} count change detected:`, {
-                currentRows,
-                newCount,
-                difference,
-                containerSelector
-            });
-            if (difference > 0) {
-                const currentIds = Array.from(container.querySelectorAll('tr')).map(row => {
-                    const idField = this.getIdField(type).replace('_', '-');
-                    return row.getAttribute(`data-${idField}`);
-                }).filter(id => id);
-                console.log(`${type} ID check:`, {
-                    currentIds: currentIds,
-                    newDataIds: newData.map(item => item[this.getIdField(type)]),
-                    idField: this.getIdField(type)
-                });
-                newData.forEach(item => {
-                    const itemId = item[this.getIdField(type)];
-                    const willAdd = !currentIds.includes(itemId.toString());
-                    if (willAdd) {
-                        this.addToTable(type, item);
-                    }
-                });
-            } else if (difference < 0) {
-                this.reloadTableData(containerSelector, newData, type);
-            }
-            return {
-                type: 'count_change',
-                oldCount: currentRows,
-                newCount: newCount,
-                difference: difference
-            };
+            console.log(`${type} count change detected. Reloading page to update...`);
+            setTimeout(() => location.reload(), 500);
+            return { type: 'reload_triggered' };
         }
+
+        // Check for specific ID presence/absence which might imply a swap even if count is same
+        // (Optional for strict correctness, but count mismatch is the main trigger for add/delete)
+        const currentIds = Array.from(container.querySelectorAll('tr:not(.expansion-row)')).map(row => {
+            const idField = this.getIdField(type).replace('_', '-');
+            return row.getAttribute(`data-${idField}`); // data-faculty-id etc.
+        }).filter(id => id);
+
+        const newIds = newData.map(item => item[this.getIdField(type)].toString());
+
+        // Simple check: if any ID in new data is missing from current DOM, or vice versa
+        const hasIdMismatch = newIds.some(id => !currentIds.includes(id)) || currentIds.some(id => !newIds.includes(id));
+
+        if (hasIdMismatch) {
+            console.log(`${type} content mismatch detected. Reloading page...`);
+            setTimeout(() => location.reload(), 500);
+            return { type: 'reload_triggered' };
+        }
+
         return null;
     }
     checkCardChanges(containerSelector, newData, type) {
@@ -885,18 +875,9 @@ class LivePollingManager {
         const currentCards = container.querySelectorAll('.faculty-card:not(.add-card), .class-card:not(.add-card), .course-card:not(.add-card)').length;
         const newCount = newData.length;
         if (currentCards !== newCount) {
-            const difference = newCount - currentCards;
-            if (difference > 0) {
-                this.reloadCardData(containerSelector, newData, type);
-            } else if (difference < 0) {
-                this.reloadCardData(containerSelector, newData, type);
-            }
-            return {
-                type: 'count_change',
-                oldCount: currentCards,
-                newCount: newCount,
-                difference: difference
-            };
+            console.log(`${type} (cards) count change detected. Reloading page...`);
+            setTimeout(() => location.reload(), 500);
+            return { type: 'reload_triggered' };
         }
         return null;
     }
@@ -1296,61 +1277,7 @@ class LivePollingManager {
         }
         this.updateCounts(entityType, 1);
     }
-    addToTable(entityType, entityData) {
-        if (this.pageType !== 'director') return;
-        const tableBody = document.querySelector(`#${entityType}-content .data-table tbody`);
-        if (!tableBody) return;
-        const selector = `[data-${entityType.replace('s', '')}-id="${entityData[entityType.replace('s', '') + '_id']}"]`;
-        const existingRow = tableBody.querySelector(selector);
-        if (existingRow) {
-            return;
-        }
-        let newRow = '';
-        switch (entityType) {
-            case 'courses':
-                newRow = this.createCourseRow(entityData);
-                break;
-            case 'faculty':
-                newRow = this.createFacultyRow(entityData);
-                break;
-            case 'classes':
-                newRow = this.createClassRow(entityData);
-                break;
-            case 'announcements':
-                newRow = this.createAnnouncementRow(entityData);
-                break;
-        }
-        if (newRow) {
-            let insertedRow;
-            if (entityType === 'faculty' || entityType === 'classes') {
-                const tempTable = document.createElement('table');
-                const tempTbody = document.createElement('tbody');
-                tempTbody.innerHTML = newRow;
-                tempTable.appendChild(tempTbody);
-                const rows = tempTbody.querySelectorAll('tr');
-                const firstExistingRow = tableBody.firstElementChild;
-                rows.forEach((row, index) => {
-                    const clonedRow = row.cloneNode(true);
-                    if (firstExistingRow) {
-                        tableBody.insertBefore(clonedRow, firstExistingRow);
-                    } else {
-                        tableBody.appendChild(clonedRow);
-                    }
-                });
-                insertedRow = tableBody.firstElementChild;
-            } else {
-                tableBody.insertAdjacentHTML('afterbegin', newRow);
-                insertedRow = tableBody.firstElementChild;
-            }
-            insertedRow.style.opacity = '0';
-            insertedRow.style.transform = 'translateY(-20px)';
-            insertedRow.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-            setTimeout(() => {
-                insertedRow.style.opacity = '1';
-                insertedRow.style.transform = 'translateY(0)';
-            }, 100);
-        }
-    }
+
     addToCards(entityType, entityData) {
         if (this.pageType !== 'program') return;
         const cardContainer = document.querySelector(`.${entityType}-grid, .${entityType}-cards`);
@@ -1404,126 +1331,10 @@ class LivePollingManager {
             });
         }
     }
-    createCourseRow(course) {
-        return `
-            <tr>
-                <td class="id-column">${escapeHtml(course.course_code)}</td>
-                <td class="description-column">${escapeHtml(course.course_description)}</td>
-                <td class="id-column">${course.units}</td>
-                <td class="id-column">${course.times_scheduled || 0}</td>
-                <td class="actions-column">
-                    <button class="delete-btn" onclick="deleteEntity('delete_course', ${course.course_id})">Delete</button>
-                </td>
-            </tr>
-        `;
-    }
-    createFacultyRow(faculty) {
-        const status = faculty.status || 'Offline';
-        return `
-            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-faculty-id="${faculty.faculty_id}">
-                <td class="name-column">${escapeHtml(faculty.full_name)}</td>
-                <td class="status-column">
-                    <span class="status-badge ${this.getStatusClass(status)}">${status}</span>
-                </td>
-                <td class="location-column">${escapeHtml(faculty.current_location || 'Not Available')}</td>
-                <td class="actions-column">
-                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_faculty', ${faculty.faculty_id})">Delete</button>
-                </td>
-            </tr>
-            <tr class="expansion-row" id="faculty-expansion-${faculty.faculty_id}" style="display: none;">
-                <td colspan="4" class="expansion-content">
-                    <div class="expanded-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Employee ID:</span>
-                            <span class="detail-value">${escapeHtml(faculty.employee_id)}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Program:</span>
-                            <span class="detail-value">${escapeHtml(faculty.program)}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Contact Email:</span>
-                            <span class="detail-value">${escapeHtml(faculty.contact_email || 'N/A')}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Phone:</span>
-                            <span class="detail-value">${escapeHtml(faculty.contact_phone || 'N/A')}</span>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-    createClassRow(classData) {
-        return `
-            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-class-id="${classData.class_id}">
-                <td class="id-column">${escapeHtml(classData.class_code)}</td>
-                <td class="name-column">${escapeHtml(classData.class_name)}</td>
-                <td class="id-column">${classData.year_level}</td>
-                <td class="id-column">${classData.total_students || 0}</td>
-                <td class="date-column">${escapeHtml(classData.academic_year)}</td>
-                <td class="actions-column">
-                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_class', ${classData.class_id})">Delete</button>
-                </td>
-            </tr>
-            <tr class="expansion-row" id="class-expansion-${classData.class_id}" style="display: none;">
-                <td colspan="5" class="expansion-content">
-                    <div class="expanded-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Semester:</span>
-                            <span class="detail-value">${escapeHtml(classData.semester)}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Program Chair:</span>
-                            <span class="detail-value">${escapeHtml(classData.program_chair_name || 'Unassigned')}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Total Subjects:</span>
-                            <span class="detail-value">${classData.total_subjects || 0}</span>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-    createAnnouncementRow(announcement) {
-        return `
-            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-announcement-id="${announcement.announcement_id}">
-                <td class="name-column">${escapeHtml(announcement.title)}</td>
-                <td class="status-column">
-                    <span class="status-badge priority-${announcement.priority}">${announcement.priority.toUpperCase()}</span>
-                </td>
-                <td class="program-column">${escapeHtml(announcement.target_audience)}</td>
-                <td class="actions-column">
-                    <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_announcement', ${announcement.announcement_id})">Delete</button>
-                </td>
-            </tr>
-            <tr class="expansion-row" id="announcement-expansion-${announcement.announcement_id}" style="display: none;">
-                <td colspan="4" class="expansion-content">
-                    <div class="expanded-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Content:</span>
-                            <span class="detail-value">${escapeHtml(announcement.content)}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Created By:</span>
-                            <span class="detail-value">${escapeHtml(announcement.created_by_name)}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Created Date:</span>
-                            <span class="detail-value">${new Date(announcement.created_at).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit'
-        })}</span>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
+
+
+
+
     createFacultyCard(faculty) {
         const isProgram = this.pageType === 'program';
         const status = faculty.status || 'Offline';
@@ -2198,164 +2009,9 @@ class LivePollingManager {
         } catch (error) {
         }
     }
-    updateTableDisplay(data) {
-        if (!this.isElementVisible(`${this.currentTab}-content`)) {
-            return;
-        }
-        const currentTable = document.querySelector(`#${this.currentTab}-content .data-table tbody`);
-        if (!currentTable) {
-            return;
-        }
-        let actualChanges = 0;
-        data.updates?.forEach(update => {
-            let row = null;
-            if (this.currentTab === 'faculty') {
-                row = currentTable.querySelector(`tr[data-faculty-id="${update.id}"]`);
-            } else if (this.currentTab === 'classes') {
-                row = currentTable.querySelector(`tr[data-class-id="${update.id}"]`);
-            } else if (this.currentTab === 'announcements') {
-                row = currentTable.querySelector(`tr[data-announcement-id="${update.id}"]`);
-            }
-            if (row && row.classList.contains('expandable-row')) {
-                const hasChange = this.hasDataChanged(row, update, this.currentTab);
-                if (hasChange) {
-                    actualChanges++;
-                    this.updateTableRow(row, update, this.currentTab);
-                }
-            } else if (update.action === 'add') {
-                actualChanges++;
-                this.addTableRow(currentTable, update, this.currentTab);
-            }
-        });
-        if (actualChanges > 0) {
-            const pageName = document.title.split(' - ')[1] || 'Dashboard';
-            this.logCurrentStatus();
-        }
-        if (data.total_count !== undefined) {
-            this.updateRowCount(this.currentTab, data.total_count);
-        }
-    }
-    updateTableRow(row, update, tableType) {
-        switch (tableType) {
-            case 'faculty':
-                const nameCell = row.querySelector('.name-column');
-                const statusCell = row.querySelector('.status-column .status-badge');
-                const locationCell = row.querySelector('.location-column');
-                if (update.full_name && nameCell) {
-                    nameCell.textContent = update.full_name;
-                }
-                if (update.status && statusCell) {
-                    statusCell.className = `status-badge status-${update.status.toLowerCase()}`;
-                    statusCell.textContent = update.status.charAt(0).toUpperCase() + update.status.slice(1);
-                }
-                if (update.location && locationCell) {
-                    locationCell.textContent = update.location || 'Not Available';
-                }
-                const expansionRow = row.nextElementSibling;
-                if (expansionRow && expansionRow.classList.contains('expansion-row')) {
-                    const detailItems = expansionRow.querySelectorAll('.detail-value');
-                    if (detailItems.length >= 3) {
-                        if (update.employee_id) detailItems[0].textContent = update.employee_id;
-                        if (update.program) detailItems[1].textContent = update.program;
-                        if (update.contact_email) detailItems[2].textContent = update.contact_email || 'N/A';
-                    }
-                }
-                break;
-            case 'classes':
-                const classNameCell = row.querySelector('.name-column');
-                if (update.class_name && classNameCell) {
-                    classNameCell.textContent = update.class_name;
-                }
-                const classExpansionRow = row.nextElementSibling;
-                if (classExpansionRow && classExpansionRow.classList.contains('expansion-row')) {
-                    const classDetailItems = classExpansionRow.querySelectorAll('.detail-value');
-                    if (classDetailItems.length >= 3) {
-                        if (update.semester) classDetailItems[0].textContent = update.semester;
-                        if (update.program_chair_name) classDetailItems[1].textContent = update.program_chair_name;
-                        if (update.total_subjects !== undefined) classDetailItems[2].textContent = update.total_subjects;
-                    }
-                }
-                break;
-            case 'announcements':
-                const titleCell = row.querySelector('.name-column');
-                const priorityCell = row.querySelector('.status-column .status-badge');
-                if (update.title && titleCell) {
-                    titleCell.textContent = update.title;
-                }
-                if (update.priority && priorityCell) {
-                    priorityCell.className = `status-badge priority-${update.priority}`;
-                    priorityCell.textContent = update.priority.toUpperCase();
-                }
-                const announcementExpansionRow = row.nextElementSibling;
-                if (announcementExpansionRow && announcementExpansionRow.classList.contains('expansion-row')) {
-                    const announcementDetailItems = announcementExpansionRow.querySelectorAll('.detail-value');
-                    if (announcementDetailItems.length >= 3) {
-                        if (update.content) announcementDetailItems[0].textContent = update.content;
-                        if (update.created_by_name) announcementDetailItems[1].textContent = update.created_by_name;
-                        if (update.created_at) {
-                            const date = new Date(update.created_at);
-                            announcementDetailItems[2].textContent = date.toLocaleDateString('en-US', {
-                                year: 'numeric', month: 'short', day: 'numeric',
-                                hour: 'numeric', minute: '2-digit', hour12: true
-                            });
-                        }
-                    }
-                }
-                break;
-        }
-        const hasActualChange = this.hasDataChanged(row, update, tableType);
-        if (hasActualChange) {
-            row.style.background = 'rgba(76, 175, 80, 0.1)';
-            setTimeout(() => {
-                row.style.background = '';
-            }, 2000);
-        }
-    }
-    addTableRow(tableBody, data, tableType) {
-        let newRowHTML = '';
-        let expansionRowHTML = '';
-        switch (tableType) {
-            case 'faculty':
-                newRowHTML = `
-                    <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-faculty-id="${data.id}">
-                        <td class="name-column">${data.full_name || ''}</td>
-                        <td class="status-column">
-                            <span class="status-badge status-${(data.status || 'offline').toLowerCase()}">
-                                ${(data.status || 'Offline').charAt(0).toUpperCase() + (data.status || 'offline').slice(1)}
-                            </span>
-                        </td>
-                        <td class="location-column">${data.location || 'Not Available'}</td>
-                        <td class="actions-column">
-                            <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_faculty', ${data.id})">Delete</button>
-                        </td>
-                    </tr>
-                `;
-                expansionRowHTML = `
-                    <tr class="expansion-row" id="faculty-expansion-${data.id}" style="display: none;">
-                        <td colspan="4" class="expansion-content">
-                            <div class="expanded-details">
-                                <div class="detail-item">
-                                    <span class="detail-label">Employee ID:</span>
-                                    <span class="detail-value">${data.employee_id || 'N/A'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Program:</span>
-                                    <span class="detail-value">${data.program || 'N/A'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Contact Email:</span>
-                                    <span class="detail-value">${data.contact_email || 'N/A'}</span>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                break;
-        }
-        if (newRowHTML) {
-            tableBody.insertAdjacentHTML('beforeend', newRowHTML + expansionRowHTML);
-        }
-    }
+
+
+
     updateRowCount(tableType, count) {
         const countElement = document.querySelector(`#${tableType}-content .table-count`);
         if (countElement) {

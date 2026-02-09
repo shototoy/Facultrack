@@ -96,7 +96,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     </thead>
                     <tbody>
                         <?php foreach ($faculty_data as $faculty): ?>
-                            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-faculty-id="<?php echo $faculty['faculty_id']; ?>">
+                            <tr data-faculty-id="<?php echo $faculty['faculty_id']; ?>" onclick="openFacultyDetails(<?php echo htmlspecialchars(json_encode($faculty)); ?>)">
                                 <td class="name-column"><?php echo htmlspecialchars($faculty['full_name']); ?></td>
                                 <td class="status-column">
                                     <span class="status-badge status-<?php echo strtolower($faculty['status']); ?>">
@@ -116,28 +116,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                     </button>
                                 </td>
                             </tr>
-                            <tr class="expansion-row" id="faculty-expansion-<?php echo $faculty['faculty_id']; ?>" style="display: none;">
-                                <td colspan="4" class="expansion-content">
-                                    <div class="expanded-details">
-                                        <div class="detail-item">
-                                            <span class="detail-label">Employee ID:</span>
-                                            <span class="detail-value"><?php echo htmlspecialchars($faculty['employee_id']); ?></span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <span class="detail-label">Program:</span>
-                                            <span class="detail-value"><?php echo htmlspecialchars($faculty['program']); ?></span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <span class="detail-label">Contact Email:</span>
-                                            <span class="detail-value"><?php echo htmlspecialchars($faculty['contact_email'] ?? 'N/A'); ?></span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <span class="detail-label">Phone:</span>
-                                            <span class="detail-value"><?php echo htmlspecialchars($faculty['contact_phone'] ?? 'N/A'); ?></span>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
+
                         <?php endforeach; ?>
                     </tbody>
                 </table>
@@ -168,7 +147,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     </thead>
                     <tbody>
                         <?php foreach ($all_announcements as $announcement): ?>
-                            <tr class="expandable-row" onclick="toggleRowExpansion(this)" data-announcement-id="<?php echo $announcement['announcement_id']; ?>">
+                            <tr data-announcement-id="<?php echo $announcement['announcement_id']; ?>" onclick="openAnnouncementDetails(<?php echo htmlspecialchars(json_encode($announcement)); ?>)">
                                 <td class="name-column"><?php echo htmlspecialchars($announcement['title']); ?></td>
                                 <td class="status-column">
                                     <span class="status-badge priority-<?php echo $announcement['priority']; ?>">
@@ -182,24 +161,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                     </button>
                                 </td>
                             </tr>
-                            <tr class="expansion-row" id="announcement-expansion-<?php echo $announcement['announcement_id']; ?>" style="display: none;">
-                                <td colspan="4" class="expansion-content">
-                                    <div class="expanded-details">
-                                        <div class="detail-item">
-                                            <span class="detail-label">Content:</span>
-                                            <span class="detail-value"><?php echo htmlspecialchars($announcement['content']); ?></span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <span class="detail-label">Created By:</span>
-                                            <span class="detail-value"><?php echo htmlspecialchars($announcement['created_by_name']); ?></span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <span class="detail-label">Created Date:</span>
-                                            <span class="detail-value"><?php echo date('M d, Y \a\t g:i A', strtotime($announcement['created_at'])); ?></span>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
+
                         <?php endforeach; ?>
                     </tbody>
                 </table>
@@ -275,73 +237,6 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 }
             };
         }
-        document.addEventListener('DOMContentLoaded', function() {
-            const allExpansionRows = document.querySelectorAll('.expansion-row');
-            allExpansionRows.forEach(row => {
-                row.style.display = 'none';
-            });
-            const allExpandableRows = document.querySelectorAll('.expandable-row');
-            allExpandableRows.forEach(row => {
-                row.classList.remove('expanded');
-            });
-        });
-        window.toggleRowExpansion = function(row) {
-            const facultyId = row.getAttribute('data-faculty-id');
-            const classId = row.getAttribute('data-class-id');
-            const announcementId = row.getAttribute('data-announcement-id');
-            const programId = row.getAttribute('data-program-id');
-            let expansionRowId;
-            if (facultyId) {
-                expansionRowId = 'faculty-expansion-' + facultyId;
-            } else if (classId) {
-                expansionRowId = 'class-expansion-' + classId;
-            } else if (announcementId) {
-                expansionRowId = 'announcement-expansion-' + announcementId;
-            } else if (programId) {
-                expansionRowId = 'program-expansion-' + programId;
-            }
-            const expansionRow = document.getElementById(expansionRowId);
-            if (!expansionRow) {
-                return;
-            }
-            const isExpanded = expansionRow.style.display === 'table-row';
-            const currentTable = row.closest('table');
-            if (currentTable) {
-                currentTable.querySelectorAll('.expansion-row').forEach(otherRow => {
-                    if (otherRow !== expansionRow) {
-                        otherRow.style.display = 'none';
-                        const otherMainRow = otherRow.previousElementSibling;
-                        if (otherMainRow) {
-                            otherMainRow.classList.remove('expanded');
-                        }
-                    }
-                });
-            }
-            if (isExpanded) {
-                expansionRow.classList.remove('expanding', 'expanded');
-                expansionRow.classList.add('collapsing');
-                row.classList.remove('expanded');
-                setTimeout(() => {
-                    expansionRow.style.display = 'none';
-                    expansionRow.classList.remove('collapsing');
-                }, 400);
-            } else {
-                expansionRow.style.display = 'table-row';
-                expansionRow.classList.remove('collapsing');
-                expansionRow.offsetHeight;
-                expansionRow.classList.add('expanding');
-                row.classList.add('expanded');
-                setTimeout(() => {
-                    expansionRow.classList.remove('expanding');
-                    expansionRow.classList.add('expanded');
-                }, 400);
-                
-                if (programId && !expansionRow.dataset.loaded) {
-                    loadProgramCourses(programId);
-                    expansionRow.dataset.loaded = 'true';
-                }
-            }
-        };
     </script>
         <div class="modal-overlay" id="editFacultyModal">
             <div class="modal">
@@ -388,6 +283,36 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                             <button type="submit" class="btn-primary">Save Changes</button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Faculty Details Modal -->
+        <div class="modal-overlay" id="facultyDetailsModal">
+            <div class="modal medium-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Faculty Details</h3>
+                    <button type="button" class="modal-close" onclick="closeModal('facultyDetailsModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="facultyDetailsContent" class="details-grid">
+                        <!-- Content populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Announcement Details Modal -->
+        <div class="modal-overlay" id="announcementDetailsModal">
+            <div class="modal medium-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Announcement Details</h3>
+                    <button type="button" class="modal-close" onclick="closeModal('announcementDetailsModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="announcementDetailsContent" class="details-grid">
+                        <!-- Content populated by JS -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -480,6 +405,114 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 alert('Error updating faculty');
             }
         }
+        
+        // Modal Details Logic
+        function openFacultyDetails(faculty) {
+            // If passed as string (from HTML attribute), parse it
+            if (typeof faculty === 'string') {
+                try {
+                    faculty = JSON.parse(faculty);
+                } catch (e) {
+                    console.error("Error parsing faculty data", e);
+                    return;
+                }
+            }
+
+            const content = document.getElementById('facultyDetailsContent');
+            const statusClass = (faculty.status || 'Offline').toLowerCase().replace(' ', '-');
+            
+            content.innerHTML = `
+                <div class="details-section">
+                    <h4>${faculty.full_name}</h4>
+                    <span class="status-badge status-${statusClass}">${faculty.status || 'Offline'}</span>
+                </div>
+                
+                <div class="details-row">
+                    <div class="detail-group">
+                        <label>Employee ID</label>
+                        <span>${faculty.employee_id || 'N/A'}</span>
+                    </div>
+                    <div class="detail-group">
+                        <label>Program</label>
+                        <span>${faculty.program || 'N/A'}</span>
+                    </div>
+                    <div class="detail-group">
+                        <label>Email</label>
+                        <span>${faculty.contact_email || 'N/A'}</span>
+                    </div>
+                    <div class="detail-group">
+                        <label>Phone</label>
+                        <span>${faculty.contact_phone || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div class="details-actions">
+                    <button class="action-btn view-btn" onclick="openIFTLModal(${faculty.faculty_id}, '${faculty.full_name.replace(/'/g, "\\'")}')">
+                        <svg class="feather"><use href="#calendar"></use></svg> IFTL
+                    </button>
+                    <button class="action-btn edit-btn" onclick="openEditFacultyModal(${faculty.faculty_id})">
+                        <svg class="feather"><use href="#edit"></use></svg> Edit
+                    </button>
+                     <button class="delete-btn" onclick="deleteEntity('delete_faculty', ${faculty.faculty_id})">
+                        <svg class="feather"><use href="#trash-2"></use></svg> Delete
+                    </button>
+                </div>
+            `;
+            
+            const modal = document.getElementById('facultyDetailsModal');
+            modal.classList.add('show');
+        }
+
+        function openAnnouncementDetails(announcement) {
+            if (typeof announcement === 'string') {
+                try {
+                    announcement = JSON.parse(announcement);
+                } catch (e) {
+                    console.error("Error parsing announcement data", e);
+                    return;
+                }
+            }
+
+            const content = document.getElementById('announcementDetailsContent');
+            const date = new Date(announcement.created_at).toLocaleString();
+            
+            content.innerHTML = `
+                <div class="details-section">
+                    <h4>${announcement.title}</h4>
+                    <span class="status-badge priority-${announcement.priority}">${announcement.priority.toUpperCase()}</span>
+                </div>
+                
+                <div class="detail-content-box">
+                    <label>Content</label>
+                    <div class="content-text">${announcement.content}</div>
+                </div>
+
+                <div class="details-row">
+                    <div class="detail-group">
+                        <label>Target Audience</label>
+                        <span>${announcement.target_audience}</span>
+                    </div>
+                    <div class="detail-group">
+                        <label>Created By</label>
+                        <span>${announcement.created_by_name}</span>
+                    </div>
+                    <div class="detail-group">
+                        <label>Date</label>
+                        <span>${date}</span>
+                    </div>
+                </div>
+
+                <div class="details-actions">
+                     <button class="delete-btn" onclick="deleteEntity('delete_announcement', ${announcement.announcement_id})">
+                        <svg class="feather"><use href="#trash-2"></use></svg> Delete
+                    </button>
+                </div>
+            `;
+            
+            const modal = document.getElementById('announcementDetailsModal');
+            modal.classList.add('show');
+        }
+
     </script>
 </body>
 </html>

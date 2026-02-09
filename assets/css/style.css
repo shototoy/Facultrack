@@ -1340,7 +1340,7 @@ body:has(.table-container) .tab-content.active {
     width: 100%;
     border-collapse: collapse;
     background: transparent;
-    table-layout: fixed;
+    table-layout: auto;
     margin: 0;
     height: auto;
 }
@@ -1385,226 +1385,8 @@ body:has(.table-container) .tab-content.active {
     vertical-align: top;
 }
 
-.data-table .actions-column {
-    width: 80px;
-    text-align: center;
-    vertical-align: middle;
-}
-
-.data-table .status-column {
-    width: 120px;
-    text-align: center;
-}
-
-.data-table .id-column {
-    width: 100px;
-}
-
-.data-table .name-column {
-    width: auto;
-    min-width: 200px;
-}
-
-.data-table .program-column {
-    width: 140px;
-}
-
-.data-table .contact-column {
-    width: 160px;
-    font-size: 0.8rem;
-}
-
-.data-table .location-column {
-    width: 180px;
-    font-size: 0.8rem;
-}
-
-.data-table .description-column {
-    width: auto;
-    min-width: 250px;
-}
-
-.data-table .date-column {
-    width: 120px;
-    font-size: 0.8rem;
-}
-
-#faculty-content .data-table .name-column {
-    width: 40%;
-}
-
-#faculty-content .data-table .status-column {
-    width: 20%;
-}
-
-#faculty-content .data-table .location-column {
-    width: 25%;
-}
-
-#faculty-content .data-table .actions-column {
-    width: 15%;
-}
-
-#classes-content .data-table .id-column {
-    width: 20%;
-}
-
-#classes-content .data-table .name-column {
-    width: 35%;
-}
-
-#classes-content .data-table .date-column {
-    width: 25%;
-}
-
-#classes-content .data-table .actions-column {
-    width: 20%;
-}
-
-#courses-content .data-table .id-column {
-    width: 15%;
-}
-
-#courses-content .data-table .description-column {
-    width: 55%;
-}
-
-#courses-content .data-table .actions-column {
-    width: 80px;
-}
-
-#announcements-content .data-table .name-column {
-    width: 40%;
-}
-
-#announcements-content .data-table .status-column {
-    width: 20%;
-}
-
-#announcements-content .data-table .program-column {
-    width: 25%;
-}
-
-#announcements-content .data-table .actions-column {
-    width: 15%;
-}
-
-#programs-content .data-table th:nth-child(1) {
-    width: 10%;
-}
-
-#programs-content .data-table th:nth-child(2) {
-    width: 25%;
-}
-
-#programs-content .data-table th:nth-child(3) {
-    width: 40%;
-}
-
-#programs-content .data-table th:nth-child(4) {
-    width: 10%;
-}
-
-#programs-content .data-table th:nth-child(5) {
-    width: 15%;
-}
-
-.expandable-row {
-    cursor: pointer;
-    position: relative;
-
-    transition: background-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.expandable-row .actions-column {
-    position: relative;
-    padding-right: 30px;
-}
-
-.expandable-row td {
-    vertical-align: middle;
-}
-
-.data-table tbody tr {
-    height: 60px;
-}
-
-.data-table tbody .expandable-row {
-    height: 60px;
-}
-
-.data-table tbody .expansion-row {
-    height: auto;
-}
-
-.expandable-row::before {
-    content: '▼';
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.7rem;
-    color: #6c757d;
-    transition: all var(--transition-normal);
-    pointer-events: none;
-    z-index: 1;
-    opacity: 0;
-}
-
-.expandable-row.expanded::before {
-    transform: translateY(-50%) rotate(180deg);
-    color: #495057;
-}
-
-.expandable-row:hover {
-    background: linear-gradient(90deg, rgba(248, 249, 250, 0.9), rgba(233, 236, 239, 0.9)) !important;
-
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.expandable-row:hover::before {
-    opacity: 0 !important;
-}
-
-.expandable-row.expanded::before {
-    opacity: 1;
-    color: #495057;
-}
-
-.expansion-row {
-    background: rgba(248, 249, 250, 0.3) !important;
-    border-top: none !important;
-    height: auto !important;
-}
 
 
-.expansion-content {
-    padding: 0 !important;
-    border: none !important;
-}
-
-.expanded-details {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 249, 250, 0.8));
-    border-radius: 8px;
-    margin: 8px;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(222, 226, 230, 0.3);
-    max-height: 0;
-    padding: 0 20px;
-    opacity: 0;
-    overflow: hidden;
-    transform: translateY(-10px);
-    transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease, padding 0.3s ease;
-    will-change: max-height, opacity;
-}
-
-.expansion-row.expanded .expanded-details {
-    max-height: 500px;
-    padding: 16px 20px;
-    opacity: 1;
-    overflow: hidden;
-    transform: translateY(0);
-}
 
 .program-courses-list {
     margin-top: 8px;
@@ -1638,20 +1420,6 @@ body:has(.table-container) .tab-content.active {
     font-style: italic;
 }
 
-.expansion-row.expanding .expanded-details,
-.expansion-row.expanded .expanded-details {
-    max-height: 500px;
-    padding: 16px 20px;
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.expansion-row.collapsing .expanded-details {
-    max-height: 0;
-    padding: 0 20px;
-    opacity: 0;
-    transform: translateY(-10px);
-}
 
 .detail-item {
     display: flex;
@@ -2246,23 +2014,6 @@ body:has(.table-container) .tab-content.active {
         font-size: 0.85rem;
     }
 
-    .data-table .contact-column,
-    .data-table .location-column {
-        font-size: 0.75rem;
-    }
-
-    .data-table .actions-column {
-        width: 100px;
-    }
-
-    .data-table .name-column {
-        width: 150px;
-    }
-
-    .data-table .program-column {
-        width: 120px;
-    }
-
     .dashboard-grid {
         grid-template-columns: 1fr !important;
         grid-template-rows: auto 1fr !important;
@@ -2511,34 +2262,13 @@ body:has(.table-container) .tab-content.active {
         table-layout: auto;
     }
 
-    .data-table th {
-        padding: 8px 4px;
-        font-size: 0.7rem;
-        white-space: normal;
-        text-align: center;
-    }
-
+    .data-table th,
     .data-table td {
-        padding: 8px 4px;
-        font-size: 0.65rem;
-        text-align: center;
-        word-break: break-word;
+        font-size: 0.7rem !important;
+        padding: 4px 2px !important;
+        white-space: normal !important;
     }
 
-    .data-table .name-column {
-        width: auto;
-        min-width: 80px;
-    }
-
-    .data-table .id-column {
-        width: auto;
-        min-width: 60px;
-    }
-
-    .data-table .program-column {
-        width: auto;
-        min-width: 70px;
-    }
 
     #programs-content .data-table th,
     #programs-content .data-table td {
@@ -2563,37 +2293,45 @@ body:has(.table-container) .tab-content.active {
         min-width: 100px;
     }
 
-    .data-table .status-column {
-        width: auto;
-        min-width: 60px;
-    }
-
-    .data-table .contact-column {
-        width: auto;
-        min-width: 100px;
-        font-size: 0.6rem;
-    }
-
-    .data-table .location-column {
-        width: auto;
-        min-width: 80px;
-        font-size: 0.6rem;
-    }
 
     .data-table .actions-column {
         width: auto;
         min-width: 70px;
     }
 
-    .data-table .description-column {
-        width: auto;
-        min-width: 120px;
+    .data-table .actions-column {
+        width: 1% !important;
+        /* Shrink to fit content */
+        white-space: nowrap !important;
+        min-width: auto !important;
+        padding: 4px 2px !important;
+        text-align: center !important;
     }
 
-    .data-table .date-column {
-        width: auto;
-        min-width: 70px;
-        font-size: 0.6rem;
+    /* Icon-only Buttons */
+    .action-btn,
+    .delete-btn {
+        font-size: 0 !important;
+        padding: 0 !important;
+        width: 24px !important;
+        /* Comfortable touch size */
+        height: 24px !important;
+        min-width: 24px !important;
+        display: inline-flex !important;
+        /* Critical for alignment */
+        align-items: center;
+        justify-content: center;
+        margin: 0 1px !important;
+        box-sizing: border-box !important;
+        border-radius: 4px;
+    }
+
+    .action-btn svg,
+    .delete-btn svg {
+        width: 14px !important;
+        height: 14px !important;
+        margin: 0 !important;
+        display: block !important;
     }
 
     .delete-btn {
@@ -2608,25 +2346,6 @@ body:has(.table-container) .tab-content.active {
         padding: 2px 6px;
         font-size: 0.6rem;
         border-radius: 8px;
-    }
-
-    .expandable-row::before {
-        right: 4px;
-        font-size: 0.6rem;
-        opacity: 0;
-    }
-
-    .expandable-row:hover::before {
-        opacity: 0 !important;
-    }
-
-    .expandable-row.expanded::before {
-        opacity: 1 !important;
-    }
-
-    .expanded-details {
-        padding: 12px;
-        margin: 4px;
     }
 
     .detail-item {
