@@ -1641,6 +1641,96 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error updating faculty: ' . $e->getMessage()]);
         }
         break;
+        
+    case 'get_faculty_details':
+        validateUserSession('campus_director');
+        try {
+            $faculty_id = $_GET['faculty_id'] ?? null;
+            if (!$faculty_id) {
+                sendJsonResponse(['success' => false, 'message' => 'Faculty ID required']);
+                break;
+            }
+            
+            $stmt = $pdo->prepare("
+                SELECT f.*, u.full_name, u.username
+                FROM faculty f
+                JOIN users u ON f.user_id = u.user_id
+                WHERE f.faculty_id = ?
+            ");
+            $stmt->execute([$faculty_id]);
+            $faculty = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($faculty) {
+                sendJsonResponse(['success' => true, 'data' => $faculty]);
+            } else {
+                sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
+            }
+        } catch (Exception $e) {
+            sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+        break;
+        
+    case 'get_announcement_details':
+        validateUserSession('campus_director');
+        try {
+            $announcement_id = $_GET['announcement_id'] ?? null;
+            if (!$announcement_id) {
+                sendJsonResponse(['success' => false, 'message' => 'Announcement ID required']);
+                break;
+            }
+            
+            $stmt = $pdo->prepare("
+                SELECT a.*, u.full_name as created_by_name
+                FROM announcements a
+                JOIN users u ON a.created_by = u.user_id
+                WHERE a.announcement_id = ?
+            ");
+            $stmt->execute([$announcement_id]);
+            $announcement = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($announcement) {
+                sendJsonResponse(['success' => true, 'data' => $announcement]);
+            } else {
+                sendJsonResponse(['success' => false, 'message' => 'Announcement not found']);
+            }
+        } catch (Exception $e) {
+            sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+        break;
+        
+    case 'update_announcement':
+        validateUserSession('campus_director');
+        try {
+            $pdo->beginTransaction();
+            
+            $announcement_id = $_POST['announcement_id'] ?? null;
+            $title = trim($_POST['title'] ?? '');
+            $content = trim($_POST['content'] ?? '');
+            $priority = $_POST['priority'] ?? 'normal';
+            $target_audience = $_POST['target_audience'] ?? 'all';
+            
+            if (!$announcement_id || !$title || !$content) {
+                throw new Exception('Missing required fields');
+            }
+            
+            $stmt = $pdo->prepare("
+                UPDATE announcements 
+                SET title = ?, content = ?, priority = ?, target_audience = ?
+                WHERE announcement_id = ?
+            ");
+            $stmt->execute([$title, $content, $priority, $target_audience, $announcement_id]);
+            
+            if ($stmt->rowCount() > 0) {
+                $pdo->commit();
+                sendJsonResponse(['success' => true, 'message' => 'Announcement updated successfully']);
+            } else {
+                throw new Exception('Announcement not found or no changes made');
+            }
+        } catch (Exception $e) {
+            $pdo->rollback();
+            sendJsonResponse(['success' => false, 'message' => 'Error updating announcement: ' . $e->getMessage()]);
+        }
+        break;
     case 'get_iftl_weeks':
         $weeks = [];
         // Start from last Monday for consistency

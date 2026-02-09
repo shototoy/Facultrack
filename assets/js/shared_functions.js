@@ -252,7 +252,10 @@ function printAnnouncement(id) {
         ? dateDiv.getAttribute('data-full-date')
         : (dateDiv ? dateDiv.textContent.trim() : '');
 
-    const appRoot = window.location.origin + '/f/Facultrack/';
+    // Dynamically determine app root to support both localhost and production (Railway)
+    const path = window.location.pathname;
+    const directory = path.substring(0, path.lastIndexOf('/'));
+    const appRoot = window.location.origin + directory + '/';
 
     const printWindow = window.open('', '_blank', 'width=850,height=1100');
 

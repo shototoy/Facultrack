@@ -156,6 +156,9 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                 </td>
                                 <td class="program-column"><?php echo htmlspecialchars($announcement['target_audience']); ?></td>
                                 <td class="actions-column">
+                                    <button class="action-btn edit-btn" onclick="event.stopPropagation(); openEditAnnouncementModal(<?php echo $announcement['announcement_id']; ?>)" title="Edit">
+                                        <svg class="feather feather-sm"><use href="#edit"></use></svg> Edit
+                                    </button>
                                     <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_announcement', <?php echo $announcement['announcement_id']; ?>)">
                                         <svg class="feather feather-sm"><use href="#trash-2"></use></svg> Delete
                                     </button>
@@ -503,7 +506,10 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </div>
 
                 <div class="details-actions">
-                     <button class="delete-btn" onclick="deleteEntity('delete_announcement', ${announcement.announcement_id})">
+                    <button class="action-btn edit-btn" onclick="openEditAnnouncementModal(${announcement.announcement_id})">
+                        <svg class="feather"><use href="#edit"></use></svg> Edit
+                    </button>
+                    <button class="delete-btn" onclick="deleteEntity('delete_announcement', ${announcement.announcement_id})">
                         <svg class="feather"><use href="#trash-2"></use></svg> Delete
                     </button>
                 </div>
@@ -513,6 +519,138 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             modal.classList.add('show');
         }
 
+        async function openEditAnnouncementModal(announcementId) {
+            if(window.event) window.event.stopPropagation();
+            
+            const modal = document.getElementById('editAnnouncementModal');
+            const form = document.getElementById('editAnnouncementForm');
+            form.reset();
+            
+            try {
+                const response = await fetch(`assets/php/polling_api.php?action=get_announcement_details&announcement_id=${announcementId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    document.getElementById('editAnnouncementId').value = data.announcement_id;
+                    document.getElementById('editAnnouncementTitle').value = data.title;
+                    document.getElementById('editAnnouncementContent').value = data.content;
+                    document.getElementById('editAnnouncementPriority').value = data.priority;
+                    document.getElementById('editAnnouncementAudience').value = data.target_audience;
+                    
+                    closeModal('announcementDetailsModal');
+                    modal.classList.add('show');
+                } else {
+                    alert('Error fetching announcement details: ' + result.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error fetching details');
+            }
+        }
+        
+        async function submitEditAnnouncement() {
+            if (typeof showConfirmation === 'function') {
+                showConfirmation(
+                    'Update Announcement',
+                    'Are you sure you want to update this announcement?',
+                    async function() {
+                        const form = document.getElementById('editAnnouncementForm');
+                        const formData = new FormData(form);
+                        formData.append('action', 'update_announcement');
+                        
+                        try {
+                            const response = await fetch('assets/php/polling_api.php', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const result = await response.json();
+                            
+                            if (result.success) {
+                                alert('Announcement updated successfully');
+                                closeModal('editAnnouncementModal');
+                                location.reload();
+                            } else {
+                                alert('Error updating announcement: ' + result.message);
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            alert('Error updating announcement');
+                        }
+                    }
+                );
+                return;
+            }
+
+            const form = document.getElementById('editAnnouncementForm');
+            const formData = new FormData(form);
+            formData.append('action', 'update_announcement');
+            
+            try {
+                const response = await fetch('assets/php/polling_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Announcement updated successfully');
+                    closeModal('editAnnouncementModal');
+                    location.reload();
+                } else {
+                    alert('Error updating announcement: ' + result.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error updating announcement');
+            }
+        }
+
     </script>
+    
+    <div class="modal-overlay" id="editAnnouncementModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Announcement</h3>
+                <button type="button" class="modal-close" onclick="closeModal('editAnnouncementModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editAnnouncementForm" onsubmit="event.preventDefault(); submitEditAnnouncement();">
+                    <input type="hidden" name="announcement_id" id="editAnnouncementId">
+                    <div class="form-group">
+                        <label class="form-label">Title *</label>
+                        <input type="text" name="title" id="editAnnouncementTitle" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Content *</label>
+                        <textarea name="content" id="editAnnouncementContent" class="form-textarea" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            <select name="priority" id="editAnnouncementPriority" class="form-select">
+                                <option value="normal">Normal</option>
+                                <option value="important">Important</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Target Audience</label>
+                            <select name="target_audience" id="editAnnouncementAudience" class="form-select">
+                                <option value="all">All Users</option>
+                                <option value="faculty">Faculty Only</option>
+                                <option value="program_chair">Program Chairs Only</option>
+                                <option value="students">Students Only</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal('editAnnouncementModal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
