@@ -1487,6 +1487,22 @@ class LivePollingManager {
         const container = document.querySelector(containerSelector);
         if (!container) return;
     }
+    addToTable(tab, entityData) {
+        // Map tab name to entity type if necessary, but usually they match
+        // Director tabs: faculty, courses, classes, announcements
+        const tableBody = document.querySelector(`#${tab}-content .data-table tbody`);
+        if (!tableBody) return;
+
+        const rowHTML = this.createTableRow(entityData, tab);
+        if (rowHTML) {
+            tableBody.insertAdjacentHTML('beforeend', rowHTML);
+            const newRow = tableBody.lastElementChild;
+            if (newRow) {
+                newRow.style.animation = 'fadeIn 0.5s ease-out';
+            }
+        }
+    }
+
     createTableRow(item, type) {
         switch (type) {
             case 'faculty':

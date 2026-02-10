@@ -63,6 +63,9 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             <button class="tab-button" onclick="switchTab('announcements')" data-tab="announcements">
                 Announcements
             </button>
+            <button class="tab-button" onclick="switchTab('iftl')" data-tab="iftl">
+                IFTL
+            </button>
             <div class="search-bar">
                 <div class="search-container collapsed" id="searchContainer">
                     <input type="text" class="search-input" placeholder="Search..." id="searchInput">
@@ -171,6 +174,19 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             </div>
         </div>
         
+
+
+        <div class="tab-content" id="iftl-content">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Individual Faculty Teaching Load</h3>
+                </div>
+                <div class="empty-state">
+                    <h3>IFTL information will be displayed here.</h3>
+                    <p>Select a faculty member from the Faculty tab to view their IFTL.</p>
+                </div>
+            </div>
+        </div>
 
         <div class="modal-overlay" id="directorIFTLModal">
             <div class="modal large-modal">

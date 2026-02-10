@@ -13,6 +13,8 @@ function createSearchResultActions() {
                 searchTable(query, 'course');
             } else if (activeTab.id === 'announcements-content') {
                 searchTable(query, 'announcement');
+            } else if (activeTab.id === 'iftl-content') {
+                searchTable(query, 'iftl');
             }
         });
     }

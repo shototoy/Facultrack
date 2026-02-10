@@ -1279,7 +1279,8 @@ body:has(.table-container) .tab-content.active {
     background: linear-gradient(145deg, #ffffff, #f8f9fa);
     border-radius: 0px 0px 12px 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(46, 125, 50, 0.08);
-    overflow: visible;
+    overflow-y: auto;
+    overflow-x: hidden;
     border: 1px solid rgba(222, 226, 230, 0.3);
     backdrop-filter: blur(10px);
     position: relative;
@@ -1291,6 +1292,8 @@ body:has(.table-container) .tab-content.active {
         height: auto;
         max-height: none;
         overflow: visible;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     .data-table {
@@ -1993,8 +1996,8 @@ body:has(.table-container) .tab-content.active {
     .table-container {
         height: auto;
         max-height: none;
-        margin-bottom: 20px;
-        overflow: visible;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     .table-header {
@@ -2036,7 +2039,7 @@ body:has(.table-container) .tab-content.active {
         min-height: 120px;
         max-height: 140px;
         position: relative !important;
-        overflow: visible !important;
+        overflow: hidden !important;
     }
 
     .location-section .location-display {
@@ -2179,218 +2182,224 @@ body:has(.table-container) .tab-content.active {
 
     .dashboard-tabs {
         display: flex !important;
-        flex-wrap: nowrap !important;
-        overflow-x: auto;
-        overflow-y: hidden;
-        justify-content: space-between;
-        padding: 0 5px;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 5px;
+        padding: 5px;
     }
 
     .tab-button {
-        padding: 12px 10px !important;
+        padding: 10px 15px !important;
         font-size: 0.85rem !important;
-        white-space: nowrap;
-        flex-shrink: 0;
+        flex: 1 1 auto;
+        text-align: center;
     }
 
     .dashboard-tabs .search-bar {
-        margin-left: auto !important;
-        /* Forces search to the right */
-        padding: 5px !important;
-        flex-shrink: 0;
+        width: 100% !important;
+        margin-top: 10px !important;
+        margin-left: 0 !important;
+        order: 10;
+        display: flex !important;
+        justify-content: center !important;
     }
 
     .dashboard-tabs .search-container {
-        transform-origin: center !important;
-    }
-
-    .dashboard-tabs .search-container.expanded {
-        width: 100%;
-        transform-origin: center;
-    }
-
-    .dashboard-tabs .search-container.collapsed {
-        width: 32px;
-        height: 32px;
-        margin: 0 auto;
-        transform-origin: center;
-    }
-
-    .dashboard-tabs .search-toggle {
-        width: 32px;
-        height: 32px;
-        font-size: 0.9rem;
-    }
-
-    .dashboard-tabs .search-container.expanded .search-toggle {
-        width: 28px;
-        height: 28px;
-    }
-
-
-    .table-container,
-    body:has(.courses-grid) .tab-content.active,
-    body:has(.classes-grid) .tab-content.active,
-    body:has(.faculty-grid) .tab-content.active,
-    .home-content-wrapper {
-        height: auto !important;
-        min-height: 50vh !important;
-        margin-bottom: 20px;
-    }
-
-    .table-header {
-        padding: 12px;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-
-    }
-
-    .table-title {
-        display: none !important;
-    }
-
-    .table-actions {
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .add-btn,
-    .export-btn {
-        flex: 1;
-        min-width: 120px;
-        padding: 8px 12px;
-        font-size: 0.8rem;
-    }
-
-    .data-table {
-        font-size: 0.7rem;
-        table-layout: auto;
-    }
-
-    .data-table th,
-    .data-table td {
-        font-size: 0.7rem !important;
-        padding: 4px 2px !important;
-        white-space: normal !important;
-    }
-
-
-    #programs-content .data-table th,
-    #programs-content .data-table td {
-        width: auto;
-    }
-
-    #programs-content .data-table th:nth-child(1),
-    #programs-content .data-table td:nth-child(1) {
-        width: auto;
-        min-width: 50px;
-    }
-
-    #programs-content .data-table th:nth-child(2),
-    #programs-content .data-table td:nth-child(2) {
-        width: auto;
-        min-width: 80px;
-    }
-
-    #programs-content .data-table th:nth-child(3),
-    #programs-content .data-table td:nth-child(3) {
-        width: auto;
-        min-width: 100px;
-    }
-
-
-    .data-table .actions-column {
-        width: auto;
-        min-width: 70px;
-    }
-
-    .data-table .actions-column {
-        width: 1% !important;
-        /* Shrink to fit content */
-        white-space: nowrap !important;
-        min-width: auto !important;
-        padding: 4px 2px !important;
-        text-align: center !important;
-    }
-
-    /* Icon-only Buttons */
-    .action-btn,
-    .delete-btn {
-        font-size: 0 !important;
-        padding: 0 !important;
-        width: 24px !important;
-        /* Comfortable touch size */
-        height: 24px !important;
-        min-width: 24px !important;
-        display: inline-flex !important;
-        /* Critical for alignment */
-        align-items: center;
-        justify-content: center;
-        margin: 0 1px !important;
-        box-sizing: border-box !important;
-        border-radius: 4px;
-    }
-
-    .action-btn svg,
-    .delete-btn svg {
-        width: 14px !important;
-        height: 14px !important;
-        margin: 0 !important;
-        display: block !important;
-    }
-
-    .delete-btn {
-        padding: 4px 8px;
-        font-size: 0.65rem;
-        border-radius: 4px;
-        white-space: nowrap;
-        min-width: 60px;
-    }
-
-    .status-badge {
-        padding: 2px 6px;
-        font-size: 0.6rem;
-        border-radius: 8px;
-    }
-
-    .detail-item {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 4px 0;
-        gap: 2px;
-        line-height: 1.1;
-    }
-
-    .detail-label {
-        font-size: 0.8rem;
-        flex: none;
-        font-weight: 700;
-        color: #495057;
-        line-height: 1.1;
-    }
-
-    .detail-value {
-        font-size: 0.85rem;
-        text-align: left;
-        word-break: break-word;
-        color: #6c757d;
-        line-height: 1.1;
-    }
-
-    .main-container {
-        padding-top: 0 !important;
-        height: auto !important;
-    }
-
-
-    .dashboard-grid {
-        grid-template-columns: 1fr !important;
-        grid-template-rows: auto 1fr !important;
-        height: calc(100vh - 160px) !important;
+        width: 100% !important;
+        max-width: 400px;
     }
 }
+
+.dashboard-tabs .search-container {
+    transform-origin: center !important;
+}
+
+.dashboard-tabs .search-container.expanded {
+    width: 100%;
+    transform-origin: center;
+}
+
+.dashboard-tabs .search-container.collapsed {
+    width: 32px;
+    height: 32px;
+    margin: 0 auto;
+    transform-origin: center;
+}
+
+.dashboard-tabs .search-toggle {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+}
+
+.dashboard-tabs .search-container.expanded .search-toggle {
+    width: 28px;
+    height: 28px;
+}
+
+
+.table-container,
+body:has(.courses-grid) .tab-content.active,
+body:has(.classes-grid) .tab-content.active,
+body:has(.faculty-grid) .tab-content.active,
+.home-content-wrapper {
+    height: auto !important;
+    min-height: 50vh !important;
+}
+
+.table-header {
+    padding: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+
+}
+
+.table-title {
+    display: none !important;
+}
+
+.table-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.add-btn,
+.export-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+}
+
+.data-table {
+    font-size: 0.7rem;
+    table-layout: auto;
+}
+
+.data-table th,
+.data-table td {
+    font-size: 0.7rem !important;
+    padding: 4px 2px !important;
+    white-space: normal !important;
+}
+
+
+#programs-content .data-table th,
+#programs-content .data-table td {
+    width: auto;
+}
+
+#programs-content .data-table th:nth-child(1),
+#programs-content .data-table td:nth-child(1) {
+    width: auto;
+    min-width: 50px;
+}
+
+#programs-content .data-table th:nth-child(2),
+#programs-content .data-table td:nth-child(2) {
+    width: auto;
+    min-width: 80px;
+}
+
+#programs-content .data-table th:nth-child(3),
+#programs-content .data-table td:nth-child(3) {
+    width: auto;
+    min-width: 100px;
+}
+
+
+.data-table .actions-column {
+    width: auto;
+    min-width: 70px;
+}
+
+.data-table .actions-column {
+    width: 1% !important;
+    /* Shrink to fit content */
+    white-space: nowrap !important;
+    min-width: auto !important;
+    padding: 4px 2px !important;
+    text-align: center !important;
+}
+
+/* Icon-only Buttons */
+.action-btn,
+.delete-btn {
+    font-size: 0 !important;
+    padding: 0 !important;
+    width: 24px !important;
+    /* Comfortable touch size */
+    height: 24px !important;
+    min-width: 24px !important;
+    display: inline-flex !important;
+    /* Critical for alignment */
+    align-items: center;
+    justify-content: center;
+    margin: 0 1px !important;
+    box-sizing: border-box !important;
+    border-radius: 4px;
+}
+
+.action-btn svg,
+.delete-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+    margin: 0 !important;
+    display: block !important;
+}
+
+.delete-btn {
+    padding: 4px 8px;
+    font-size: 0.65rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    min-width: 60px;
+}
+
+.status-badge {
+    padding: 2px 6px;
+    font-size: 0.6rem;
+    border-radius: 8px;
+}
+
+.detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 4px 0;
+    gap: 2px;
+    line-height: 1.1;
+}
+
+.detail-label {
+    font-size: 0.8rem;
+    flex: none;
+    font-weight: 700;
+    color: #495057;
+    line-height: 1.1;
+}
+
+.detail-value {
+    font-size: 0.85rem;
+    text-align: left;
+    word-break: break-word;
+    color: #6c757d;
+    line-height: 1.1;
+}
+
+.main-container {
+    padding-top: 0 !important;
+    height: auto !important;
+}
+
+
+.dashboard-grid {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto 1fr !important;
+    height: calc(100vh - 160px) !important;
+}
+
 
 
 .location-section {
@@ -2402,7 +2411,7 @@ body:has(.table-container) .tab-content.active {
     min-height: 100px;
     max-height: 120px;
     position: relative !important;
-    overflow: visible !important;
+    overflow: hidden !important;
 }
 
 .location-section .location-display {
