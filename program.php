@@ -947,6 +947,42 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
         .no-data svg {
             color: #ccc;
         }
+        
+        /* Unified Empty State Styles */
+        .empty-state-container {
+            grid-column: 1 / -1;
+            width: 100%;
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            border: 2px dashed rgba(0, 0, 0, 0.1);
+        }
+        .empty-state-icon {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+            color: var(--primary-green);
+        }
+        .empty-state-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        .empty-state-description {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            max-width: 400px;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
@@ -1022,16 +1058,33 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                     Object.keys(phpFacultySchedules).forEach(facultyId => {
                         facultySchedules[facultyId] = phpFacultySchedules[facultyId];
                     });
+
+                    // Unified Empty State Generator
+                    function getEmptyStateHTML(title, description) {
+                        return `
+                            <div class="empty-state-container">
+                                <svg class="feather empty-state-icon"><use href="#inbox"></use></svg>
+                                <div class="empty-state-title">${title}</div>
+                                <div class="empty-state-description">${description}</div>
+                            </div>
+                        `;
+                    }
+
                     document.addEventListener('DOMContentLoaded', function() {
                         const facultyGrid = document.querySelector('.faculty-grid');
                         const facultyData = window.facultyData || [];
+                        
+                        // Clear existing dynamic cards (keep the first add-card)
+                        const dynamicCards = facultyGrid.querySelectorAll('.faculty-card');
+                        dynamicCards.forEach(card => card.remove());
+                        const existingEmpty = facultyGrid.querySelector('.empty-state-container');
+                        if (existingEmpty) existingEmpty.remove();
+
                         if (facultyData.length === 0) {
-                            facultyGrid.innerHTML = `
-                                <div class="empty-state">
-                                    <h3>No faculty members found</h3>
-                                    <p>No faculty members are currently assigned to the <?php echo htmlspecialchars($program); ?> program</p>
-                                </div>
-                            `;
+                            facultyGrid.insertAdjacentHTML('beforeend', getEmptyStateHTML(
+                                'No faculty members found', 
+                                'No faculty members are currently assigned to the <?php echo htmlspecialchars($program); ?> program'
+                            ));
                         } else {
                             facultyData.forEach(faculty => {
                                 const cardHTML = window.livePollingManager ? 
@@ -1082,20 +1135,22 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                 </div>
             </div>
             <div class="tab-content" id="courses-content">
-                <?php if (empty($courses_data)): ?>
-                    <div class="empty-state">
-                        <h3>No courses found</h3>
-                        <p>No courses are currently scheduled under the <?php echo htmlspecialchars($program); ?> program</p>
-                    </div>
-                <?php else: ?>
-                    <div class="courses-grid">
-                        <div class="add-card add-card-course add-card-first" data-modal="addCourseModal">
-                            <div class="add-card-icon add-card-course-icon">
-                                <svg class="feather"><use href="#book-open"></use></svg>
-                            </div>
-                            <div class="add-card-title">Add Course</div>
-                            <div class="add-card-subtitle">Create a new course entry</div>
+                <div class="courses-grid">
+                    <div class="add-card add-card-course add-card-first" data-modal="addCourseModal">
+                        <div class="add-card-icon add-card-course-icon">
+                            <svg class="feather"><use href="#book-open"></use></svg>
                         </div>
+                        <div class="add-card-title">Add Course</div>
+                        <div class="add-card-subtitle">Create a new course entry</div>
+                    </div>
+                    <?php if (empty($courses_data)): ?>
+                        <script>
+                            document.write(getEmptyStateHTML(
+                                'No courses found',
+                                'No courses are currently scheduled under the <?php echo htmlspecialchars($program); ?> program'
+                            ));
+                        </script>
+                    <?php else: ?>
                         <?php foreach ($courses_data as $course): ?>
                             <div class="course-card" data-course="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-id="<?php echo $course['course_id']; ?>">
                                 <div class="course-card-content">
@@ -1133,8 +1188,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                                 </button>
                             </div>
                         <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="tab-content" id="classes-content">
                 <div class="classes-grid" id="classesGrid">
@@ -1152,13 +1207,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                     document.addEventListener('DOMContentLoaded', function() {
                         const classGrid = document.querySelector('.classes-grid');
                         const classesData = window.classesData || [];
+                        
+                        // Clear existing dynamic cards
+                        const dynamicCards = classGrid.querySelectorAll('.class-card');
+                        dynamicCards.forEach(card => card.remove());
+                        const existingEmpty = classGrid.querySelector('.empty-state-container');
+                        if (existingEmpty) existingEmpty.remove();
+
                         if (classesData.length === 0) {
-                            classGrid.innerHTML = `
-                                <div class="no-data">
-                                    <h3>No classes assigned</h3>
-                                    <p>No classes are currently under your supervision</p>
-                                </div>
-                            `;
+                            classGrid.insertAdjacentHTML('beforeend', getEmptyStateHTML(
+                                'No classes assigned',
+                                'No classes are currently under your supervision'
+                            ));
                         } else {
                             classesData.forEach(classItem => {
                                 const cardHTML = createSophisticatedClassCard(classItem);

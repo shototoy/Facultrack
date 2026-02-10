@@ -178,14 +178,27 @@ function updateEmptyState(containerSelector, visibleCount, searchTerm, title, me
     if (existingEmptyState) {
         existingEmptyState.remove();
     }
+    const existingMainEmptyState = container.querySelector('.empty-state-container:not(.search-empty-state)');
+    if (existingMainEmptyState && visibleCount > 0) {
+        // Hide main empty state if search has results? 
+        // Actually main empty state means NO data at all, so search wouldn't find anything anyway.
+        // But if we are searching, we assume data exists but filtered.
+    }
+
     if (visibleCount === 0 && searchTerm.trim() !== '') {
-        const emptyState = document.createElement('div');
-        emptyState.className = 'empty-state search-empty-state';
-        emptyState.innerHTML = `
-            <h3>${title}</h3>
-            <p>${message}</p>
-        `;
-        container.appendChild(emptyState);
+        if (typeof getEmptyStateHTML === 'function') {
+            container.insertAdjacentHTML('beforeend', getEmptyStateHTML(title, message));
+            const added = container.lastElementChild;
+            if (added) added.classList.add('search-empty-state');
+        } else {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state search-empty-state';
+            emptyState.innerHTML = `
+                <h3>${title}</h3>
+                <p>${message}</p>
+            `;
+            container.appendChild(emptyState);
+        }
     }
 }
 function contactFaculty(email) {
