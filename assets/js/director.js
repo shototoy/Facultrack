@@ -197,10 +197,11 @@ async function emailAnnouncement(announcement) {
         `Target Audience: ${announcement.target_audience}\n\n` +
         `${announcement.content}\n\n` +
         `--\nSent via FaculTrack`;
+
     let ccEmails = [];
-    if (announcement.target_audience === 'faculty' || announcement.target_audience === 'program_chairs' || announcement.target_audience === 'all') {
+    if (announcement.target_audience) {
         try {
-            const response = await fetch(`assets/php/polling_api.php?action=get_audience_emails&audience=${announcement.target_audience}`);
+            const response = await fetch(`assets/php/polling_api.php?action=get_audience_emails&audience=${encodeURIComponent(announcement.target_audience)}`);
             const data = await response.json();
             if (data.success && Array.isArray(data.emails)) {
                 ccEmails = data.emails;
@@ -213,7 +214,7 @@ async function emailAnnouncement(announcement) {
     const mailtoLink = `mailto:${recipientString}?subject=${subject}&body=${encodeURIComponent(bodyContent)}`;
     const link = document.createElement('a');
     link.href = mailtoLink;
-    link.target = '_blank'; 
+    link.target = '_blank';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

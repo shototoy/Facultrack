@@ -1424,6 +1424,41 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
+    case 'get_audience_emails':
+        if ($_SESSION['role'] !== 'campus_director' && $_SESSION['role'] !== 'program_chair') {
+            sendJsonResponse(['success' => false, 'message' => 'Unauthorized access'], 403);
+            break;
+        }
+        $audience = $_GET['audience'] ?? '';
+        $emails = [];
+        try {
+            if (strtolower($audience) === 'all' || strtolower($audience) === 'faculty' || strtolower($audience) === 'all faculty') {
+                $stmt = $pdo->prepare("SELECT contact_email FROM faculty WHERE contact_email IS NOT NULL AND contact_email != '' AND is_active = TRUE");
+                $stmt->execute();
+                $emails = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            } elseif (strtolower($audience) === 'program_chairs' || strtolower($audience) === 'program chairs') {
+                 $stmt = $pdo->prepare("
+                    SELECT f.contact_email 
+                    FROM faculty f 
+                    JOIN users u ON f.user_id = u.user_id 
+                    WHERE u.role = 'program_chair' 
+                    AND f.contact_email IS NOT NULL 
+                    AND f.contact_email != '' 
+                    AND f.is_active = TRUE
+                ");
+                $stmt->execute();
+                $emails = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            } else {
+                // Assume audience is a program name
+                $stmt = $pdo->prepare("SELECT contact_email FROM faculty WHERE program = ? AND contact_email IS NOT NULL AND contact_email != '' AND is_active = TRUE");
+                $stmt->execute([$audience]);
+                $emails = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            }
+            sendJsonResponse(['success' => true, 'emails' => $emails]);
+        } catch (Exception $e) {
+            sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        }
+        break;
     case 'get_schedule':
         validateUserSession('faculty');
         $days = $_POST['days'] ?? '';
