@@ -6,10 +6,8 @@ $pdo->exec("SET time_zone = '+08:00'");
 validateUserSession('program_chair');
 $user_id = $_SESSION['user_id'];
 $program_chair_name = $_SESSION['full_name'];
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
-    
     switch ($_POST['action']) {
         case 'assign_course_load':
             try {
@@ -21,78 +19,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $time_end = $_POST['time_end'];
                 $room = $_POST['room'] ?? null;
                 $is_edit_mode = $_POST['is_edit_mode'] === 'true';
-                
                 if ($is_edit_mode) {
                     $original_course = $_POST['original_course_code'];
                     $original_time = $_POST['original_time_start'];
                     $original_days = $_POST['original_days'];
-                    
                     $delete_stmt = $pdo->prepare("DELETE FROM schedules WHERE faculty_id = ? AND course_code = ? AND time_start = ? AND days = ? AND is_active = TRUE");
                     $delete_stmt->execute([$faculty_id, $original_course, $original_time, $original_days]);
                 }
-                
                 $insert_stmt = $pdo->prepare("INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)");
                 $insert_stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room]);
-                
                 echo json_encode(['success' => true, 'message' => $is_edit_mode ? 'Course updated successfully' : 'Course assigned successfully']);
             } catch (Exception $e) {
                 echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
             exit;
-            
         case 'delete_schedule':
             try {
                 $faculty_id = $_POST['faculty_id'];
                 $course_code = $_POST['course_code'];
                 $time_start = $_POST['time_start'];
                 $days = $_POST['days'];
-                
                 $stmt = $pdo->prepare("DELETE FROM schedules WHERE faculty_id = ? AND course_code = ? AND time_start = ? AND days = ? AND is_active = TRUE");
                 $stmt->execute([$faculty_id, $course_code, $time_start, $days]);
-                
                 echo json_encode(['success' => true, 'message' => 'Schedule deleted successfully']);
             } catch (Exception $e) {
                 echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
             exit;
-            
         case 'get_courses_and_classes':
             try {
                 $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
                 $stmt->execute([$user_id]);
                 $program = $stmt->fetchColumn();
-                
                 $courses_query = "SELECT c.course_code, c.course_description FROM courses c LEFT JOIN programs p ON c.program_id = p.program_id WHERE c.is_active = TRUE AND p.program_name = ? ORDER BY c.course_code";
                 $stmt = $pdo->prepare($courses_query);
                 $stmt->execute([$program]);
                 $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
                 echo json_encode(['success' => true, 'courses' => $courses]);
             } catch (Exception $e) {
                 echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
             exit;
-            
         case 'get_classes_for_course':
             try {
                 $course_code = $_POST['course_code'];
                 $stmt = $pdo->prepare("SELECT DISTINCT c.class_id, c.class_code, c.class_name, c.year_level FROM classes c JOIN curriculum curr ON c.year_level = curr.year_level AND c.semester = curr.semester WHERE curr.course_code = ? AND c.is_active = TRUE AND curr.is_active = TRUE ORDER BY c.class_code");
                 $stmt->execute([$course_code]);
                 $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
                 echo json_encode(['success' => true, 'classes' => $classes]);
             } catch (Exception $e) {
                 echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
             exit;
-            
         case 'get_room_options':
             $rooms = ['Room 101', 'Room 102', 'Room 103', 'Room 201', 'Room 202', 'Room 203', 'Computer Lab 1', 'Computer Lab 2', 'TBA'];
             echo json_encode(['success' => true, 'rooms' => $rooms]);
             exit;
     }
 }
-
 $chair_info = getProgramChairInfo($pdo, $user_id);
 $program = $chair_info ? $chair_info['program'] : 'Unknown Program';
 $classes_data = getProgramClasses($pdo, $user_id);
@@ -109,7 +93,6 @@ if (!empty($class_ids)) {
     $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
     $stmt->execute([$user_id]);
     $program = $stmt->fetchColumn();
-    
     $courses_query = "
         SELECT DISTINCT c.course_id, c.course_code, c.course_description, c.units,
                COUNT(s.schedule_id) as times_scheduled
@@ -131,7 +114,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 function checkDayOverlap($days1, $days2) {
     $days1 = strtoupper(trim($days1));
     $days2 = strtoupper(trim($days2));
-    
     $parseDays = function($dayString) {
         $dayString = str_replace(' ', '', $dayString);
         $days = [];
@@ -147,10 +129,8 @@ function checkDayOverlap($days1, $days2) {
         }
         return $days;
     };
-    
     $arr1 = $parseDays($days1);
     $arr2 = $parseDays($days2);
-    
     return count(array_intersect($arr1, $arr2)) > 0;
 }
 function checkTimeOverlap($start1, $end1, $start2, $end2) {
@@ -296,7 +276,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
         $original_course = $is_edit ? ($_POST['original_course_code'] ?? '') : '';
         $original_time_start = $is_edit ? ($_POST['original_time_start'] ?? '') : '';
         $original_days = $is_edit ? ($_POST['original_days'] ?? '') : '';
-        
         if (strtotime($time_end) <= strtotime($time_start)) {
             echo json_encode(['success' => false, 'message' => 'End time must be after start time']);
             exit;
@@ -774,7 +753,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
     }
     exit;
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -947,8 +925,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
         .no-data svg {
             color: #ccc;
         }
-        
-        /* Unified Empty State Styles */
         .empty-state-container {
             grid-column: auto / -1;
             width: auto;
@@ -1042,25 +1018,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                         <div class="add-card-title">Add Faculty Member</div>
                         <div class="add-card-subtitle">Register a new faculty member</div>
                     </div>
-
                     <script>
                     window.facultyData = <?php echo json_encode($faculty_data); ?>;
-                    
                     const facultyNames = {};
                     const facultySchedules = {};
-                    
                     const phpFacultyData = <?php echo json_encode($faculty_data); ?> || [];
                     const phpFacultySchedules = <?php echo json_encode($faculty_schedules); ?> || {};
-                    
                     phpFacultyData.forEach(faculty => {
                         facultyNames[faculty.faculty_id] = faculty.full_name;
                     });
-                    
                     Object.keys(phpFacultySchedules).forEach(facultyId => {
                         facultySchedules[facultyId] = phpFacultySchedules[facultyId];
                     });
-
-                    // Unified Empty State Generator
                     function getEmptyStateHTML(title, description) {
                         return `
                             <div class="empty-state-container">
@@ -1070,17 +1039,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                             </div>
                         `;
                     }
-
                     document.addEventListener('DOMContentLoaded', function() {
                         const facultyGrid = document.querySelector('.faculty-grid');
                         const facultyData = window.facultyData || [];
-                        
-                        // Clear existing dynamic cards (keep the first add-card)
                         const dynamicCards = facultyGrid.querySelectorAll('.faculty-card');
                         dynamicCards.forEach(card => card.remove());
                         const existingEmpty = facultyGrid.querySelector('.empty-state-container');
                         if (existingEmpty) existingEmpty.remove();
-
                         if (facultyData.length === 0) {
                             facultyGrid.insertAdjacentHTML('beforeend', getEmptyStateHTML(
                                 'No faculty members found', 
@@ -1201,20 +1166,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                         <div class="add-card-title">Add Class</div>
                         <div class="add-card-subtitle">Assign a new class group</div>
                     </div>
-
                     <script>
                     window.classesData = <?php echo json_encode($classes_data); ?>;
                     window.classSchedules = <?php echo json_encode($class_schedules); ?>;
                     document.addEventListener('DOMContentLoaded', function() {
                         const classGrid = document.querySelector('.classes-grid');
                         const classesData = window.classesData || [];
-                        
-                        // Clear existing dynamic cards
                         const dynamicCards = classGrid.querySelectorAll('.class-card');
                         dynamicCards.forEach(card => card.remove());
                         const existingEmpty = classGrid.querySelector('.empty-state-container');
                         if (existingEmpty) existingEmpty.remove();
-
                         if (classesData.length === 0) {
                             classGrid.insertAdjacentHTML('beforeend', getEmptyStateHTML(
                                 'No classes assigned',

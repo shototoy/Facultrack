@@ -4,7 +4,6 @@ $username = getenv('DB_USER') ?: getenv('MYSQLUSER') ?: 'root';
 $password = getenv('DB_PASSWORD') ?: getenv('MYSQLPASSWORD') ?: '';
 $dbname = getenv('DB_NAME') ?: getenv('MYSQLDATABASE') ?: 'facultrack_db';
 $port = getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: 3306;
-
 function initializeDatabase() {
     global $servername, $username, $password, $dbname, $port;
     try {

@@ -1,51 +1,40 @@
 function printFacultySchedule(facultyId) {
     const facultyName = facultyNames[facultyId] || 'Unknown Faculty';
     const schedules = facultySchedules[facultyId] || [];
-
     const { mwfSchedules, tthSchedules } = separateSchedulesByType(schedules);
     const summary = calculateSummaryData(schedules);
-
     const printWindow = window.open('', '_blank', 'width=1200,height=800');
     printWindow.document.write(generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary));
     printWindow.document.close();
-
     printWindow.onload = () => {
         setTimeout(() => printWindow.print(), 500);
     };
 }
-
 function separateSchedulesByType(schedules) {
     const mwfSchedules = [];
     const tthSchedules = [];
-
     schedules.forEach(schedule => {
         const days = schedule.days.toUpperCase();
         if (/[MWF]/.test(days)) mwfSchedules.push(schedule);
         if (/T|TH|S/.test(days)) tthSchedules.push(schedule);
     });
-
     return { mwfSchedules, tthSchedules };
 }
-
 function calculateSummaryData(schedules) {
     const preparations = new Set();
     let totalClassHours = 0;
     let lectureUnits = 0;
     let labUnits = 0;
-
     schedules.forEach(schedule => {
         preparations.add(schedule.course_code);
-
         const start = new Date(`2000-01-01 ${schedule.time_start}`);
         const end = new Date(`2000-01-01 ${schedule.time_end}`);
         const hours = (end - start) / (1000 * 60 * 60);
         const dayCount = countDaysInSchedule(schedule.days);
         totalClassHours += hours * dayCount;
-
         const units = parseFloat(schedule.units || 3);
         lectureUnits += units;
     });
-
     const actualTeachingLoad = lectureUnits + labUnits;
     const normalLoad = 18;
     const overload = actualTeachingLoad - normalLoad;
@@ -53,7 +42,6 @@ function calculateSummaryData(schedules) {
     const officeHours = Math.max(0, maxDailyHours - Math.round(totalClassHours));
     const consultationHours = 4;
     const totalHours = totalClassHours + officeHours + consultationHours;
-
     return {
         preparations: preparations.size,
         loadDisplacement: 12,
@@ -71,7 +59,6 @@ function calculateSummaryData(schedules) {
         totalHours: Math.round(totalHours)
     };
 }
-
 function countDaysInSchedule(days) {
     const dayString = days.toUpperCase().replace(/\s/g, '');
     let count = 0;
@@ -87,7 +74,6 @@ function countDaysInSchedule(days) {
     }
     return count;
 }
-
 function generateTimeSlots(type) {
     if (type === 'MWF') {
         return [
@@ -101,10 +87,8 @@ function generateTimeSlots(type) {
         ];
     }
 }
-
 function findScheduleForSlot(schedules, day, timeSlot) {
     const [slotStart] = timeSlot.split('-');
-
     const normalizeTime = (time) => {
         const parts = time.split(':');
         const hours = parts[0].padStart(2, '0');
@@ -112,9 +96,7 @@ function findScheduleForSlot(schedules, day, timeSlot) {
         const seconds = parts[2] || '00';
         return `${hours}:${minutes}:${seconds}`;
     };
-
     const slotStartTime = normalizeTime(slotStart);
-
     const dayMap = {
         'MONDAY': 'M',
         'WEDNESDAY': 'W',
@@ -123,27 +105,20 @@ function findScheduleForSlot(schedules, day, timeSlot) {
         'THURSDAY': 'TH',
         'SATURDAY': 'S'
     };
-
     return schedules.find(schedule => {
         const scheduleDays = schedule.days.toUpperCase();
         const hasDayMatch = scheduleDays.includes(dayMap[day]);
-
         const scheduleStart = normalizeTime(schedule.time_start);
         const hasTimeMatch = scheduleStart === slotStartTime;
-
         return hasDayMatch && hasTimeMatch;
     });
 }
-
 function generateScheduleGrid(type, schedules) {
     const days = type === 'MWF'
         ? ['MONDAY', 'WEDNESDAY', 'FRIDAY']
         : ['TUESDAY', 'THURSDAY', 'SATURDAY'];
-
     const timeSlots = generateTimeSlots(type);
-
     const occupiedCells = {};
-
     let html = `
         <table class="schedule-grid">
             <thead>
@@ -161,26 +136,19 @@ function generateScheduleGrid(type, schedules) {
             </thead>
             <tbody>
     `;
-
     timeSlots.forEach((slot, slotIndex) => {
         html += `<tr><td class="time-col">${slot}</td>`;
-
         days.forEach((day, dayIndex) => {
             const cellKey = `${slotIndex}-${dayIndex}`;
-
             if (occupiedCells[cellKey]) {
                 return;
             }
-
             const schedule = findScheduleForSlot(schedules, day, slot);
-
             if (schedule) {
                 const rowspan = calculateRowspan(schedule.time_start, schedule.time_end, type);
-
                 for (let i = 1; i < rowspan; i++) {
                     occupiedCells[`${slotIndex + i}-${dayIndex}`] = true;
                 }
-
                 const rowspanAttr = rowspan > 1 ? ` rowspan="${rowspan}"` : '';
                 html += `
                     <td${rowspanAttr}>${schedule.course_code || ''}</td>
@@ -191,10 +159,8 @@ function generateScheduleGrid(type, schedules) {
                 html += `<td></td><td></td><td></td>`;
             }
         });
-
         html += '</tr>';
     });
-
     html += `
             </tbody>
             <tfoot>
@@ -213,19 +179,15 @@ function generateScheduleGrid(type, schedules) {
             </tfoot>
         </table>
     `;
-
     return html;
 }
-
 function calculateRowspan(startTime, endTime, scheduleType) {
     const start = new Date(`2000-01-01 ${startTime}`);
     const end = new Date(`2000-01-01 ${endTime}`);
     const durationHours = (end - start) / (1000 * 60 * 60);
-
     const slotDuration = scheduleType === 'MWF' ? 1 : 1.5;
     return Math.ceil(durationHours / slotDuration);
 }
-
 function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
     return `
 <!DOCTYPE html>
@@ -238,13 +200,11 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
             size: A4 landscape;
             margin: 0.5cm;
         }
-        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
         body {
             font-family: Arial, sans-serif;
             font-size: 7pt;
@@ -255,7 +215,6 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
             justify-content: center;
             align-items: flex-start;
         }
-        
         .container {
             display: grid;
             grid-template-columns: 1fr 200px;
@@ -264,12 +223,10 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
             width: 100%;
             align-items: start;
         }
-        
         .left-section {
             display: flex;
             flex-direction: column;
         }
-        
         .summary-box {
             border: 1px solid #000;
             padding: 5px;
@@ -277,7 +234,6 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
             height: fit-content;
             margin-top: 90px;
         }
-        
         .header {
             display: flex;
             align-items: center;
@@ -287,36 +243,29 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
             grid-column: 1 / -1;
             width: 100%;
         }
-
         .header-text {
             text-align: center;
         }
-        
         .logo {
             width: 60px;
             height: 60px;
             object-fit: contain;
         }
-
-        
         .header h2 {
             font-size: 11pt;
             margin: 2px 0;
             font-weight: bold;
         }
-        
         .header h3 {
             font-size: 10pt;
             margin: 2px 0;
             font-weight: bold;
         }
-        
         .header p {
             font-size: 9pt;
             margin: 2px 0;
             font-weight: bold;
         }
-        
         .faculty-info {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -326,23 +275,19 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
             border: 1px solid #000;
             padding: 4px;
         }
-        
         .faculty-info div {
             display: flex;
             gap: 3px;
         }
-        
         .faculty-info strong {
             min-width: 70px;
         }
-        
         .schedule-grid {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 5px;
             font-size: 6pt;
         }
-        
         .schedule-grid th,
         .schedule-grid td {
             border: 1px solid #000;
@@ -351,56 +296,45 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
             height: 14px;
             overflow: hidden;
         }
-        
         .schedule-grid thead th {
             background-color: #f0f0f0;
             font-weight: bold;
             font-size: 6.5pt;
         }
-        
         .time-col {
             width: 55px;
             font-size: 5.5pt;
         }
-        
         .schedule-grid tbody td {
             font-size: 5.5pt;
         }
-        
         .schedule-grid tfoot td {
             font-weight: bold;
             background-color: #f9f9f9;
         }
-        
-        
         .summary-box h4 {
             text-align: center;
             margin-bottom: 5px;
             font-size: 7pt;
             font-weight: bold;
         }
-        
         .summary-box table {
             width: 100%;
             border-collapse: collapse;
         }
-        
         .summary-box td {
             padding: 1px 2px;
             border-bottom: 1px solid #ddd;
             font-size: 6pt;
         }
-        
         .summary-box td:first-child {
             text-align: left;
         }
-        
         .summary-box td:last-child {
             text-align: right;
             font-weight: bold;
             width: 30px;
         }
-        
         .footer {
             margin-top: 8px;
             display: grid;
@@ -409,22 +343,18 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
             font-size: 6.5pt;
             grid-column: 1 / -1;
         }
-        
         .footer-section {
             text-align: center;
         }
-        
         .footer-section p {
             margin: 2px 0;
         }
-        
         .signature-line {
             border-top: 1px solid #000;
             margin-top: 25px;
             padding-top: 2px;
             font-weight: bold;
         }
-        
         @media print {
             body {
                 padding: 0;
@@ -444,19 +374,15 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
             </div>
             <img src="assets/images/logo2.png" alt="ACCESS Logo" class="logo" onerror="this.style.display='none'">
         </div>
-        
         <div class="left-section">
-            
             <div class="faculty-info">
                 <div><strong>Name:</strong> <span>${facultyName}</span></div>
                 <div><strong>College:</strong> <span>Teacher Education</span></div>
                 <div><strong>Department:</strong> <span>Secondary</span></div>
                 <div><strong>Designation:</strong> <span>Division Director</span></div>
             </div>
-            
             ${generateScheduleGrid('MWF', mwfSchedules)}
             ${generateScheduleGrid('TTH', tthSchedules)}
-            
             <div class="footer">
                 <div class="footer-section">
                     <p>Prepared by:</p>
@@ -473,7 +399,6 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
                 </div>
             </div>
         </div>
-        
         <div class="summary-box">
             <h4>SUMMARY OF INFORMATION</h4>
             <table>
@@ -507,3 +432,4 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
 </html>
     `;
 }
+

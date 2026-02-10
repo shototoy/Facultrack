@@ -101,7 +101,6 @@ function getAllCourses($pdo) {
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 function getAllPrograms($pdo) {
     $programs_query = "
         SELECT 
@@ -163,7 +162,6 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
     $schedule_query = "
         SELECT s.*, c.course_description, cl.class_name, cl.class_code,
             CASE 
-
                 WHEN '$viewing_day' = '$today_code' THEN
                     CASE 
                         WHEN TIME(NOW()) > s.time_end THEN 'finished'
@@ -171,7 +169,6 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
                         WHEN TIME(NOW()) < s.time_start THEN 'upcoming'
                         ELSE 'finished'
                     END
-
                 WHEN (
                     ('$viewing_day' = 'M' AND '$today_code' IN ('T', 'W', 'TH', 'F', 'S')) OR
                     ('$viewing_day' = 'T' AND '$today_code' IN ('W', 'TH', 'F', 'S')) OR
@@ -180,7 +177,6 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
                     ('$viewing_day' = 'F' AND '$today_code' = 'S') OR
                     ('$viewing_day' = 'S' AND '$today_code' = 'M')
                 ) THEN 'finished'
-
                 WHEN (
                     ('$viewing_day' = 'T' AND '$today_code' = 'M') OR
                     ('$viewing_day' = 'W' AND '$today_code' IN ('M', 'T')) OR
@@ -539,20 +535,16 @@ switch ($action) {
             }
             try {
                 $pdo->beginTransaction();
-                
                 $stmt = $pdo->prepare("SELECT COUNT(*) FROM courses WHERE program_id = ? AND is_active = TRUE");
                 $stmt->execute([$program_id]);
                 $courseCount = $stmt->fetchColumn();
-                
                 if ($courseCount > 0) {
                     $pdo->rollback();
                     sendJsonResponse(['success' => false, 'message' => 'Cannot delete program: ' . $courseCount . ' courses are still assigned to this program']);
                     break;
                 }
-                
                 $stmt = $pdo->prepare("DELETE FROM programs WHERE program_id = ?");
                 $stmt->execute([$program_id]);
-                
                 if ($stmt->rowCount() > 0) {
                     $pdo->commit();
                     sendJsonResponse(['success' => true, 'message' => 'Program deleted successfully']);
@@ -667,9 +659,7 @@ switch ($action) {
                             $stmt = $pdo->prepare("SELECT COUNT(*) FROM {$c['generate_id']['table']} WHERE {$c['generate_id']['column']} LIKE ?");
                             $stmt->execute([$prefix . '%']);
                             $count = $stmt->fetchColumn();
-                            // If attempts > 0, it means the ID generated from count collided, so add attempt count to skip ahead
                             $next_id = $prefix . str_pad($count + 1 + $attempts, 4, '0', STR_PAD_LEFT);
-                            
                             $stmt = $pdo->prepare("SELECT 1 FROM {$c['generate_id']['table']} WHERE {$c['generate_id']['column']} = ?");
                             $stmt->execute([$next_id]);
                             if (!$stmt->fetch()) {
@@ -808,7 +798,6 @@ switch ($action) {
             } elseif ($user_role === 'faculty') {
                 $stmt = $pdo->prepare("UPDATE faculty SET is_active = 1 WHERE user_id = ?");
                 $stmt->execute([$user_id]);
-                
                 $faculty_query = "
                     SELECT 
                         f.faculty_id,
@@ -1014,9 +1003,7 @@ switch ($action) {
     case 'get_iftl_faculty_list':
         validateUserSession('campus_director');
         try {
-            $week_identifier = date('Y') . '-W' . date('W'); // Current week
-            
-            // Query faculty with IFTL status
+            $week_identifier = date('Y') . '-W' . date('W'); 
             $query = "
                 SELECT 
                     f.faculty_id, 
@@ -1033,25 +1020,15 @@ switch ($action) {
                 WHERE u.role NOT IN ('program_chair', 'campus_director')
                 ORDER BY u.full_name ASC
             ";
-            
             $stmt = $pdo->prepare($query);
             $stmt->execute([$week_identifier]);
             $faculty_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Debugging if empty: Check total faculty count without filter
             if (empty($faculty_list)) { 
                 $debug_query = "SELECT u.full_name, u.role FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.is_active = TRUE";
                 $stmt_debug = $pdo->prepare($debug_query);
                 $stmt_debug->execute();
                 $all_faculty = $stmt_debug->fetchAll(PDO::FETCH_ASSOC);
-                 // If you want to see this in network tab, temporary change response structure
-                 // sendJsonResponse(['success' => true, 'faculty' => [], 'debug_all' => $all_faculty, 'week' => $week_identifier]); 
-                 // But for now, let's just make sure the filter isn't too aggressive. 
-                 // It is possible the role stored in DB is 'Program Chair' not 'program_chair' or something?
-                 // But wait, the standard get_dashboard_data works. 
-                 // Let's try removing the filter temporarily to see if data appears.
             }
-            
             sendJsonResponse([
                 'success' => true,
                 'faculty' => $faculty_list,
@@ -1128,15 +1105,12 @@ switch ($action) {
                 $stmt->execute([$user_id]);
                 $response_data['classes_data'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $response_data['faculty_data'] = getAllFaculty($pdo);
-                
                 $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
                 $stmt->execute([$user_id]);
                 $program_chair_program = $stmt->fetchColumn();
-                
                 $stmt = $pdo->prepare("SELECT program_id FROM programs WHERE program_name = ? AND is_active = TRUE");
                 $stmt->execute([$program_chair_program]);
                 $program_id = $stmt->fetchColumn();
-                
                 $courses_query = "
                     SELECT 
                         c.course_id,
@@ -1224,7 +1198,6 @@ switch ($action) {
                 if ($faculty_data) {
                     $response_data['current_entities'] = ['faculty' => [$faculty_data]];
                 }
-                
                 if ($tab === 'announcements') {
                     $announcements_query = "
                         SELECT 
@@ -1261,19 +1234,16 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         }
         break;
-        
     case 'get_programs':
         $programs = getAllPrograms($pdo);
         sendJsonResponse(['success' => true, 'programs' => $programs]);
         break;
-        
     case 'get_program_courses':
         $program_id = $_GET['program_id'] ?? $_POST['program_id'] ?? null;
         if (!$program_id) {
             sendJsonResponse(['success' => false, 'message' => 'Program ID required']);
             break;
         }
-        
         $courses_query = "
             SELECT c.course_id, c.course_code, c.course_description, c.units,
                    COUNT(s.schedule_id) as times_scheduled
@@ -1285,7 +1255,6 @@ switch ($action) {
         $stmt = $pdo->prepare($courses_query);
         $stmt->execute([$program_id]);
         $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         sendJsonResponse(['success' => true, 'courses' => $courses]);
         break;
     case 'get_schedule_updates':
@@ -1353,8 +1322,6 @@ switch ($action) {
             $stmt = $pdo->prepare($schedule_query);
             $stmt->execute([$faculty_id]);
             $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-
             $stats = [
                 'today' => count($schedules),
                 'ongoing' => 0,
@@ -1364,12 +1331,9 @@ switch ($action) {
                 if ($s['status'] === 'ongoing') $stats['ongoing']++;
                 if ($s['status'] === 'finished') $stats['completed']++;
             }
-            
-
             $status_stmt = $pdo->prepare("SELECT status FROM faculty WHERE faculty_id = ?");
             $status_stmt->execute([$faculty_id]);
             $stats['status'] = $status_stmt->fetchColumn() ?: 'Offline';
-
             sendJsonResponse([
                 'success' => true,
                 'schedules' => $schedules,
@@ -1393,15 +1357,12 @@ switch ($action) {
             break;
         }
         try {
-            // Check for IFTL compliance for the current week
             $current_week = date('Y') . '-W' . date('W');
             $compliance_query = "SELECT compliance_id FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ?";
             $stmt = $pdo->prepare($compliance_query);
             $stmt->execute([$faculty_id, $current_week]);
             $compliance_id = $stmt->fetchColumn();
-
             if ($compliance_id) {
-                // Fetch from IFTL entries
                 $schedule_query = "
                     SELECT 
                         e.entry_id as schedule_id,
@@ -1436,12 +1397,10 @@ switch ($action) {
                     LEFT JOIN classes cl ON e.class_name = cl.class_name
                     WHERE e.compliance_id = ?
                     ORDER BY e.time_start";
-                
                 $stmt = $pdo->prepare($schedule_query);
                 $stmt->execute([$compliance_id]);
                 $schedule_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             } else {
-                // Fallback to standard schedule
                 $schedule_query = "
                     SELECT s.*, c.course_description, cl.class_name, cl.class_code, cl.total_students,
                            'upcoming' as status, 'standard' as source
@@ -1450,12 +1409,10 @@ switch ($action) {
                     JOIN classes cl ON s.class_id = cl.class_id
                     WHERE s.faculty_id = ? AND s.is_active = TRUE
                     ORDER BY s.time_start";
-                
                 $stmt = $pdo->prepare($schedule_query);
                 $stmt->execute([$faculty_id]);
                 $schedule_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
-            
             sendJsonResponse([
                 'success' => true, 
                 'schedules' => $schedule_data,
@@ -1467,7 +1424,6 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
-
     case 'get_schedule':
         validateUserSession('faculty');
         $days = $_POST['days'] ?? '';
@@ -1629,61 +1585,43 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
-
     case 'get_faculty_details':
         validateUserSession('campus_director');
         $faculty_id = $_GET['faculty_id'] ?? null;
         if (!$faculty_id) {
             sendJsonResponse(['success' => false, 'message' => 'Faculty ID is required']);
         }
-        
         $stmt = $pdo->prepare("SELECT f.*, u.username, u.full_name, u.role, u.is_active as user_active FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.faculty_id = ?");
         $stmt->execute([$faculty_id]);
         $faculty = $stmt->fetch(PDO::FETCH_ASSOC);
-        
         if ($faculty) {
             sendJsonResponse(['success' => true, 'data' => $faculty]);
         } else {
             sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
         }
         break;
-
     case 'update_faculty':
         validateUserSession('campus_director');
         try {
             $pdo->beginTransaction();
-            
             $faculty_id = $_POST['faculty_id'];
             $full_name = trim($_POST['full_name']);
             $username = trim($_POST['username']);
             $program = $_POST['program'] ?? null;
             $contact_email = $_POST['contact_email'] ?? null;
             $contact_phone = $_POST['contact_phone'] ?? null;
-            // Password update is optional
             $password = !empty($_POST['password']) ? $_POST['password'] : null;
-            
-            // Get user_id
             $stmt = $pdo->prepare("SELECT user_id FROM faculty WHERE faculty_id = ?");
             $stmt->execute([$faculty_id]);
             $user_id = $stmt->fetchColumn();
-            
             if (!$user_id) throw new Exception("Faculty not found");
-            
-            // Allow checking for duplicates (username) if username changed?
-            // Simplified for now.
-            
-            // Update users table
             $user_sql = "UPDATE users SET full_name = ?, username = ? " . ($password ? ", password = ?" : "") . " WHERE user_id = ?";
             $user_params = $password ? [$full_name, $username, $password, $user_id] : [$full_name, $username, $user_id];
-            
             $stmt = $pdo->prepare($user_sql);
             $stmt->execute($user_params);
-            
-            // Update faculty table
             $faculty_sql = "UPDATE faculty SET program = ?, contact_email = ?, contact_phone = ? WHERE faculty_id = ?";
             $stmt = $pdo->prepare($faculty_sql);
             $stmt->execute([$program, $contact_email, $contact_phone, $faculty_id]);
-            
             $pdo->commit();
             sendJsonResponse(['success' => true, 'message' => 'Faculty updated successfully']);
         } catch (Exception $e) {
@@ -1691,7 +1629,6 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error updating faculty: ' . $e->getMessage()]);
         }
         break;
-        
     case 'get_faculty_details':
         validateUserSession('campus_director');
         try {
@@ -1700,7 +1637,6 @@ switch ($action) {
                 sendJsonResponse(['success' => false, 'message' => 'Faculty ID required']);
                 break;
             }
-            
             $stmt = $pdo->prepare("
                 SELECT f.*, u.full_name, u.username
                 FROM faculty f
@@ -1709,7 +1645,6 @@ switch ($action) {
             ");
             $stmt->execute([$faculty_id]);
             $faculty = $stmt->fetch(PDO::FETCH_ASSOC);
-            
             if ($faculty) {
                 sendJsonResponse(['success' => true, 'data' => $faculty]);
             } else {
@@ -1719,7 +1654,6 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
-        
     case 'get_announcement_details':
         validateUserSession('campus_director');
         try {
@@ -1728,7 +1662,6 @@ switch ($action) {
                 sendJsonResponse(['success' => false, 'message' => 'Announcement ID required']);
                 break;
             }
-            
             $stmt = $pdo->prepare("
                 SELECT a.*, u.full_name as created_by_name
                 FROM announcements a
@@ -1737,7 +1670,6 @@ switch ($action) {
             ");
             $stmt->execute([$announcement_id]);
             $announcement = $stmt->fetch(PDO::FETCH_ASSOC);
-            
             if ($announcement) {
                 sendJsonResponse(['success' => true, 'data' => $announcement]);
             } else {
@@ -1747,29 +1679,24 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
-        
     case 'update_announcement':
         validateUserSession('campus_director');
         try {
             $pdo->beginTransaction();
-            
             $announcement_id = $_POST['announcement_id'] ?? null;
             $title = trim($_POST['title'] ?? '');
             $content = trim($_POST['content'] ?? '');
             $priority = $_POST['priority'] ?? 'normal';
             $target_audience = $_POST['target_audience'] ?? 'all';
-            
             if (!$announcement_id || !$title || !$content) {
                 throw new Exception('Missing required fields');
             }
-            
             $stmt = $pdo->prepare("
                 UPDATE announcements 
                 SET title = ?, content = ?, priority = ?, target_audience = ?
                 WHERE announcement_id = ?
             ");
             $stmt->execute([$title, $content, $priority, $target_audience, $announcement_id]);
-            
             if ($stmt->rowCount() > 0) {
                 $pdo->commit();
                 sendJsonResponse(['success' => true, 'message' => 'Announcement updated successfully']);
@@ -1783,9 +1710,7 @@ switch ($action) {
         break;
     case 'get_iftl_weeks':
         $weeks = [];
-        // Start from last Monday for consistency
         $base_date = strtotime('last Monday', strtotime('tomorrow'));
-        // Current week + next 4 weeks + past 4 weeks
         for ($i = -4; $i <= 4; $i++) {
             $week_start = date('Y-m-d', strtotime("$i weeks", $base_date));
             $week_end = date('Y-m-d', strtotime("$week_start +6 days"));
@@ -1800,7 +1725,6 @@ switch ($action) {
         }
         sendJsonResponse(['success' => true, 'weeks' => $weeks]);
         break;
-
     case 'get_faculty_iftl':
         $target_faculty_id = $_POST['faculty_id'] ?? $_SESSION['faculty_id'] ?? null;
         if (!$target_faculty_id && $_SESSION['role'] === 'faculty') {
@@ -1809,12 +1733,9 @@ switch ($action) {
              $target_faculty_id = $stmt->fetchColumn();
         }
         $week = $_POST['week'] ?? date('Y-\WW');
-        
-        // Check if compliance record exists
         $stmt = $pdo->prepare("SELECT * FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ?");
         $stmt->execute([$target_faculty_id, $week]);
         $compliance = $stmt->fetch(PDO::FETCH_ASSOC);
-
         if ($compliance && !isset($_POST['reset'])) {
             $stmt = $pdo->prepare("SELECT * FROM iftl_entries WHERE compliance_id = ? ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), time_start");
             $stmt->execute([$compliance['compliance_id']]);
@@ -1825,26 +1746,20 @@ switch ($action) {
         }
         sendJsonResponse(['success' => true, 'compliance' => $compliance, 'entries' => $entries]);
         break;
-
     case 'save_iftl':
         $compliance_id = $_POST['compliance_id'] ?? null;
         $faculty_id = $_POST['faculty_id'] ?? $_SESSION['faculty_id'] ?? null;
-        
         if (!$faculty_id && $_SESSION['role'] === 'faculty') {
              $stmt = $pdo->prepare("SELECT faculty_id FROM faculty WHERE user_id = ?");
              $stmt->execute([$_SESSION['user_id']]);
              $faculty_id = $stmt->fetchColumn();
         }
-
         $week_identifier = $_POST['week_identifier'];
         $week_start_date = $_POST['week_start_date'];
         $status = $_POST['status'] ?? 'Draft';
-        
         try {
             $pdo->beginTransaction();
-            
             if ($compliance_id) {
-                // Determine if we need to update status (e.g. Draft -> Submitted)
                 $stmt = $pdo->prepare("UPDATE iftl_weekly_compliance SET status = ?, updated_at = NOW() WHERE compliance_id = ?");
                 $stmt->execute([$status, $compliance_id]);
             } else {
@@ -1857,10 +1772,8 @@ switch ($action) {
                     $compliance_id = $stmt->fetchColumn();
                  }
             }
-            
             $stmt = $pdo->prepare("DELETE FROM iftl_entries WHERE compliance_id = ?");
             $stmt->execute([$compliance_id]);
-            
             $entries = json_decode($_POST['entries'], true);
             if ($entries) {
                 $insert_stmt = $pdo->prepare("INSERT INTO iftl_entries (compliance_id, day_of_week, time_start, time_end, course_code, room, activity_type, status, remarks, is_modified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -1879,7 +1792,6 @@ switch ($action) {
                     ]);
                 }
             }
-            
             $pdo->commit();
             sendJsonResponse(['success' => true, 'message' => 'IFTL saved successfully']);
         } catch (Exception $e) {
@@ -1887,7 +1799,6 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Error saving IFTL: ' . $e->getMessage()]);
         }
         break;
-
     default:
         sendJsonResponse(['success' => false, 'message' => 'Unknown action: ' . $action], 400);
         break;
@@ -2026,10 +1937,8 @@ function getAllCurrentEntities($pdo, $role, $tab = null) {
         return [];
     }
 }
-
 function generateIFTLFromStandard($pdo, $faculty_id) {
     if (!$faculty_id) return [];
-    
     $stmt = $pdo->prepare("
         SELECT s.*, c.class_name 
         FROM schedules s 
@@ -2038,12 +1947,10 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
     ");
     $stmt->execute([$faculty_id]);
     $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
     $entries = [];
     $day_map = [
         'M' => 'Monday', 'T' => 'Tuesday', 'W' => 'Wednesday', 'TH' => 'Thursday', 'F' => 'Friday', 'S' => 'Saturday', 'SAT' => 'Saturday'
     ];
-    
     foreach ($schedules as $sched) {
         $days_str = strtoupper($sched['days']);
         $parsed_days = [];
@@ -2059,7 +1966,6 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
                 $i++;
             }
         }
-        
         foreach ($parsed_days as $d) {
             if (isset($day_map[$d])) {
                 $entries[] = [
@@ -2068,7 +1974,6 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
                     'time_end' => $sched['time_end'],
                     'course_code' => $sched['course_code'],
                     'room' => $sched['room'],
-                    // Using activity_type to store Class Name/Section
                     'activity_type' => $sched['class_name'] ?? 'Class', 
                     'status' => 'Regular',
                     'remarks' => '',
@@ -2077,7 +1982,6 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
             }
         }
     }
-    
     usort($entries, function($a, $b) {
         $days = ['Monday'=>1, 'Tuesday'=>2, 'Wednesday'=>3, 'Thursday'=>4, 'Friday'=>5, 'Saturday'=>6, 'Sunday'=>7];
         $da = $days[$a['day_of_week']] ?? 8;
@@ -2085,7 +1989,7 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
         if ($da !== $db) return $da - $db;
         return strcmp($a['time_start'], $b['time_start']);
     });
-    
     return $entries;
 }
 ?>
+

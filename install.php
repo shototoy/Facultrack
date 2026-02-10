@@ -1,59 +1,38 @@
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
-// Load common config to get credentials ($servername, $username, etc)
 require_once 'assets/php/common_utilities.php';
-
 echo "<h1>Database Population Tool (mysqli)</h1>";
-
-// Manually ensure credentials are plain strings
 $db_host = $servername;
 $db_user = $username;
 $db_pass = $password;
 $db_name = $dbname;
 $db_port = $port;
-
 echo "Connecting to $db_host...<br>";
-
-// Create connection
 $mysqli = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
-
-// Check connection
 if ($mysqli->connect_error) {
     die("Connection failed: " . $mysqli->connect_error);
 }
-
-// Ensure UTF-8
 $mysqli->set_charset("utf8mb4");
-
 echo "Current directory: " . __DIR__ . "<br>";
 $sql_file = __DIR__ . '/facultrack.sql';
-
 if (!file_exists($sql_file)) {
     die("Error: facultrack.sql not found at $sql_file");
 }
-
 echo "Reading SQL file...<br>";
 $sql = file_get_contents($sql_file);
-
 if (empty($sql)) {
     die("Error: SQL file is empty");
 }
-
-// NUCLEAR OPTION: Wipe database clean first
 $mysqli->query("SET FOREIGN_KEY_CHECKS = 0");
 if ($result = $mysqli->query("SHOW TABLES")) {
     while ($row = $result->fetch_row()) {
         $table = $row[0];
-        // echo "Dropping table $table...<br>"; // Silence drop output
         $mysqli->query("DROP TABLE IF EXISTS `$table`");
     }
     $result->free();
 }
 $mysqli->query("SET FOREIGN_KEY_CHECKS = 1");
-
-// DEBUG: Check file content for corruption
 $content = file_get_contents($sql_file);
 echo "<h3>File Integrity Check</h3>";
 echo "File size: " . strlen($content) . " bytes<br>";
@@ -64,27 +43,20 @@ if ($pos !== false) {
 } else {
     echo "DID NOT FIND 'DIR-1' in SQL file!<br>";
 }
-// Check for lines starting with (41,
 $pos2 = strpos($content, "\n(41,");
 if ($pos2 !== false) {
     echo "Found line starting with (41, at position $pos2. Context:<br>";
     echo "<pre>" . htmlspecialchars(substr($content, $pos2 - 50, 100)) . "</pre>";
 }
-
-// Proceed with import
 echo "Executing SQL...<br>";
 if ($mysqli->multi_query($content)) {
     do {
-        /* store first result set */
         if ($result = $mysqli->store_result()) {
             $result->free();
         }
-        /* print divider */
         if ($mysqli->more_results()) {
-            // echo "."; 
         }
     } while ($mysqli->next_result());
-    
     if ($mysqli->errno) {
         echo "<h2 style='color:red'>Error executing statement: " . $mysqli->error . "</h2>";
     } else {
@@ -94,6 +66,6 @@ if ($mysqli->multi_query($content)) {
 } else {
     echo "<h2 style='color:red'>First statement failed: " . $mysqli->error . "</h2>";
 }
-
 $mysqli->close();
 ?>
+

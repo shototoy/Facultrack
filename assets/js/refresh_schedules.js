@@ -19,3 +19,4 @@ function refreshFacultySchedules() {
             console.error('Error refreshing faculty schedules:', error);
         });
 }
+

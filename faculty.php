@@ -312,14 +312,14 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             }
             body {
                 overflow-y: auto !important;
-                padding-bottom: 120px !important; /* Increased space */
+                padding-bottom: 120px !important; 
                 padding-top: 20px !important;
             }
             .dashboard-grid {
                 display: grid !important;
                 grid-template-columns: 1fr !important;
                 grid-template-rows: auto 1fr !important;
-                height: auto !important; /* Changed from calc to auto for relative flow */
+                height: auto !important; 
                 min-height: calc(100vh - 120px) !important;
                 gap: 12px !important;
             }
@@ -338,9 +338,9 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 order: 2 !important;
                 padding: 12px !important;
                 padding-bottom: 100px !important;
-                overflow-y: visible !important; /* Allow scroll */
+                overflow-y: visible !important; 
                 border: none !important;
-                max-height: none !important; /* Remove constraints */
+                max-height: none !important; 
             }
             .schedule-section.scroll-mode-active {
                 max-height: none !important;
@@ -348,18 +348,18 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             }
             .actions-section {
                 position: fixed !important;
-                bottom: 20px !important; /* Added gap from bottom */
-                left: 20px !important; /* Added gap from sides */
+                bottom: 20px !important; 
+                left: 20px !important; 
                 right: 20px !important;
                 width: auto !important;
                 z-index: 1000 !important;
                 background: rgba(255, 255, 255, 0.98) !important;
-                border: 1px solid rgba(46, 125, 50, 0.2) !important; /* Full border */
-                border-radius: 12px !important; /* Rounded */
+                border: 1px solid rgba(46, 125, 50, 0.2) !important; 
+                border-radius: 12px !important; 
                 box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15) !important;
                 backdrop-filter: blur(10px) !important;
                 height: auto !important;
-                min-height: 80px !important; /* Reduced height */
+                min-height: 80px !important; 
                 order: 3 !important;
                 transform: none !important;
                 opacity: 0 !important;
@@ -823,7 +823,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
 <body class="faculty-page">
     <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
-
         <div class="content-wrapper" id="contentWrapper">
             <?php 
             $ongoing_classes = count(array_filter($today_schedule, function($schedule) {
@@ -1036,7 +1035,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
                             <label class="form-label">Select Week</label>
                             <select id="facultyIFTLWeekSelect" class="form-select" onchange="loadFacultyIFTLData()">
-                                <!-- Loaded via JS -->
+                                
                             </select>
                         </div>
                         <div class="iftl-actions" style="display: flex; gap: 10px;">
@@ -1045,7 +1044,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                             <button class="btn-primary" style="background: #e65100;" onclick="saveIFTLData('Submitted')">Submit</button>
                         </div>
                     </div>
-                    
                     <div id="facultyIFTLContent" class="schedule-table-container" style="flex: 1; overflow-y: auto; border: 1px solid #eee; border-radius: 8px;">
                         <div class="loading">Select a week...</div>
                     </div>
@@ -1054,27 +1052,22 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
         </div>
     <script>
         window.userRole = 'faculty';
-        
         function openStatusModal() {
             document.getElementById('statusModal').classList.add('show');
             document.body.style.overflow = 'hidden';
         }
-
         function closeStatusModal() {
             document.getElementById('statusModal').classList.remove('show');
             document.body.style.overflow = 'auto';
             document.getElementById('statusForm').reset();
         }
-
         async function updateStatus() {
             const statusSelect = document.getElementById('statusSelect');
             const selectedStatus = statusSelect.value;
-
             if (!selectedStatus) {
                 showNotification('Please select a status', 'error');
                 return;
             }
-
             try {
                 const response = await fetch('assets/php/polling_api.php', {
                     method: 'POST',
@@ -1083,9 +1076,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                     },
                     body: `action=update_status&status=${encodeURIComponent(selectedStatus)}`
                 });
-
                 const result = await response.json();
-                
                 if (result.success) {
                     showNotification(`Status updated to: ${selectedStatus}`, 'success');
                     closeStatusModal();

@@ -65,7 +65,6 @@ if (!function_exists('renderAnnouncementCard')) {
         $created_at = $announcement['time_ago'] ?? date('M j, Y', strtotime($announcement['created_at']));
         $full_date = date('F d, Y', strtotime($announcement['created_at']));
         $announcementJson = htmlspecialchars(json_encode($announcement), ENT_QUOTES, 'UTF-8');
-        
         $emailButton = '';
         if (isset($_SESSION['role']) && $_SESSION['role'] === 'campus_director') {
             $emailButton = "
@@ -73,7 +72,6 @@ if (!function_exists('renderAnnouncementCard')) {
                     <svg class='feather' style='width: 14px; height: 14px;'><use href='#mail'></use></svg>
                 </button>";
         }
-
         return "
         <div class='announcement-card priority-{$priority_class}' id='announcement-{$announcement['announcement_id']}'>
             <div class='announcement-header'>

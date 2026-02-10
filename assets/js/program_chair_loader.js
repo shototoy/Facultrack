@@ -2,15 +2,12 @@ document.addEventListener('DOMContentLoaded', function() {
     loadProgramChairs();
     loadProgramsForCourse();
 });
-
 async function loadProgramChairs() {
     const select = document.getElementById('programChairSelect');
     if (!select) return;
-    
     try {
         const response = await fetch('assets/php/polling_api.php?action=get_statistics');
         const data = await response.json();
-        
         if (data.success && data.program_chairs) {
             select.innerHTML = '<option value="">Select Program Chair (Optional)</option>';
             data.program_chairs.forEach(chair => {
@@ -24,15 +21,12 @@ async function loadProgramChairs() {
         console.error('Error loading program chairs:', error);
     }
 }
-
 async function loadProgramsForCourse() {
     const select = document.getElementById('programSelectCourse');
     if (!select) return;
-    
     try {
         const response = await fetch('assets/php/polling_api.php?action=get_programs');
         const data = await response.json();
-        
         if (data.success && data.programs) {
             select.innerHTML = '<option value="">Select Program</option>';
             data.programs.forEach(program => {

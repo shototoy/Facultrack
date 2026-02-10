@@ -157,3 +157,4 @@ if (document.readyState === 'loading') {
 } else {
     setupSearchFunctionality();
 }
+

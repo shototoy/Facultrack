@@ -1,7 +1,6 @@
 <?php
 require_once 'common_utilities.php';
 $pdo = initializeDatabase();
-
 try {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS `iftl_weekly_compliance` (
@@ -20,7 +19,6 @@ try {
             KEY `faculty_id` (`faculty_id`),
             FOREIGN KEY (`faculty_id`) REFERENCES `faculty`(`faculty_id`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
         CREATE TABLE IF NOT EXISTS `iftl_entries` (
             `entry_id` INT(11) NOT NULL AUTO_INCREMENT,
             `compliance_id` INT(11) NOT NULL,
@@ -44,3 +42,4 @@ try {
     echo "Error creating tables: " . $e->getMessage();
 }
 ?>
+

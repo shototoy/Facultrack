@@ -1,4 +1,3 @@
-
 function contactFaculty(email) {
     if (email) {
         window.location.href = `mailto:${email}`;
@@ -17,3 +16,4 @@ function formatTime(timeString) {
 document.addEventListener('DOMContentLoaded', function () {
     console.log('Class Dashboard loaded');
 });
+

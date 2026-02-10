@@ -83,22 +83,17 @@ $role = $_SESSION['role'] ?? '';
 </div>
 <script>
     let confirmationCallback = null;
-
     function showConfirmation(title, message, callback) {
         document.getElementById('confirmationTitle').textContent = title || 'Confirmation';
         document.getElementById('confirmationMessage').textContent = message || 'Are you sure you want to proceed?';
-        
         confirmationCallback = callback;
-        
         const modal = document.getElementById('confirmationModal');
         modal.classList.add('show');
     }
-
     function closeConfirmationModal() {
         document.getElementById('confirmationModal').classList.remove('show');
         confirmationCallback = null;
     }
-
     document.getElementById('confirmationConfirmBtn').addEventListener('click', function() {
         if (typeof confirmationCallback === 'function') {
             confirmationCallback();
@@ -270,15 +265,12 @@ $role = $_SESSION['role'] ?? '';
             <button type="button" class="modal-close" onclick="closeModal('facultyScheduleModal')">&times;</button>
         </div>
         <div class="modal-body">
-
             <div class="mobile-pagination-nav">
                 <button class="pagination-btn active" onclick="showMobilePage(1)" data-page="1">MWF Schedule</button>
                 <button class="pagination-btn" onclick="showMobilePage(2)" data-page="2">TTH Schedule</button>
                 <button class="pagination-btn" onclick="showMobilePage(3)" data-page="3">Summary</button>
             </div>
-
             <div id="scheduleContent">
-
                 <div class="mobile-page-content">
                     <div class="mobile-page page-1 active">
                         <div class="schedule-table-container" id="mwfTableContainer">
@@ -298,7 +290,6 @@ $role = $_SESSION['role'] ?? '';
                         </div>
                     </div>
                 </div>
-
                 <div class="desktop-grid-content">
                     <div class="loading">Loading schedule...</div>
                 </div>
@@ -313,14 +304,12 @@ $role = $_SESSION['role'] ?? '';
             <button type="button" class="modal-close" onclick="closeModal('facultyCourseLoadModal')">&times;</button>
         </div>
         <div class="modal-body">
-
             <div class="mobile-pagination-nav">
                 <button class="pagination-btn active" onclick="showCourseLoadPage(1)" data-page="1">MWF Schedule</button>
                 <button class="pagination-btn" onclick="showCourseLoadPage(2)" data-page="2">TTH Schedule</button>
             </div>
-            <!-- Content area -->
+            
             <div id="courseLoadContent">
-
                 <div class="mobile-page-content">
                     <div class="mobile-page page-1 active">
                         <div class="schedule-table-container" id="courseLoadMwfTableContainer">
@@ -333,18 +322,15 @@ $role = $_SESSION['role'] ?? '';
                         </div>
                     </div>
                 </div>
-
                 <div class="desktop-grid-content">
                     <div class="loading">Loading course load...</div>
                 </div>
-
                 <div id="assignmentPanel" class="assignment-panel" style="display: none;">
                     <div class="assignment-header">
                         <span id="selectedTimeSlot">Select a time slot to assign courses</span>
                         <button onclick="closeAssignmentPanel()" class="close-btn">×</button>
                     </div>
                     <div id="assignmentContent" class="assignment-content">
-
                     </div>
                 </div>
             </div>
@@ -397,7 +383,6 @@ $role = $_SESSION['role'] ?? '';
             <div id="classesPreview" class="form-group" style="display: none;">
                 <label class="form-label">Classes to Update</label>
                 <div id="classesPreviewContent" class="preview-content">
-
                 </div>
             </div>
             <div class="form-group">
@@ -417,7 +402,6 @@ $role = $_SESSION['role'] ?? '';
         </form>
     </div>
 </div>
-
 <div class="modal-overlay" id="addProgramModal">
     <div class="modal">
         <div class="modal-header">

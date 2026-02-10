@@ -119,13 +119,11 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                     </button>
                                 </td>
                             </tr>
-
                         <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
         </div>
-
         <div class="tab-content" id="announcements-content">
             <div class="table-container">
                 <div class="table-header">
@@ -173,15 +171,11 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                     </button>
                                 </td>
                             </tr>
-
                         <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
         </div>
-        
-
-
         <div class="tab-content" id="iftl-content">
             <div class="table-container">
                 <div class="table-header">
@@ -193,7 +187,6 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </div>
             </div>
         </div>
-
         <div class="modal-overlay" id="directorIFTLModal">
             <div class="modal large-modal">
                 <div class="modal-header">
@@ -204,11 +197,11 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     <div class="iftl-controls" style="margin-bottom: 20px;">
                         <label for="iftlWeekSelect">Select Week:</label>
                         <select id="iftlWeekSelect" class="form-select" onchange="loadFacultyIFTL()">
-                            <!-- Options populated via JS -->
+                            
                         </select>
                     </div>
                     <div id="iftlContent" class="schedule-table-container">
-                        <!-- Content loaded via JS -->
+                        
                         <div class="loading">Select a week to view IFTL</div>
                     </div>
                 </div>
@@ -311,8 +304,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </div>
             </div>
         </div>
-
-        <!-- Faculty Details Modal -->
+        
         <div class="modal-overlay" id="facultyDetailsModal">
             <div class="modal medium-modal">
                 <div class="modal-header">
@@ -321,13 +313,12 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </div>
                 <div class="modal-body">
                     <div id="facultyDetailsContent" class="details-grid">
-                        <!-- Content populated by JS -->
+                        
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Announcement Details Modal -->
+        
         <div class="modal-overlay" id="announcementDetailsModal">
             <div class="modal medium-modal">
                 <div class="modal-header">
@@ -336,25 +327,20 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </div>
                 <div class="modal-body">
                     <div id="announcementDetailsContent" class="details-grid">
-                        <!-- Content populated by JS -->
+                        
                     </div>
                 </div>
             </div>
         </div>
     <script>
-        // Edit Faculty Logic
         async function openEditFacultyModal(facultyId) {
-            // Prevent event propagation if triggered from row click
             if(window.event) window.event.stopPropagation();
-            
             const modal = document.getElementById('editFacultyModal');
             const form = document.getElementById('editFacultyForm');
             form.reset();
-            
             try {
                 const response = await fetch(`assets/php/polling_api.php?action=get_faculty_details&faculty_id=${facultyId}`);
                 const result = await response.json();
-                
                 if (result.success) {
                     const data = result.data;
                     document.getElementById('editFacultyId').value = data.faculty_id;
@@ -363,7 +349,6 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     document.getElementById('editProgram').value = data.program;
                     document.getElementById('editContactEmail').value = data.contact_email;
                     document.getElementById('editContactPhone').value = data.contact_phone;
-                    
                     modal.classList.add('show');
                 } else {
                     alert('Error fetching faculty details: ' + result.message);
@@ -373,7 +358,6 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 alert('Error fetching details');
             }
         }
-        
         async function submitEditFaculty() {
             if (typeof showConfirmation === 'function') {
                 showConfirmation(
@@ -383,18 +367,16 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                          const form = document.getElementById('editFacultyForm');
                         const formData = new FormData(form);
                         formData.append('action', 'update_faculty');
-                        
                         try {
                             const response = await fetch('assets/php/polling_api.php', {
                                 method: 'POST',
                                 body: formData
                             });
                             const result = await response.json();
-                            
                             if (result.success) {
                                 alert('Faculty updated successfully');
                                 closeModal('editFacultyModal');
-                                location.reload(); // Simple reload to reflect changes
+                                location.reload(); 
                             } else {
                                 alert('Error updating faculty: ' + result.message);
                             }
@@ -406,22 +388,19 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 );
                 return;
             }
-
             const form = document.getElementById('editFacultyForm');
             const formData = new FormData(form);
             formData.append('action', 'update_faculty');
-            
             try {
                 const response = await fetch('assets/php/polling_api.php', {
                     method: 'POST',
                     body: formData
                 });
                 const result = await response.json();
-                
                 if (result.success) {
                     alert('Faculty updated successfully');
                     closeModal('editFacultyModal');
-                    location.reload(); // Simple reload to reflect changes
+                    location.reload(); 
                 } else {
                     alert('Error updating faculty: ' + result.message);
                 }
@@ -430,10 +409,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 alert('Error updating faculty');
             }
         }
-        
-        // Modal Details Logic
         function openFacultyDetails(faculty) {
-            // If passed as string (from HTML attribute), parse it
             if (typeof faculty === 'string') {
                 try {
                     faculty = JSON.parse(faculty);
@@ -442,16 +418,13 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     return;
                 }
             }
-
             const content = document.getElementById('facultyDetailsContent');
             const statusClass = (faculty.status || 'Offline').toLowerCase().replace(' ', '-');
-            
             content.innerHTML = `
                 <div class="details-section">
                     <h4>${faculty.full_name}</h4>
                     <span class="status-badge status-${statusClass}">${faculty.status || 'Offline'}</span>
                 </div>
-                
                 <div class="details-row">
                     <div class="detail-group">
                         <label>Employee ID</label>
@@ -471,11 +444,9 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     </div>
                 </div>
             `;
-            
             const modal = document.getElementById('facultyDetailsModal');
             modal.classList.add('show');
         }
-
         function openAnnouncementDetails(announcement) {
             if (typeof announcement === 'string') {
                 try {
@@ -485,21 +456,17 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     return;
                 }
             }
-
             const content = document.getElementById('announcementDetailsContent');
             const date = new Date(announcement.created_at).toLocaleString();
-            
             content.innerHTML = `
                 <div class="details-section">
                     <h4>${announcement.title}</h4>
                     <span class="status-badge priority-${announcement.priority}">${announcement.priority.toUpperCase()}</span>
                 </div>
-                
                 <div class="detail-content-box">
                     <label>Content</label>
                     <div class="content-text">${announcement.content}</div>
                 </div>
-
                 <div class="details-row">
                     <div class="detail-group">
                         <label>Target Audience</label>
@@ -515,22 +482,17 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     </div>
                 </div>
             `;
-            
             const modal = document.getElementById('announcementDetailsModal');
             modal.classList.add('show');
         }
-
         async function openEditAnnouncementModal(announcementId) {
             if(window.event) window.event.stopPropagation();
-            
             const modal = document.getElementById('editAnnouncementModal');
             const form = document.getElementById('editAnnouncementForm');
             form.reset();
-            
             try {
                 const response = await fetch(`assets/php/polling_api.php?action=get_announcement_details&announcement_id=${announcementId}`);
                 const result = await response.json();
-                
                 if (result.success) {
                     const data = result.data;
                     document.getElementById('editAnnouncementId').value = data.announcement_id;
@@ -538,7 +500,6 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     document.getElementById('editAnnouncementContent').value = data.content;
                     document.getElementById('editAnnouncementPriority').value = data.priority;
                     document.getElementById('editAnnouncementAudience').value = data.target_audience;
-                    
                     closeModal('announcementDetailsModal');
                     modal.classList.add('show');
                 } else {
@@ -549,7 +510,6 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 alert('Error fetching details');
             }
         }
-        
         async function submitEditAnnouncement() {
             if (typeof showConfirmation === 'function') {
                 showConfirmation(
@@ -559,14 +519,12 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                         const form = document.getElementById('editAnnouncementForm');
                         const formData = new FormData(form);
                         formData.append('action', 'update_announcement');
-                        
                         try {
                             const response = await fetch('assets/php/polling_api.php', {
                                 method: 'POST',
                                 body: formData
                             });
                             const result = await response.json();
-                            
                             if (result.success) {
                                 alert('Announcement updated successfully');
                                 closeModal('editAnnouncementModal');
@@ -582,18 +540,15 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 );
                 return;
             }
-
             const form = document.getElementById('editAnnouncementForm');
             const formData = new FormData(form);
             formData.append('action', 'update_announcement');
-            
             try {
                 const response = await fetch('assets/php/polling_api.php', {
                     method: 'POST',
                     body: formData
                 });
                 const result = await response.json();
-                
                 if (result.success) {
                     alert('Announcement updated successfully');
                     closeModal('editAnnouncementModal');
@@ -606,9 +561,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 alert('Error updating announcement');
             }
         }
-
     </script>
-    
     <div class="modal-overlay" id="editAnnouncementModal">
         <div class="modal">
             <div class="modal-header">

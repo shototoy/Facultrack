@@ -180,11 +180,7 @@ function updateEmptyState(containerSelector, visibleCount, searchTerm, title, me
     }
     const existingMainEmptyState = container.querySelector('.empty-state-container:not(.search-empty-state)');
     if (existingMainEmptyState && visibleCount > 0) {
-        // Hide main empty state if search has results? 
-        // Actually main empty state means NO data at all, so search wouldn't find anything anyway.
-        // But if we are searching, we assume data exists but filtered.
     }
-
     if (visibleCount === 0 && searchTerm.trim() !== '') {
         if (typeof getEmptyStateHTML === 'function') {
             container.insertAdjacentHTML('beforeend', getEmptyStateHTML(title, message));
@@ -392,13 +388,11 @@ function findExistingCourse(cell, day, timeSlot) {
 function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
     const isEditMode = existingCourse !== null;
     console.log('showAssignmentPanel called:', { day, timeSlot, existingCourse, isEditMode });
-
     const form = document.querySelector('.courseload-assignment-form');
     if (!form) {
         console.error('Course load form not found!');
         return;
     }
-
     const timeValue = convertTimeSlotToValue(timeSlot);
     const formHTML = generateAssignmentForm({
         isEditMode,
@@ -409,7 +403,6 @@ function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
         tableType: 'MWF',
         context: 'desktop'
     });
-
     form.innerHTML = `
         <div class="form-section">
             <h4 style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 1.1em;">
@@ -423,9 +416,7 @@ function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
             ${formHTML}
         </div>
     `;
-
     form.style.display = 'block';
-
     const formGroups = form.querySelectorAll('.form-group');
     formGroups.forEach(group => {
         group.style.marginBottom = '10px';
@@ -440,7 +431,6 @@ function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
             select.style.fontSize = '0.9em';
         }
     });
-
     const formActions = form.querySelector('.form-actions');
     if (formActions) {
         formActions.style.marginTop = '12px';
@@ -453,7 +443,6 @@ function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
             btn.style.fontSize = '0.9em';
         });
     }
-
     const dayMap = { 'Monday': 'M', 'Tuesday': 'T', 'Wednesday': 'W', 'Thursday': 'TH', 'Friday': 'F', 'Saturday': 'S' };
     const dayCheckboxes = form.querySelectorAll('input[name="days[]"]');
     dayCheckboxes.forEach(cb => {
@@ -468,7 +457,6 @@ function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
         }
         handleDayCheckboxChange(dayCheckbox);
     }
-
     loadAssignmentFormData('desktop', existingCourse);
 }
 function closeAssignmentPanel() {
@@ -509,7 +497,6 @@ function populateCourseAssignmentPage(day, timeSlot, cell, existingCourse = null
     const isEditMode = existingCourse !== null;
     const timeValue = convertTimeSlotToValue(timeSlot);
     const tableType = getTableTypeFromDay(day);
-
     const formHTML = generateAssignmentForm({
         isEditMode,
         existingCourse,
@@ -519,7 +506,6 @@ function populateCourseAssignmentPage(day, timeSlot, cell, existingCourse = null
         tableType,
         context: 'mobile'
     });
-
     assignmentPage.innerHTML = `
         <div class="assignment-page-header">
             <button class="back-btn" onclick="closeCourseAssignmentPage()">
@@ -536,7 +522,6 @@ function populateCourseAssignmentPage(day, timeSlot, cell, existingCourse = null
             ${formHTML}
         </div>
     `;
-
     initializeAssignmentPageForm(day, timeValue, tableType, existingCourse);
     loadAssignmentFormData('mobile', existingCourse);
 }
@@ -2089,14 +2074,12 @@ function handleDayCheckboxChange(checkbox) {
     const tthDays = ['T', 'TH', 'S'];
     const form = checkbox.closest('form');
     const allCheckboxes = form.querySelectorAll('input[name="days[]"]');
-
     const checkedMWF = Array.from(allCheckboxes).filter(cb =>
         cb.checked && mwfDays.includes(cb.value)
     );
     const checkedTTH = Array.from(allCheckboxes).filter(cb =>
         cb.checked && tthDays.includes(cb.value)
     );
-
     if (checkedMWF.length > 0) {
         allCheckboxes.forEach(cb => {
             if (tthDays.includes(cb.value) && !cb.checked) {
@@ -2115,23 +2098,18 @@ function handleDayCheckboxChange(checkbox) {
         });
     }
 }
-
-
 function exportSchedule(facultyId) {
     const facultyName = facultyNames[facultyId] || 'Unknown Faculty';
     const schedules = facultySchedules[facultyId] || [];
-
     const { mwfSchedules, tthSchedules } = separateSchedulesByType(schedules);
     const summary = calculateSummaryData(schedules);
-
     const exportWindow = window.open('', '_blank', 'width=1200,height=800');
     exportWindow.document.write(generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary));
     exportWindow.document.close();
-
     exportWindow.onload = () => {
         if (typeof html2canvas === 'undefined') {
             const script = exportWindow.document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            script.src = 'https:
             script.onload = () => {
                 captureAndDownload(exportWindow, facultyName);
             };
@@ -2141,7 +2119,6 @@ function exportSchedule(facultyId) {
         }
     };
 }
-
 function captureAndDownload(targetWindow, facultyName) {
     targetWindow.html2canvas(targetWindow.document.body, {
         scale: 2,
@@ -2157,12 +2134,10 @@ function captureAndDownload(targetWindow, facultyName) {
             a.download = `${facultyName.replace(/\s+/g, '_')}_Schedule.png`;
             a.click();
             URL.revokeObjectURL(url);
-
             setTimeout(() => targetWindow.close(), 1000);
         });
     });
 }
-
 function printSchedule(facultyId) {
     printFacultySchedule(facultyId);
 }
@@ -2525,7 +2500,6 @@ function loadRoomOptionsForCourseLoad() {
 function generateAssignmentForm(options) {
     const { isEditMode, existingCourse, day, timeSlot, timeValue, tableType, context } = options;
     const idSuffix = context === 'mobile' ? 'Page' : '';
-
     return `
         <form id="assignmentForm${idSuffix}" onsubmit="event.preventDefault(); submitAssignment(this, ${isEditMode});" class="assignment-form-unified">
             <div class="form-section-main">
@@ -2596,7 +2570,6 @@ function generateAssignmentForm(options) {
 }
 function loadAssignmentFormData(context, existingCourse) {
     const idSuffix = context === 'mobile' ? 'Page' : '';
-
     fetch('program.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -2607,23 +2580,19 @@ function loadAssignmentFormData(context, existingCourse) {
             if (data.success) {
                 const courseSelect = document.getElementById(`courseSelect${idSuffix}`);
                 const classSelect = document.getElementById(`classSelect${idSuffix}`);
-
                 if (courseSelect) {
                     courseSelect.innerHTML = '<option value="">Choose a course...</option>';
                     data.courses.forEach(course => {
                         const selected = existingCourse && existingCourse.course_code === course.course_code ? 'selected' : '';
                         courseSelect.innerHTML += `<option value="${course.course_code}" ${selected}>${course.course_code} - ${course.course_description}</option>`;
                     });
-
                     courseSelect.addEventListener('change', function () {
                         updateClassDropdownUnified(this.value, context, existingCourse);
                     });
-
                     if (existingCourse) {
                         updateClassDropdownUnified(existingCourse.course_code, context, existingCourse);
                     }
                 }
-
                 if (classSelect && !existingCourse) {
                     classSelect.disabled = true;
                     classSelect.innerHTML = '<option value="">Select a course first...</option>';
@@ -2631,7 +2600,6 @@ function loadAssignmentFormData(context, existingCourse) {
             }
         })
         .catch(error => console.error('Error loading courses:', error));
-
     loadRoomOptionsUnified(context, existingCourse);
     const timeStart = document.getElementById(`hiddenTimeStart${idSuffix}`).value;
     populateEndTimeOptionsUnified(timeStart, context, existingCourse);
@@ -2639,16 +2607,13 @@ function loadAssignmentFormData(context, existingCourse) {
 function updateClassDropdownUnified(courseCode, context, existingCourse = null) {
     const idSuffix = context === 'mobile' ? 'Page' : '';
     const classSelect = document.getElementById(`classSelect${idSuffix}`);
-
     if (!courseCode) {
         classSelect.disabled = true;
         classSelect.innerHTML = '<option value="">Select a course first...</option>';
         return;
     }
-
     classSelect.disabled = false;
     classSelect.innerHTML = '<option value="">Loading classes...</option>';
-
     fetch('program.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -2681,7 +2646,6 @@ function loadRoomOptionsUnified(context, existingCourse = null) {
     const idSuffix = context === 'mobile' ? 'Page' : '';
     const roomSelect = document.getElementById(`roomSelect${idSuffix}`);
     if (!roomSelect) return;
-
     fetch('program.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -2702,7 +2666,6 @@ function populateEndTimeOptionsUnified(startTime, context, existingCourse = null
     const idSuffix = context === 'mobile' ? 'Page' : '';
     const endTimeSelect = document.getElementById(`timeEndSelect${idSuffix}`);
     if (!endTimeSelect || !startTime) return;
-
     const startHour = parseInt(startTime.split(':')[0]);
     const allEndTimes = [
         { value: '09:00:00', label: '9:00 AM' }, { value: '10:00:00', label: '10:00 AM' },
@@ -2711,7 +2674,6 @@ function populateEndTimeOptionsUnified(startTime, context, existingCourse = null
         { value: '15:00:00', label: '3:00 PM' }, { value: '16:00:00', label: '4:00 PM' },
         { value: '17:00:00', label: '5:00 PM' }
     ];
-
     endTimeSelect.innerHTML = '<option value="">Select end time...</option>';
     allEndTimes.forEach(time => {
         const timeHour = parseInt(time.value.split(':')[0]);
@@ -2725,17 +2687,14 @@ function submitAssignment(formElement, isEditMode) {
     const formData = new FormData(formElement);
     const selectedDays = Array.from(formElement.querySelectorAll('input[name="days[]"]:checked'))
         .map(checkbox => checkbox.value);
-
     if (selectedDays.length === 0) {
         showNotification('Please select at least one day', 'error');
         return;
     }
-
     formData.delete('days[]');
     formData.append('days', selectedDays.join(''));
     formData.append('action', 'assign_course_load');
     formData.append('faculty_id', currentFacultyId);
-
     fetch('program.php', {
         method: 'POST',
         body: formData
@@ -2758,19 +2717,16 @@ function deleteAssignment() {
     if (!confirm('Are you sure you want to delete this course assignment?')) {
         return;
     }
-
     const form = document.querySelector('form[id^="assignmentForm"]');
     const originalCourse = form.querySelector('input[name="original_course_code"]').value;
     const originalTime = form.querySelector('input[name="original_time_start"]').value;
     const originalDays = form.querySelector('input[name="original_days"]').value;
-
     const formData = new FormData();
     formData.append('action', 'delete_schedule');
     formData.append('faculty_id', currentFacultyId);
     formData.append('course_code', originalCourse);
     formData.append('time_start', originalTime);
     formData.append('days', originalDays);
-
     fetch('program.php', {
         method: 'POST',
         body: formData

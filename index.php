@@ -20,7 +20,6 @@ if (!isset($_GET['ready']) && empty($_POST)) {
             background: #075822 url('assets/images/icon.png') no-repeat center center;
             background-size: contain;
         }
-        /* .logo-loader removed as it is now background */
         .spinner {
             width: 50px; height: 50px;
             border: 4px solid rgba(255, 255, 255, 0.2);
@@ -28,7 +27,7 @@ if (!isset($_GET['ready']) && empty($_POST)) {
             border-top: 4px solid #ffffff;
             animation: spin 1s linear infinite;
             margin-bottom: 1.5rem;
-            z-index: 10000; /* Ensure on top */
+            z-index: 10000; 
             margin-top: 2rem;
         }
         .loading-text { 
@@ -38,7 +37,7 @@ if (!isset($_GET['ready']) && empty($_POST)) {
             font-weight: 500;
             letter-spacing: 0.5px;
             text-align: center;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.5); /* Stronger shadow for readability over image */
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5); 
             z-index: 10000;
         }
         .progress-bar-bg {
@@ -63,7 +62,6 @@ if (!isset($_GET['ready']) && empty($_POST)) {
             z-index: 10000;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* Removed pulse animation since image is static background */
         @keyframes indeterminate {
             0% { left: -100%; width: 100%; }
             100% { left: 100%; width: 10%; }
@@ -86,7 +84,6 @@ if (!isset($_GET['ready']) && empty($_POST)) {
             textIdx = (textIdx + 1) % texts.length;
             document.getElementById('loading-text').innerText = texts[textIdx];
         }, 2000);
-
         function checkServer() {
             fetch('assets/php/polling_api.php?action=test', { cache: "no-store" })
             .then(response => {
@@ -284,7 +281,6 @@ try {
             flex-direction: column;
             justify-content: center;
         }
-        
         .login-card::before {
             content: '';
             position: absolute;
@@ -298,31 +294,27 @@ try {
             border-radius: 15px;
             z-index: -1;
         }
-
         .form-input {
             background: rgba(255, 255, 255, 0.6) !important;
             border: 1px solid rgba(255, 255, 255, 0.4);
             color: #000;
             font-weight: 600;
-            font-size: 1.2rem; /* Increased font size */
-            padding: 16px; /* Increased height */
+            font-size: 1.2rem; 
+            padding: 16px; 
         }
         .form-input:focus {
             background: rgba(255, 255, 255, 0.9) !important;
             box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
         }
-        
         #password {
-            margin-bottom: 3rem; /* Gap before button */
+            margin-bottom: 3rem; 
         }
-
         .form-label {
             color: #fff;
             text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            font-size: 1.3rem; /* Increased label size */
+            font-size: 1.3rem; 
             margin-bottom: 10px;
         }
-
         .login-btn {
             width: 100%;
             background: #075822;
@@ -349,10 +341,9 @@ try {
         .demo-title {
             color: #eee;
         }
-        
         @media (max-width: 768px) {
             .login-card {
-                padding: 30px; /* Uniform padding */
+                padding: 30px; 
                 min-height: auto;
                 width: 90%;
             }
@@ -373,7 +364,6 @@ try {
                 margin-top: 10px !important;
                 padding: 12px;
             }
-
         }
     </style>
 </head>

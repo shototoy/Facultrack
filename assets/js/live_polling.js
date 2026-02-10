@@ -541,7 +541,6 @@ class LivePollingManager {
             default: return 'Unknown';
         }
     }
-
     getStatusClass(status) {
         switch (status) {
             case 'Available':
@@ -600,7 +599,6 @@ class LivePollingManager {
             }
         }
     }
-
     updateStatisticsFromTableData(data) {
         if (this.pageType === 'faculty' && data.stats) {
             this.updateFacultyStats(data.stats);
@@ -610,7 +608,6 @@ class LivePollingManager {
             this.updateTotalCount(data.tab, data.count);
         }
     }
-
     updateFacultyStats(stats) {
         const mapping = {
             'Today': stats.today,
@@ -618,7 +615,6 @@ class LivePollingManager {
             'Completed': stats.completed,
             'Status': stats.status
         };
-
         document.querySelectorAll('.header-stat').forEach(card => {
             const label = card.querySelector('.header-stat-label')?.textContent?.trim();
             const numberEl = card.querySelector('.header-stat-number');
@@ -627,7 +623,6 @@ class LivePollingManager {
             }
         });
     }
-
     getActiveTab() {
         const activeTabElement = document.querySelector('.tab-content.active');
         if (activeTabElement) {
@@ -823,41 +818,29 @@ class LivePollingManager {
     checkTableChanges(containerSelector, newData, type) {
         const container = document.querySelector(containerSelector);
         if (!container || !Array.isArray(newData)) return null;
-
-        // Count rows that represent actual data (exclude expansion rows if any legacy ones remain)
         const currentRows = container.querySelectorAll('tr:not(.expansion-row)').length;
         const newCount = newData.length;
-
         if (currentRows !== newCount) {
             console.log(`${type} count change detected. Reloading page to update...`);
             setTimeout(() => location.reload(), 500);
             return { type: 'reload_triggered' };
         }
-
-        // Check for specific ID presence/absence which might imply a swap even if count is same
-        // (Optional for strict correctness, but count mismatch is the main trigger for add/delete)
         const currentIds = Array.from(container.querySelectorAll('tr:not(.expansion-row)')).map(row => {
             const idField = this.getIdField(type).replace('_', '-');
-            return row.getAttribute(`data-${idField}`); // data-faculty-id etc.
+            return row.getAttribute(`data-${idField}`); 
         }).filter(id => id);
-
         const newIds = newData.map(item => item[this.getIdField(type)].toString());
-
-        // Simple check: if any ID in new data is missing from current DOM, or vice versa
         const hasIdMismatch = newIds.some(id => !currentIds.includes(id)) || currentIds.some(id => !newIds.includes(id));
-
         if (hasIdMismatch) {
             console.log(`${type} content mismatch detected. Reloading page...`);
             setTimeout(() => location.reload(), 500);
             return { type: 'reload_triggered' };
         }
-
         return null;
     }
     checkCardChanges(containerSelector, newData, type) {
         const container = document.querySelector(containerSelector);
         if (!container || !Array.isArray(newData)) return null;
-
         let cardSelector;
         if (type === 'faculty') {
             cardSelector = '.faculty-card:not(.add-card)';
@@ -868,16 +851,13 @@ class LivePollingManager {
         } else {
             return null;
         }
-
         const currentCards = container.querySelectorAll(cardSelector).length;
         const newCount = newData.length;
-
         if (currentCards !== newCount) {
             console.log(`${type} (cards) count change detected. Current: ${currentCards}, New: ${newCount}. Reloading page...`);
             setTimeout(() => location.reload(), 500);
             return { type: 'reload_triggered' };
         }
-
         return null;
     }
     logCurrentStatus() {
@@ -1063,54 +1043,41 @@ class LivePollingManager {
             }
         }
     }
-
     updateLocationDisplay(data) {
         if (this.pageType === 'faculty') {
             if (data.current_location !== undefined || data.status !== undefined) {
                 const locationText = document.getElementById('currentLocation');
                 const statusDots = document.querySelectorAll('.status-dot');
                 const statusTexts = document.querySelectorAll('.location-status span:not(.status-dot)');
-
                 if (data.current_location !== undefined && locationText) {
                     locationText.textContent = data.current_location || 'No Location';
                 }
-
                 if (data.status !== undefined) {
                     const status = data.status || 'Offline';
                     const statusClass = this.getStatusClass(status);
-
                     statusDots.forEach(dot => {
                         dot.className = `status-dot ${statusClass}`;
                     });
-
                     statusTexts.forEach(text => {
                         text.textContent = status;
                     });
                 }
             }
-
-
             if (data.last_updated !== undefined) {
                 const lastUpdatedElement = document.querySelector('.location-updated');
                 if (lastUpdatedElement) {
                     const originalText = lastUpdatedElement.textContent;
                     const newText = `Last updated: ${data.last_updated}`;
-
-
                     lastUpdatedElement.textContent = newText;
-
-
                     lastUpdatedElement.style.transition = 'background-color 0.5s ease';
                     lastUpdatedElement.style.backgroundColor = '#fffbeb';
                     lastUpdatedElement.style.padding = '2px 5px';
                     lastUpdatedElement.style.borderRadius = '4px';
-
                     setTimeout(() => {
                         lastUpdatedElement.style.backgroundColor = 'transparent';
                     }, 500);
                 }
             }
-
             if (data.faculty && Array.isArray(data.faculty)) {
                 this.updateFacultyOwnStatus(data.faculty);
             }
@@ -1137,47 +1104,34 @@ class LivePollingManager {
             });
         }
     }
-
-
     updateTableRowStatus(row, entityData, entityType) {
         const statusClass = this.getStatusClass(entityData.status);
-
         switch (entityType) {
             case 'faculty':
-
                 const statusBadge = row.querySelector('.status-badge');
                 if (statusBadge) {
                     statusBadge.className = `status-badge ${statusClass}`;
                     statusBadge.textContent = entityData.status || 'Offline';
                 }
-
-
                 const statusDot = row.querySelector('.status-dot');
                 if (statusDot) {
                     statusDot.className = `status-dot ${statusClass}`;
                 }
-
-
                 const locationCell = row.querySelector('.location-column, .location-cell, .current-location');
                 if (locationCell && entityData.current_location !== undefined) {
                     locationCell.textContent = entityData.current_location || 'Not Available';
                 }
-
-
                 const lastSeenCell = row.querySelector('.last-seen');
                 if (lastSeenCell && entityData.last_seen !== undefined) {
                     lastSeenCell.textContent = entityData.last_seen || 'Unknown';
                 }
                 break;
-
             default:
-
                 const defaultStatusBadge = row.querySelector('.status-badge');
                 if (defaultStatusBadge) {
                     defaultStatusBadge.className = `status-badge ${statusClass}`;
                     defaultStatusBadge.textContent = entityData.status || 'Offline';
                 }
-
                 const defaultStatusDot = row.querySelector('.status-dot');
                 if (defaultStatusDot) {
                     defaultStatusDot.className = `status-dot ${statusClass}`;
@@ -1187,61 +1141,44 @@ class LivePollingManager {
     }
     updateCardStatus(card, entityData, entityType) {
         const statusClass = this.getStatusClass(entityData.status);
-
         switch (entityType) {
             case 'faculty':
-
                 const statusBadge = card.querySelector('.status-badge');
                 if (statusBadge) {
                     statusBadge.className = `status-badge ${statusClass}`;
                     statusBadge.textContent = entityData.status || 'Offline';
                 }
-
-
                 const statusDot = card.querySelector('.status-dot');
                 if (statusDot) {
                     statusDot.className = `status-dot ${statusClass}`;
                 }
-
-
                 const locationText = card.querySelector('.location-text');
                 if (locationText) {
                     locationText.textContent = entityData.status || 'Offline';
                 }
-
-
                 const locationDiv = card.querySelector('.location-info div:nth-child(2)');
                 if (locationDiv && entityData.current_location !== undefined) {
                     locationDiv.textContent = entityData.current_location || 'Not Available';
                 }
-
-
                 const currentLocationElement = card.querySelector('.current-location, .faculty-location');
                 if (currentLocationElement && entityData.current_location !== undefined) {
                     currentLocationElement.textContent = entityData.current_location || 'Not Available';
                 }
-
-
                 const timeInfo = card.querySelector('.time-info');
                 if (timeInfo && entityData.last_updated) {
                     timeInfo.textContent = `Last updated: ${entityData.last_updated}`;
                 }
-
-
                 const lastSeenElement = card.querySelector('.last-seen, .faculty-last-seen');
                 if (lastSeenElement && entityData.last_seen !== undefined) {
                     lastSeenElement.textContent = entityData.last_seen || 'Unknown';
                 }
                 break;
-
             default:
-
                 const defaultStatusBadge = card.querySelector('.status-badge');
                 if (defaultStatusBadge) {
                     defaultStatusBadge.className = `status-badge ${statusClass}`;
                     defaultStatusBadge.textContent = entityData.status || 'Offline';
                 }
-
                 const defaultStatusDot = card.querySelector('.status-dot');
                 if (defaultStatusDot) {
                     defaultStatusDot.className = `status-dot ${statusClass}`;
@@ -1276,7 +1213,6 @@ class LivePollingManager {
         }
         this.updateCounts(entityType, 1);
     }
-
     addToCards(entityType, entityData) {
         if (this.pageType !== 'program') return;
         const cardContainer = document.querySelector(`.${entityType}-grid, .${entityType}-cards`);
@@ -1330,10 +1266,6 @@ class LivePollingManager {
             });
         }
     }
-
-
-
-
     createFacultyCard(faculty) {
         const isProgram = this.pageType === 'program';
         const status = faculty.status || 'Offline';
@@ -1488,11 +1420,8 @@ class LivePollingManager {
         if (!container) return;
     }
     addToTable(tab, entityData) {
-        // Map tab name to entity type if necessary, but usually they match
-        // Director tabs: faculty, courses, classes, announcements
         const tableBody = document.querySelector(`#${tab}-content .data-table tbody`);
         if (!tableBody) return;
-
         const rowHTML = this.createTableRow(entityData, tab);
         if (rowHTML) {
             tableBody.insertAdjacentHTML('beforeend', rowHTML);
@@ -1502,7 +1431,6 @@ class LivePollingManager {
             }
         }
     }
-
     createTableRow(item, type) {
         switch (type) {
             case 'faculty':
@@ -2024,9 +1952,6 @@ class LivePollingManager {
         } catch (error) {
         }
     }
-
-
-
     updateRowCount(tableType, count) {
         const countElement = document.querySelector(`#${tableType}-content .table-count`);
         if (countElement) {
@@ -2090,19 +2015,15 @@ class LivePollingManager {
             }
         }
     }
-
     updateFacultyOwnStatus(facultyData) {
         const currentUserId = window.userId || sessionStorage.getItem('userId');
         const currentUser = facultyData.find(faculty => faculty.user_id == currentUserId);
         if (!currentUser) return;
-
         const statusDots = document.querySelectorAll('.status-dot');
         const statusTexts = document.querySelectorAll('.location-status span:not(.status-dot)');
         const locationText = document.getElementById('currentLocation');
-
         const status = currentUser.status || 'Offline';
         const statusClass = this.getStatusClass(status);
-
         statusDots.forEach(dot => {
             const oldClass = dot.className;
             const newClass = `status-dot ${statusClass}`;
@@ -2112,7 +2033,6 @@ class LivePollingManager {
                 setTimeout(() => dot.style.animation = '', 300);
             }
         });
-
         statusTexts.forEach(text => {
             if (text.textContent.trim() !== status) {
                 text.textContent = status;
@@ -2120,15 +2040,11 @@ class LivePollingManager {
                 setTimeout(() => text.style.animation = '', 300);
             }
         });
-
         if (locationText && currentUser.current_location) {
             locationText.textContent = currentUser.current_location || 'No Location';
         }
-
-
         console.log('Current user data:', currentUser);
         console.log('last_updated value:', currentUser.last_updated);
-
         if (currentUser.last_updated) {
             const lastUpdatedElement = document.querySelector('.location-updated');
             console.log('lastUpdatedElement found:', lastUpdatedElement);
@@ -2142,3 +2058,4 @@ class LivePollingManager {
     }
 }
 window.livePolling = new LivePollingManager();
+

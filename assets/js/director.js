@@ -1,4 +1,3 @@
-
 function createSearchResultActions() {
     if (document.querySelector('#searchInput')) {
         const searchInput = document.querySelector('#searchInput');
@@ -19,15 +18,12 @@ function createSearchResultActions() {
         });
     }
 }
-
 async function loadProgramCourses(programId) {
     const container = document.getElementById(`program-courses-${programId}`);
     if (!container) return;
-
     try {
         const response = await fetch(`assets/php/polling_api.php?action=get_program_courses&program_id=${programId}`);
         const data = await response.json();
-
         if (data.success && data.courses) {
             if (data.courses.length === 0) {
                 container.innerHTML = '<div class="no-courses">No courses assigned to this program yet.</div>';
@@ -48,37 +44,29 @@ async function loadProgramCourses(programId) {
         container.innerHTML = '<div class="error">Error loading courses</div>';
     }
 }
-
 window.loadProgramCourses = loadProgramCourses;
-
-// IFTL Tab Functions
 async function loadIFTLFaculty() {
     const container = document.querySelector('#iftl-content .table-container');
     container.innerHTML = '<div class="loading-spinner"></div> Loading faculty list...';
-
     try {
         const response = await fetch('assets/php/polling_api.php?action=get_iftl_faculty_list');
         const data = await response.json();
-
         if (data.success) {
             if (data.faculty.length === 0) {
                 container.innerHTML = '<div class="empty-state"><h3>No faculty members found.</h3></div>';
                 return;
             }
-
             let html = `
                 <div class="table-header">
                     <h3 class="table-title">Individual Faculty Teaching Load (Week: ${data.current_week})</h3>
                 </div>
                 <div class="iftl-grid">
             `;
-
             data.faculty.forEach(faculty => {
                 const hasIFTL = faculty.has_iftl > 0;
                 const statusClass = hasIFTL ? '' : 'no-iftl';
                 const statusText = hasIFTL ? 'Submitted' : 'No IFTL';
                 const statusBadge = hasIFTL ? '<span class="status-badge status-available">Submitted</span>' : '<span class="status-badge status-offline">Missing</span>';
-
                 html += `
                     <div class="iftl-card ${statusClass}" onclick="openIFTLModal(${faculty.faculty_id}, '${faculty.full_name}')">
                         <div class="iftl-card-header">
@@ -94,7 +82,6 @@ async function loadIFTLFaculty() {
                     </div>
                 `;
             });
-
             html += '</div>';
             container.innerHTML = html;
         } else {
@@ -105,11 +92,9 @@ async function loadIFTLFaculty() {
         container.innerHTML = '<div class="error-message">Failed to load faculty list.</div>';
     }
 }
-
 function getInitials(name) {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 }
-
 function searchTable(query, type) {
     if (type === 'iftl') {
         const cards = document.querySelectorAll('.iftl-card');
@@ -119,7 +104,6 @@ function searchTable(query, type) {
         });
         return;
     }
-
     const table = document.querySelector(`#${type === 'class' ? 'classes' : type}-content .data-table`);
     if (!table) return;
     const rows = table.querySelectorAll('tbody tr:not(.expansion-row)');
@@ -128,22 +112,16 @@ function searchTable(query, type) {
         const text = row.textContent.toLowerCase();
         const isVisible = text.includes(query);
         row.style.display = isVisible ? '' : 'none';
-
         if (isVisible) visibleCount++;
     });
 }
-
-// Announcement Actions
 function printAnnouncement(announcement) {
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) {
         alert('Please allow popups to use the print feature.');
         return;
     }
-
-    // Format date properly
     const dateStr = announcement.created_at ? new Date(announcement.created_at).toLocaleDateString() : new Date().toLocaleDateString();
-
     printWindow.document.write(`
         <html>
         <head>
@@ -212,7 +190,6 @@ function printAnnouncement(announcement) {
     `);
     printWindow.document.close();
 }
-
 async function emailAnnouncement(announcement) {
     const subject = encodeURIComponent(`Announcement: ${announcement.title}`);
     const bodyContent = `${announcement.title}\n\n` +
@@ -220,10 +197,7 @@ async function emailAnnouncement(announcement) {
         `Target Audience: ${announcement.target_audience}\n\n` +
         `${announcement.content}\n\n` +
         `--\nSent via FaculTrack`;
-
     let ccEmails = [];
-
-    // Fetch emails based on audience if applicable
     if (announcement.target_audience === 'faculty' || announcement.target_audience === 'program_chairs' || announcement.target_audience === 'all') {
         try {
             const response = await fetch(`assets/php/polling_api.php?action=get_audience_emails&audience=${announcement.target_audience}`);
@@ -235,27 +209,17 @@ async function emailAnnouncement(announcement) {
             console.error("Error fetching audience emails:", error);
         }
     }
-
     const recipientString = ccEmails.join(',');
-
-    // Use window.open to avoid navigating away, though mailto usually doesn't navigation
-    // But some browsers might show a blank page. 
-    // Creating a temporary link and clicking it is safer.
-    // Putting recipients in TOO field as requested.
     const mailtoLink = `mailto:${recipientString}?subject=${subject}&body=${encodeURIComponent(bodyContent)}`;
-
     const link = document.createElement('a');
     link.href = mailtoLink;
-    link.target = '_blank'; // Optional, but helps in some browsers
+    link.target = '_blank'; 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
-
 window.printAnnouncement = printAnnouncement;
 window.emailAnnouncement = emailAnnouncement;
-
-// Initialize IFTL tab listener
 document.addEventListener('DOMContentLoaded', function () {
     const iftlTabBtn = document.querySelector('button[data-tab="iftl"]');
     if (iftlTabBtn) {
@@ -264,7 +228,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
-
 function removeEntityFromUI(entityType, entityId) {
     switch (entityType) {
         case 'faculty':
@@ -284,7 +247,6 @@ function removeEntityFromUI(entityType, entityId) {
             break;
     }
 }
-
 function removeFacultyFromTable(facultyId) {
     const row = document.querySelector(`tr[data-faculty-id="${facultyId}"]`);
     if (row) {
@@ -296,15 +258,12 @@ function removeFacultyFromTable(facultyId) {
             updateHeaderStatistics('faculty', -1);
         }, 300);
     } else {
-        // Fallback for when data-attribute is missing (legacy rows or different structure)
-        // Try finding by button onclick content
         const selectors = [
             `tr:has(button[onclick*="delete_faculty, ${facultyId}"])`,
             `tr:has(button[onclick*="'delete_faculty', ${facultyId}"])`,
             `button[onclick*="delete_faculty, ${facultyId}"]`,
             `button[onclick*="'delete_faculty', ${facultyId}"]`
         ];
-
         for (const selector of selectors) {
             try {
                 const button = document.querySelector(selector);
@@ -325,7 +284,6 @@ function removeFacultyFromTable(facultyId) {
         }
     }
 }
-
 function removeClassFromTable(classId) {
     const row = document.querySelector(`tr[data-class-id="${classId}"]`);
     if (row) {
@@ -350,7 +308,6 @@ function removeClassFromTable(classId) {
         }
     }
 }
-
 function removeCourseFromTable(courseId) {
     const rows = document.querySelectorAll('#courses-content .data-table tbody tr');
     rows.forEach(row => {
@@ -361,7 +318,6 @@ function removeCourseFromTable(courseId) {
         }
     });
 }
-
 function removeAnnouncementFromTable(announcementId) {
     const row = document.querySelector(`tr[data-announcement-id="${announcementId}"]`);
     if (row) {
@@ -386,7 +342,6 @@ function removeAnnouncementFromTable(announcementId) {
         }
     }
 }
-
 function removeProgramFromTable(programId) {
     const row = document.querySelector(`tr[data-program-id="${programId}"]`);
     if (row) {
@@ -411,8 +366,6 @@ function removeProgramFromTable(programId) {
         }
     }
 }
-
-
 function updateHeaderStatistics(entityType, delta) {
     const elementMap = {
         'faculty': 'totalFaculty',
@@ -437,11 +390,7 @@ function updateHeaderStatistics(entityType, delta) {
     }
 }
 function updateTableCounts(entityType, delta) {
-    // This seems redundant or recursive in original code, simplifying or removing if not used elsewhere
-    // Keeping for safety but it looks wrong in original
-    // updateTableCounts(entityType, delta); 
 }
-
 window.loadClassesForSemester = async function (semester) {
     const academicYearSelect = document.querySelector('[name="academic_year"]');
     const academicYear = academicYearSelect.value;
@@ -555,27 +504,17 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }, 1000);
 });
-
-// Global variables for print functionality
 window.facultyNames = {};
 window.facultySchedules = {};
-
-// Global variable to store current faculty ID for IFTL modal
 let currentIFTLFacultyId = null;
-
 async function openIFTLModal(facultyId, facultyName) {
-    // Save faculty name for print logic
     window.facultyNames[facultyId] = facultyName;
-
-    // Show loading state
     const originalText = event ? event.target.innerHTML : '';
     const button = event ? event.target.closest('button') : null;
-
     if (button) {
         button.disabled = true;
         button.innerHTML = '<span class="loading-spinner-sm"></span> Loading...';
     }
-
     try {
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
@@ -583,12 +522,8 @@ async function openIFTLModal(facultyId, facultyName) {
             body: `action=get_full_faculty_schedule&faculty_id=${facultyId}`
         });
         const result = await response.json();
-
         if (result.success) {
-            // Store schedule for print logic
             window.facultySchedules[facultyId] = result.schedules;
-
-            // Execute print logic
             if (typeof printFacultySchedule === 'function') {
                 printFacultySchedule(facultyId);
             } else {
