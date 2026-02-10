@@ -1171,6 +1171,9 @@ body::before {
     border-bottom: 3px solid transparent;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .tab-button.active {

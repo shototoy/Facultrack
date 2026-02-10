@@ -992,13 +992,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
             ?>
             <div class="dashboard-tabs">
                 <button class="tab-button active" onclick="switchTab('faculty')" data-tab="faculty">
-                    Faculty Members
+                    <svg class="feather feather-sm"><use href="#users"></use></svg> Faculty Members
                 </button>
                 <button class="tab-button" onclick="switchTab('courses')" data-tab="courses">
-                    Courses
+                    <svg class="feather feather-sm"><use href="#book-open"></use></svg> Courses
                 </button>
                 <button class="tab-button" onclick="switchTab('classes')" data-tab="classes">
-                    Classes
+                    <svg class="feather feather-sm"><use href="#clipboard"></use></svg> Classes
                 </button>
                 <div class="search-bar">
                     <div class="search-container collapsed" id="searchContainer">

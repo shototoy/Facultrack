@@ -58,13 +58,13 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
         ?>
         <div class="dashboard-tabs">
             <button class="tab-button active" onclick="switchTab('faculty')" data-tab="faculty">
-                Faculty Members
+                <svg class="feather feather-sm"><use href="#users"></use></svg> Faculty Members
             </button>
             <button class="tab-button" onclick="switchTab('announcements')" data-tab="announcements">
-                Announcements
+                <svg class="feather feather-sm"><use href="#bell"></use></svg> Announcements
             </button>
             <button class="tab-button" onclick="switchTab('iftl')" data-tab="iftl">
-                IFTL
+                <svg class="feather feather-sm"><use href="#calendar"></use></svg> IFTL
             </button>
             <div class="search-bar">
                 <div class="search-container collapsed" id="searchContainer">
