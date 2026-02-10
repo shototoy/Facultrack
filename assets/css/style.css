@@ -3756,21 +3756,28 @@ body:has(.faculty-grid) .tab-content.active,
 }
 
 .iftl-avatar {
-    width: 40px;
-    height: 40px;
-    background: var(--primary-color);
+    width: 50px;
+    height: 50px;
+    background: var(--faculty-avatar-bg);
     color: white;
-    border-radius: 50%;
+    border: 2px solid var(--faculty-avatar-border);
+    border-radius: var(--radius-round);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    font-size: 0.9rem;
+    font-weight: 600;
+    font-size: 1rem;
     flex-shrink: 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: all var(--transition-normal);
 }
 
 .iftl-card.no-iftl .iftl-avatar {
-    background: #ccc;
+    background: var(--faculty-avatar-bg);
+    filter: grayscale(100%);
+    opacity: 0.6;
+    border-color: #e0e0e0;
+    box-shadow: none;
 }
 
 .iftl-info {

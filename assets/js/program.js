@@ -2109,7 +2109,7 @@ function exportSchedule(facultyId) {
     exportWindow.onload = () => {
         if (typeof html2canvas === 'undefined') {
             const script = exportWindow.document.createElement('script');
-            script.src = 'https:
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
             script.onload = () => {
                 captureAndDownload(exportWindow, facultyName);
             };

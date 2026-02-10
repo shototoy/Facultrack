@@ -31,7 +31,8 @@ require_once 'assets/php/announcement_functions.php';
     right: 0;
     width: 100%;
     height: 100%;
-    background: url('data:image/svg+xml,<svg xmlns="http:
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="80" cy="20" r="20" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="60" r="15" fill="rgba(255,255,255,0.05)"/><circle cx="70" cy="80" r="25" fill="rgba(255,255,255,0.08)"/></svg>') no-repeat;
+
     background-size: cover;
     pointer-events: none;
 }
