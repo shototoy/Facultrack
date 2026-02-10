@@ -537,9 +537,11 @@ body::before {
 }
 
 .main-container {
-    max-width: 100vw;
+    width: 100%;
+    max-width: 100%;
     margin: 0 auto;
     position: relative;
+    overflow-x: hidden;
 }
 
 .content-wrapper {
