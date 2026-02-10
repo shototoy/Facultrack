@@ -1351,30 +1351,37 @@ body:has(.table-container) .tab-content.active {
 }
 
 .table-container .data-table th:nth-child(1) {
-    width: 40%;
-    padding-left: 20px;
-    font-size: 0.95rem;
+    width: 50%;
+    font-size: 1rem;
     font-weight: 600;
+}
+
+@media (max-width: 1200px) {
+    .table-container .data-table th:nth-child(1) {
+        width: 30%;
+    }
+
+    .table-container .data-table td:nth-child(2),
+    .table-container .data-table td:nth-child(3) {
+        width: 15%;
+    }
 }
 
 .table-container .data-table td:nth-child(2),
 .table-container .data-table td:nth-child(3) {
-    width: 15%;
+    width: 12%;
 }
 
-.table-container .data-table .name-column {
-    font-size: 0.95rem;
-    font-weight: 600;
-}
 
 .table-container .data-table th,
 .table-container .data-table td {
-    padding: 12px 8px;
+    padding: 8px 12px;
     text-align: left;
     border-bottom: 1px solid rgba(222, 226, 230, 0.4);
     transition: background-color 0.2s ease, box-shadow 0.2s ease;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    font-size: 0.6rem;
 }
 
 .table-container .data-table th {
@@ -1404,7 +1411,17 @@ body:has(.table-container) .tab-content.active {
 
 .table-container .data-table td {
     font-size: 0.85rem;
-    vertical-align: top;
+    vertical-align: middle;
+}
+
+.table-container .data-table .actions-column {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    border-bottom: none;
+    /* Let the tr border handle it or keep it? */
 }
 
 
@@ -2288,13 +2305,6 @@ body:has(.faculty-grid) .tab-content.active,
 .data-table {
     font-size: 0.7rem;
     table-layout: auto;
-}
-
-.data-table th,
-.data-table td {
-    font-size: 0.7rem !important;
-    padding: 4px 2px !important;
-    white-space: normal !important;
 }
 
 
@@ -3591,6 +3601,7 @@ body:has(.faculty-grid) .tab-content.active,
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-align: center;
 }
 
 .action-btn.view-btn {

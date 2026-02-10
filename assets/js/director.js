@@ -236,12 +236,13 @@ async function emailAnnouncement(announcement) {
         }
     }
 
-    const ccString = ccEmails.join(',');
+    const recipientString = ccEmails.join(',');
 
     // Use window.open to avoid navigating away, though mailto usually doesn't navigation
     // But some browsers might show a blank page. 
     // Creating a temporary link and clicking it is safer.
-    const mailtoLink = `mailto:?cc=${encodeURIComponent(ccString)}&subject=${subject}&body=${encodeURIComponent(bodyContent)}`;
+    // Putting recipients in TOO field as requested.
+    const mailtoLink = `mailto:${recipientString}?subject=${subject}&body=${encodeURIComponent(bodyContent)}`;
 
     const link = document.createElement('a');
     link.href = mailtoLink;
