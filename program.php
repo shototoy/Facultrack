@@ -950,15 +950,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
         
         /* Unified Empty State Styles */
         .empty-state-container {
-            grid-column: 1 / -1;
-            width: 100%;
+            grid-column: auto / -1;
+            width: auto;
             text-align: center;
-            padding: 40px 20px;
+            padding: 20px;
             color: var(--text-secondary);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            height: 100%;
             min-height: 200px;
             background: rgba(255, 255, 255, 0.5);
             border-radius: 12px;
