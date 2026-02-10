@@ -1011,6 +1011,56 @@ switch ($action) {
             sendJsonResponse(['success' => false, 'message' => 'Database error']);
         }
         break;
+    case 'get_iftl_faculty_list':
+        validateUserSession('campus_director');
+        try {
+            $week_identifier = date('Y') . '-W' . date('W'); // Current week
+            
+            // Query faculty with IFTL status
+            $query = "
+                SELECT 
+                    f.faculty_id, 
+                    u.full_name, 
+                    f.program, 
+                    f.status,
+                    f.current_location,
+                    (SELECT COUNT(*) 
+                     FROM iftl_weekly_compliance iwc 
+                     WHERE iwc.faculty_id = f.faculty_id 
+                     AND iwc.week_identifier = ?) as has_iftl
+                FROM faculty f
+                JOIN users u ON f.user_id = u.user_id
+                WHERE u.role NOT IN ('program_chair', 'campus_director')
+                ORDER BY u.full_name ASC
+            ";
+            
+            $stmt = $pdo->prepare($query);
+            $stmt->execute([$week_identifier]);
+            $faculty_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Debugging if empty: Check total faculty count without filter
+            if (empty($faculty_list)) { 
+                $debug_query = "SELECT u.full_name, u.role FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.is_active = TRUE";
+                $stmt_debug = $pdo->prepare($debug_query);
+                $stmt_debug->execute();
+                $all_faculty = $stmt_debug->fetchAll(PDO::FETCH_ASSOC);
+                 // If you want to see this in network tab, temporary change response structure
+                 // sendJsonResponse(['success' => true, 'faculty' => [], 'debug_all' => $all_faculty, 'week' => $week_identifier]); 
+                 // But for now, let's just make sure the filter isn't too aggressive. 
+                 // It is possible the role stored in DB is 'Program Chair' not 'program_chair' or something?
+                 // But wait, the standard get_dashboard_data works. 
+                 // Let's try removing the filter temporarily to see if data appears.
+            }
+            
+            sendJsonResponse([
+                'success' => true,
+                'faculty' => $faculty_list,
+                'current_week' => $week_identifier
+            ]);
+        } catch (Exception $e) {
+            sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        }
+        break;
     case 'get_dashboard_data':
         $tab = $_GET['tab'] ?? 'faculty';
         $role = $_SESSION['role'];

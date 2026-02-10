@@ -64,6 +64,16 @@ if (!function_exists('renderAnnouncementCard')) {
         $category = getAnnouncementCategory($announcement['target_audience']);
         $created_at = $announcement['time_ago'] ?? date('M j, Y', strtotime($announcement['created_at']));
         $full_date = date('F d, Y', strtotime($announcement['created_at']));
+        $announcementJson = htmlspecialchars(json_encode($announcement), ENT_QUOTES, 'UTF-8');
+        
+        $emailButton = '';
+        if (isset($_SESSION['role']) && $_SESSION['role'] === 'campus_director') {
+            $emailButton = "
+                <button onclick='event.stopPropagation(); emailAnnouncement({$announcementJson})' title='Email Announcement' style='background: none; border: none; cursor: pointer; margin-left: 4px; padding: 4px; color: inherit; vertical-align: middle; opacity: 0.7; transition: opacity 0.2s;' onmouseover='this.style.opacity=1' onmouseout='this.style.opacity=0.7'>
+                    <svg class='feather' style='width: 14px; height: 14px;'><use href='#mail'></use></svg>
+                </button>";
+        }
+
         return "
         <div class='announcement-card priority-{$priority_class}' id='announcement-{$announcement['announcement_id']}'>
             <div class='announcement-header'>
@@ -73,9 +83,10 @@ if (!function_exists('renderAnnouncementCard')) {
                 </div>
                 <div class='announcement-date' data-full-date='{$full_date}'>
                     {$created_at}
-                    <button onclick='printAnnouncement({$announcement['announcement_id']})' title='Print Announcement' style='background: none; border: none; cursor: pointer; margin-left: 8px; padding: 4px; color: inherit; vertical-align: middle; opacity: 0.7; transition: opacity 0.2s;' onmouseover='this.style.opacity=1' onmouseout='this.style.opacity=0.7'>
+                    <button onclick='event.stopPropagation(); printAnnouncement({$announcementJson})' title='Print Announcement' style='background: none; border: none; cursor: pointer; margin-left: 8px; padding: 4px; color: inherit; vertical-align: middle; opacity: 0.7; transition: opacity 0.2s;' onmouseover='this.style.opacity=1' onmouseout='this.style.opacity=0.7'>
                         <svg class='feather' style='width: 14px; height: 14px;'><use href='#printer'></use></svg>
                     </button>
+                    {$emailButton}
                 </div>
             </div>
             <h4 class='announcement-title'>" . htmlspecialchars($announcement['title']) . "</h4>

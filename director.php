@@ -108,10 +108,10 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                 </td>
                                 <td class="location-column"><?php echo htmlspecialchars($faculty['current_location'] ?? 'No Location'); ?></td>
                                 <td class="actions-column">
-                                    <button class="action-btn view-btn" onclick="openIFTLModal(<?php echo $faculty['faculty_id']; ?>, '<?php echo htmlspecialchars($faculty['full_name']); ?>')" title="View IFTL">
+                                    <button class="action-btn view-btn" onclick="event.stopPropagation(); openIFTLModal(<?php echo $faculty['faculty_id']; ?>, '<?php echo htmlspecialchars($faculty['full_name']); ?>')" title="View IFTL">
                                         <svg class="feather feather-sm"><use href="#calendar"></use></svg> IFTL
                                     </button>
-                                    <button class="action-btn edit-btn" onclick="openEditFacultyModal(<?php echo $faculty['faculty_id']; ?>)" title="Edit">
+                                    <button class="action-btn edit-btn" onclick="event.stopPropagation(); openEditFacultyModal(<?php echo $faculty['faculty_id']; ?>)" title="Edit">
                                         <svg class="feather feather-sm"><use href="#edit"></use></svg> Edit
                                     </button>
                                     <button class="delete-btn" onclick="event.stopPropagation(); deleteEntity('delete_faculty', <?php echo $faculty['faculty_id']; ?>)">
@@ -159,6 +159,12 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                                 </td>
                                 <td class="program-column"><?php echo htmlspecialchars($announcement['target_audience']); ?></td>
                                 <td class="actions-column">
+                                    <button class="action-btn print-btn" onclick="event.stopPropagation(); printAnnouncement(<?php echo htmlspecialchars(json_encode($announcement)); ?>)" title="Print">
+                                        <svg class="feather feather-sm"><use href="#printer"></use></svg> Print
+                                    </button>
+                                    <button class="action-btn email-btn" onclick="event.stopPropagation(); emailAnnouncement(<?php echo htmlspecialchars(json_encode($announcement)); ?>)" title="Email">
+                                        <svg class="feather feather-sm"><use href="#mail"></use></svg> Email
+                                    </button>
                                     <button class="action-btn edit-btn" onclick="event.stopPropagation(); openEditAnnouncementModal(<?php echo $announcement['announcement_id']; ?>)" title="Edit">
                                         <svg class="feather feather-sm"><use href="#edit"></use></svg> Edit
                                     </button>

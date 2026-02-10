@@ -997,8 +997,8 @@ body::before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
-    padding-bottom: 15px;
+    margin-bottom: 4px;
+    padding-bottom: 8px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
@@ -1350,9 +1350,21 @@ body:has(.table-container) .tab-content.active {
     height: auto;
 }
 
-.table-container .data-table th:nth-child(1),
-.table-container .data-table td:nth-child(1) {
-    width: 50%;
+.table-container .data-table th:nth-child(1) {
+    width: 40%;
+    padding-left: 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.table-container .data-table td:nth-child(2),
+.table-container .data-table td:nth-child(3) {
+    width: 15%;
+}
+
+.table-container .data-table .name-column {
+    font-size: 0.95rem;
+    font-weight: 600;
 }
 
 .table-container .data-table th,
@@ -2315,48 +2327,11 @@ body:has(.faculty-grid) .tab-content.active,
     min-width: 70px;
 }
 
-.data-table .actions-column {
-    width: 1% !important;
-    /* Shrink to fit content */
-    white-space: nowrap !important;
-    min-width: auto !important;
-    padding: 4px 2px !important;
-    text-align: center !important;
-}
 
-/* Icon-only Buttons */
-.action-btn,
-.delete-btn {
-    font-size: 0 !important;
-    padding: 0 !important;
-    width: 24px !important;
-    /* Comfortable touch size */
-    height: 24px !important;
-    min-width: 24px !important;
-    display: inline-flex !important;
-    /* Critical for alignment */
-    align-items: center;
-    justify-content: center;
-    margin: 0 1px !important;
-    box-sizing: border-box !important;
-    border-radius: 4px;
-}
 
-.action-btn svg,
-.delete-btn svg {
-    width: 14px !important;
-    height: 14px !important;
-    margin: 0 !important;
-    display: block !important;
-}
 
-.delete-btn {
-    padding: 4px 8px;
-    font-size: 0.65rem;
-    border-radius: 4px;
-    white-space: nowrap;
-    min-width: 60px;
-}
+
+
 
 .status-badge {
     padding: 2px 6px;
@@ -3523,14 +3498,13 @@ body:has(.faculty-grid) .tab-content.active,
 .details-grid {
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    padding: 10px;
+    gap: 12px;
+    padding: 0;
 }
 
 .details-section {
     border-bottom: 1px solid #eee;
-    padding-bottom: 16px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -3538,15 +3512,15 @@ body:has(.faculty-grid) .tab-content.active,
 
 .details-section h4 {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     color: #2c3e50;
     font-weight: 600;
 }
 
 .details-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
 }
 
 .detail-group {
@@ -3610,10 +3584,10 @@ body:has(.faculty-grid) .tab-content.active,
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 8px 14px;
+    padding: 6px 12px;
     border: none;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -3649,6 +3623,26 @@ body:has(.faculty-grid) .tab-content.active,
     transform: translateY(-1px);
 }
 
+.action-btn.print-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+.action-btn.print-btn:hover {
+    background-color: #5a6268;
+    transform: translateY(-1px);
+}
+
+.action-btn.email-btn {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.action-btn.email-btn:hover {
+    background-color: #138496;
+    transform: translateY(-1px);
+}
+
 .action-btn svg,
 .delete-btn svg {
     width: 16px;
@@ -3668,4 +3662,131 @@ body:has(.faculty-grid) .tab-content.active,
         justify-content: center;
         text-align: center;
     }
+}
+
+/* Global Responsive Action Buttons (Tablet & Mobile) */
+@media (max-width: 768px) {
+
+    .table-container .action-btn,
+    .table-container .delete-btn {
+        font-size: 0 !important;
+        padding: 0 !important;
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 2px !important;
+        border-radius: 6px;
+        color: transparent !important;
+        position: relative !important;
+    }
+
+    .table-container .action-btn svg,
+    .table-container .delete-btn svg {
+        width: 16px !important;
+        height: 16px !important;
+        margin: 0 !important;
+        display: block !important;
+        color: white !important;
+        fill: currentColor;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+    }
+
+    .table-actions {
+        gap: 4px;
+    }
+}
+
+/* IFTL Tab Styles */
+.iftl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 16px;
+}
+
+.iftl-card {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eee;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.iftl-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.iftl-card.no-iftl {
+    opacity: 0.7;
+    background: #f8f9fa;
+    border-style: dashed;
+}
+
+.iftl-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.iftl-avatar {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.iftl-card.no-iftl .iftl-avatar {
+    background: #ccc;
+}
+
+.iftl-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.iftl-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.iftl-program {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.iftl-status {
+    font-size: 0.75rem;
+    flex-shrink: 0;
 }

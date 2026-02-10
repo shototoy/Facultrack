@@ -51,7 +51,75 @@ async function loadProgramCourses(programId) {
 
 window.loadProgramCourses = loadProgramCourses;
 
+// IFTL Tab Functions
+async function loadIFTLFaculty() {
+    const container = document.querySelector('#iftl-content .table-container');
+    container.innerHTML = '<div class="loading-spinner"></div> Loading faculty list...';
+
+    try {
+        const response = await fetch('assets/php/polling_api.php?action=get_iftl_faculty_list');
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.faculty.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No faculty members found.</h3></div>';
+                return;
+            }
+
+            let html = `
+                <div class="table-header">
+                    <h3 class="table-title">Individual Faculty Teaching Load (Week: ${data.current_week})</h3>
+                </div>
+                <div class="iftl-grid">
+            `;
+
+            data.faculty.forEach(faculty => {
+                const hasIFTL = faculty.has_iftl > 0;
+                const statusClass = hasIFTL ? '' : 'no-iftl';
+                const statusText = hasIFTL ? 'Submitted' : 'No IFTL';
+                const statusBadge = hasIFTL ? '<span class="status-badge status-available">Submitted</span>' : '<span class="status-badge status-offline">Missing</span>';
+
+                html += `
+                    <div class="iftl-card ${statusClass}" onclick="openIFTLModal(${faculty.faculty_id}, '${faculty.full_name}')">
+                        <div class="iftl-card-header">
+                            <div class="iftl-avatar">${getInitials(faculty.full_name)}</div>
+                            <div class="iftl-info">
+                                <div class="iftl-name">${faculty.full_name}</div>
+                                <div class="iftl-program">${faculty.program || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <div class="iftl-status">
+                            ${statusBadge}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `<div class="error-message">Error: ${data.message}</div>`;
+        }
+    } catch (error) {
+        console.error('Error loading IFTL faculty:', error);
+        container.innerHTML = '<div class="error-message">Failed to load faculty list.</div>';
+    }
+}
+
+function getInitials(name) {
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+}
+
 function searchTable(query, type) {
+    if (type === 'iftl') {
+        const cards = document.querySelectorAll('.iftl-card');
+        cards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            card.style.display = text.includes(query) ? 'flex' : 'none';
+        });
+        return;
+    }
+
     const table = document.querySelector(`#${type === 'class' ? 'classes' : type}-content .data-table`);
     if (!table) return;
     const rows = table.querySelectorAll('tbody tr:not(.expansion-row)');
@@ -64,6 +132,137 @@ function searchTable(query, type) {
         if (isVisible) visibleCount++;
     });
 }
+
+// Announcement Actions
+function printAnnouncement(announcement) {
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+        alert('Please allow popups to use the print feature.');
+        return;
+    }
+
+    // Format date properly
+    const dateStr = announcement.created_at ? new Date(announcement.created_at).toLocaleDateString() : new Date().toLocaleDateString();
+
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Print Announcement - ${announcement.title}</title>
+            <style>
+                body { 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    padding: 40px; 
+                    max-width: 800px; 
+                    margin: 0 auto; 
+                    color: #333;
+                }
+                .header { 
+                    border-bottom: 2px solid #333; 
+                    padding-bottom: 20px; 
+                    margin-bottom: 30px; 
+                }
+                .title { font-size: 24px; font-weight: bold; margin: 0 0 10px 0; }
+                .meta { 
+                    color: #666; 
+                    font-size: 14px; 
+                    margin-bottom: 10px;
+                }
+                .meta span { margin-right: 20px; }
+                .meta-label { font-weight: 600; }
+                .content { 
+                    line-height: 1.6; 
+                    font-size: 16px; 
+                    white-space: pre-wrap;
+                }
+                .footer {
+                    margin-top: 50px;
+                    border-top: 1px solid #ddd;
+                    padding-top: 20px;
+                    font-size: 12px;
+                    color: #888;
+                    text-align: center;
+                }
+                @media print {
+                    @page { margin: 2cm; }
+                    body { -webkit-print-color-adjust: exact; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="title">${announcement.title}</div>
+                <div class="meta">
+                    <span><span class="meta-label">Priority:</span> ${announcement.priority.toUpperCase()}</span>
+                    <span><span class="meta-label">Target Audience:</span> ${announcement.target_audience}</span>
+                    <span><span class="meta-label">Date:</span> ${dateStr}</span>
+                </div>
+            </div>
+            <div class="content">${announcement.content}</div>
+            <div class="footer">
+                Printed from FaculTrack on ${new Date().toLocaleString()}
+            </div>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 500);
+                };
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+async function emailAnnouncement(announcement) {
+    const subject = encodeURIComponent(`Announcement: ${announcement.title}`);
+    const bodyContent = `${announcement.title}\n\n` +
+        `Priority: ${announcement.priority.toUpperCase()}\n` +
+        `Target Audience: ${announcement.target_audience}\n\n` +
+        `${announcement.content}\n\n` +
+        `--\nSent via FaculTrack`;
+
+    let ccEmails = [];
+
+    // Fetch emails based on audience if applicable
+    if (announcement.target_audience === 'faculty' || announcement.target_audience === 'program_chairs' || announcement.target_audience === 'all') {
+        try {
+            const response = await fetch(`assets/php/polling_api.php?action=get_audience_emails&audience=${announcement.target_audience}`);
+            const data = await response.json();
+            if (data.success && Array.isArray(data.emails)) {
+                ccEmails = data.emails;
+            }
+        } catch (error) {
+            console.error("Error fetching audience emails:", error);
+        }
+    }
+
+    const ccString = ccEmails.join(',');
+
+    // Use window.open to avoid navigating away, though mailto usually doesn't navigation
+    // But some browsers might show a blank page. 
+    // Creating a temporary link and clicking it is safer.
+    const mailtoLink = `mailto:?cc=${encodeURIComponent(ccString)}&subject=${subject}&body=${encodeURIComponent(bodyContent)}`;
+
+    const link = document.createElement('a');
+    link.href = mailtoLink;
+    link.target = '_blank'; // Optional, but helps in some browsers
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+window.printAnnouncement = printAnnouncement;
+window.emailAnnouncement = emailAnnouncement;
+
+// Initialize IFTL tab listener
+document.addEventListener('DOMContentLoaded', function () {
+    const iftlTabBtn = document.querySelector('button[data-tab="iftl"]');
+    if (iftlTabBtn) {
+        iftlTabBtn.addEventListener('click', function () {
+            loadIFTLFaculty();
+        });
+    }
+});
 
 function removeEntityFromUI(entityType, entityId) {
     switch (entityType) {
