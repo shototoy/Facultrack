@@ -2,7 +2,7 @@
 require_once 'common_utilities.php';
 initializeSession();
 header('Content-Type: application/json');
-$pdo = initializeDatabase();
+$pdo = get_db_connection();
 if (!isset($_SESSION['user_id'])) {
     sendJsonResponse(['success' => false, 'message' => 'Unauthorized access'], 401);
 }
@@ -61,3 +61,4 @@ try {
     sendJsonResponse(['success' => false, 'message' => 'Heartbeat update failed'], 500);
 }
 ?>
+

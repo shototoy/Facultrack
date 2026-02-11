@@ -1,7 +1,7 @@
 <?php
 require_once 'assets/php/common_utilities.php';
 initializeSession();
-$pdo = initializeDatabase();
+$pdo = get_db_connection();
 validateUserSession('campus_director');
 $user_id = $_SESSION['user_id'];
 $director_name = $_SESSION['full_name'];
@@ -608,3 +608,4 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
     </div>
 </body>
 </html>
+

@@ -1,6 +1,6 @@
 <?php
 require_once 'common_utilities.php';
-$pdo = initializeDatabase();
+$pdo = get_db_connection();
 try {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS `iftl_weekly_compliance` (
@@ -42,4 +42,5 @@ try {
     echo "Error creating tables: " . $e->getMessage();
 }
 ?>
+
 

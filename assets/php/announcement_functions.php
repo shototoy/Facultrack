@@ -101,7 +101,7 @@ if (!function_exists('renderAnnouncementCard')) {
                 </div>
                 <div class='announcement-date' data-full-date='{$full_date}'>
                     {$created_at}
-                    <button onclick='event.stopPropagation(); printAnnouncement({$announcementJson})' title='Print Announcement' style='background: none; border: none; cursor: pointer; margin-left: 8px; padding: 4px; color: inherit; vertical-align: middle; opacity: 0.7; transition: opacity 0.2s;' onmouseover='this.style.opacity=1' onmouseout='this.style.opacity=0.7'>
+                    <button onclick='event.stopPropagation(); printAnnouncement({$announcement['announcement_id']})' title='Print Announcement' style='background: none; border: none; cursor: pointer; margin-left: 8px; padding: 4px; color: inherit; vertical-align: middle; opacity: 0.7; transition: opacity 0.2s;' onmouseover='this.style.opacity=1' onmouseout='this.style.opacity=0.7'>
                         <svg class='feather' style='width: 14px; height: 14px;'><use href='#printer'></use></svg>
                     </button>
                     {$emailButton}

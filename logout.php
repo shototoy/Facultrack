@@ -7,7 +7,7 @@ $user_id = $_SESSION['user_id'] ?? null;
 if ($user_id && ($user_role === 'faculty' || $user_role === 'program_chair' || $user_role === 'campus_director')) {
     require_once 'assets/php/common_utilities.php';
     try {
-        $pdo = initializeDatabase();
+        $pdo = get_db_connection();
         $set_offline_query = "UPDATE faculty SET is_active = 0 WHERE user_id = ?";
         $stmt = $pdo->prepare($set_offline_query);
         $stmt->execute([$user_id]);
@@ -30,3 +30,4 @@ $_SESSION['logout_user'] = $user_name;
 header("Location: index.php");
 exit();
 ?>
+

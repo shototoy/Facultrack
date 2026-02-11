@@ -117,7 +117,7 @@ exit();
 }
 require_once 'assets/php/common_utilities.php';
 initializeSession();
-$pdo = initializeDatabase();
+$pdo = get_db_connection();
 $error_message = '';
 $success_message = '';
 if ($_POST) {
@@ -434,3 +434,4 @@ try {
     </script>
 </body>
 </html>
+

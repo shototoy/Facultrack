@@ -1,7 +1,7 @@
 <?php
 require_once 'assets/php/common_utilities.php';
 initializeSession();
-$pdo = initializeDatabase();
+$pdo = get_db_connection();
 $pdo->exec("SET time_zone = '+08:00'");
 validateUserSession('class');
 $user_id = $_SESSION['user_id'];
@@ -222,3 +222,4 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
 <script src="assets/js/home.js"></script>
 </body>
 </html>
+

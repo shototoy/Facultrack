@@ -153,7 +153,7 @@ async function deleteEntity(action, id) {
                 }
             }
         );
-        return; 
+        return;
     }
 }
 function capitalize(text) {
@@ -224,25 +224,14 @@ async function handleFormSubmission(form, type) {
         submitButton.textContent = originalText;
     }
 }
-function printAnnouncement(id) {
-    const card = document.getElementById('announcement-' + id);
-    if (!card) return;
-    const clone = card.cloneNode(true);
-    const btn = clone.querySelector('button');
-    if (btn) btn.remove();
-    const title = clone.querySelector('.announcement-title').textContent;
-    const content = clone.querySelector('.announcement-content').textContent;
-    const authorElem = clone.querySelector('.announcement-author');
-    const authorName = authorElem ? authorElem.textContent.replace('By:', '').trim() : 'ADMINISTRATION';
-    const dateDiv = clone.querySelector('.announcement-date');
-    const date = (dateDiv && dateDiv.getAttribute('data-full-date'))
-        ? dateDiv.getAttribute('data-full-date')
-        : (dateDiv ? dateDiv.textContent.trim() : '');
+
+function generateAnnouncementPDF(id, title, content, authorName, date) {
+    // Dynamically determine app root to support both localhost and production (Railway)
     const path = window.location.pathname;
     const directory = path.substring(0, path.lastIndexOf('/'));
     const appRoot = window.location.origin + directory + '/';
-    const printWindow = window.open('', '_blank', 'width=850,height=1100');
-    printWindow.document.write(`
+
+    return `
         <!DOCTYPE html>
         <html>
         <head>
@@ -282,11 +271,13 @@ function printAnnouncement(id) {
                     height: 100%;
                     object-fit: fill; 
                 }
+
                 .content-wrapper {
                     padding: 154px 96px 96px 96px; 
                     position: relative;
                     z-index: 1;
                 }
+
                 .document-header {
                     position: absolute; 
                     top: 15px;
@@ -297,17 +288,20 @@ function printAnnouncement(id) {
                     justify-content: flex-start;
                     height: 90px;
                 }
+                
                 .logos-left {
                     display: flex;
                     gap: 15px;
                     align-items: center;
                     margin-right: 25px;
                 }
+                
                 .logo {
                     width: 75px;
                     height: 75px;
                     object-fit: contain;
                 }
+                
                 .header-text {
                     text-align: left;
                     color: #000;
@@ -327,6 +321,7 @@ function printAnnouncement(id) {
                     margin: 0;
                     font-style: italic;
                 }
+
                 .office-title-block {
                     margin-top: 30px;  
                     text-align: center;
@@ -343,6 +338,7 @@ function printAnnouncement(id) {
                     font-size: 12pt;
                     margin-top: 8px;
                 }
+
                 .memo-info {
                     margin-bottom: 20px;
                     font-family: Arial, sans-serif;
@@ -364,6 +360,7 @@ function printAnnouncement(id) {
                      border-bottom: 2px solid #000;
                      margin-bottom: 30px;
                 }
+
                 .content { 
                     font-size: 12pt; 
                     line-height: 1.5; 
@@ -373,6 +370,7 @@ function printAnnouncement(id) {
                     text-align: justify;
                     font-family: Arial, sans-serif;
                 }
+                
                 .footer-text {
                     position: fixed;
                     bottom: 48px;
@@ -395,28 +393,38 @@ function printAnnouncement(id) {
             <div class="background-layer">
                 <img src="assets/images/announcement.png" alt="">
             </div>
+
             <div class="content-wrapper">
                 <!-- Header removed as requested -->
                 <div class="document-header" style="display: none;">
+                    
                 </div>
+
                 <div class="office-title-block">
                     <div class="office-title">Office of the Campus Director</div>
                     <div class="office-subtitle">Isulan Campus</div>
                 </div>
+
                 <div class="memo-info">
                     <div style="font-weight: bold; margin-bottom: 20px;">OFFICE MEMORANDUM No. ${id}, Series ${new Date(date).getFullYear() || new Date().getFullYear()}</div>
+                    
                     <div class="memo-row"><span class="memo-label">TO:</span> <span class="memo-value">CAMPUS DESIGNATED PERSONNEL</span></div>
                     <div class="memo-row"><span class="memo-label">FROM:</span> <span class="memo-value">${authorName.toUpperCase()}</span></div>
                     <div class="memo-row" style="margin-left: 100px; margin-top: -8px; font-weight: normal; font-size: 10pt;">Campus Director</div>
+                    
                     <div class="memo-row"><span class="memo-label">SUBJECT:</span> <span class="memo-value" style="text-transform: uppercase;">${title}</span></div>
                     <div class="memo-row"><span class="memo-label">DATE:</span> <span class="memo-value">${date}</span></div>
                 </div>
+                
                 <div class="memo-line"></div>
+                
                 <div class="content">${content}</div>
+                
                 <div class="signatory">
                     <p>For your information and guidance.</p>
                 </div>
             </div>
+
             <!-- Footer removed as requested -->
             <div class="footer-text" style="display: none;">
                 <span>VISION:</span> A leading University in advancing scholarly innovation, multi-cultural convergence, and responsive public service in a borderless Region. | 
@@ -424,6 +432,7 @@ function printAnnouncement(id) {
                 <span>MAXIM:</span> Generator of Solutions. | 
                 <span>CORE VALUES:</span> Patriotism, Respect, Integrity, Zeal, Excellence in Public Service.
             </div>
+
             <script>
                 setTimeout(() => {
                     window.print();
@@ -431,7 +440,72 @@ function printAnnouncement(id) {
             </script>
         </body>
         </html>
-    `);
+    `;
+}
+
+function printAnnouncement(id) {
+    const card = document.getElementById('announcement-' + id);
+    if (!card) return;
+
+    const clone = card.cloneNode(true);
+    const btn = clone.querySelector('button');
+    if (btn) btn.remove();
+
+    const title = clone.querySelector('.announcement-title').textContent;
+    const content = clone.querySelector('.announcement-content').textContent;
+    const authorElem = clone.querySelector('.announcement-author');
+    const authorName = authorElem ? authorElem.textContent.replace('By:', '').trim() : 'ADMINISTRATION';
+
+    const dateDiv = clone.querySelector('.announcement-date');
+    const date = (dateDiv && dateDiv.getAttribute('data-full-date'))
+        ? dateDiv.getAttribute('data-full-date')
+        : (dateDiv ? dateDiv.textContent.trim() : '');
+
+    const pdfContent = generateAnnouncementPDF(id, title, content, authorName, date);
+
+    const printWindow = window.open('', '_blank', 'width=850,height=1100');
+    printWindow.document.write(pdfContent);
     printWindow.document.close();
 }
 
+async function emailAnnouncement(announcement) {
+    const subject = encodeURIComponent(`Announcement: ${announcement.title}`);
+
+    // Dynamically determine app root to support both localhost and production (Railway)
+    const path = window.location.pathname;
+    const directory = path.substring(0, path.lastIndexOf('/'));
+    const appRoot = window.location.origin + directory + '/';
+    const memoLink = `${appRoot}view_memo.php?id=${announcement.announcement_id}`;
+
+    const bodyContent = `${announcement.title}\n\n` +
+        `Priority: ${announcement.priority.toUpperCase()}\n` +
+        `Target Audience: ${announcement.target_audience}\n\n` +
+        `${announcement.content}\n\n` +
+        `View Memo: ${memoLink}\n\n` +
+        `--\nSent via FaculTrack`;
+
+    let ccEmails = [];
+    if (announcement.target_audience) {
+        try {
+            const response = await fetch(`assets/php/polling_api.php?action=get_audience_emails&audience=${encodeURIComponent(announcement.target_audience)}`);
+            const data = await response.json();
+            if (data.success && Array.isArray(data.emails)) {
+                ccEmails = data.emails;
+            }
+        } catch (error) {
+            console.error("Error fetching audience emails:", error);
+        }
+    }
+    const recipientString = ccEmails.join(',');
+    const mailtoLink = `mailto:${recipientString}?subject=${subject}&body=${encodeURIComponent(bodyContent)}`;
+    const link = document.createElement('a');
+    link.href = mailtoLink;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+window.printAnnouncement = printAnnouncement;
+window.generateAnnouncementPDF = generateAnnouncementPDF;
+window.emailAnnouncement = emailAnnouncement;

@@ -4,7 +4,7 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 require_once 'common_utilities.php';
 initializeSession();
-$pdo = initializeDatabase();
+$pdo = get_db_connection();
 $php_timezone = date_default_timezone_get();
 $mysql_timezone_map = [
     'Asia/Manila' => '+08:00',
@@ -2026,4 +2026,5 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
     return $entries;
 }
 ?>
+
 

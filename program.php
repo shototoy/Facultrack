@@ -1,7 +1,7 @@
 <?php
 require_once 'assets/php/common_utilities.php';
 initializeSession();
-$pdo = initializeDatabase();
+$pdo = get_db_connection();
 $pdo->exec("SET time_zone = '+08:00'");
 validateUserSession('program_chair');
 $user_id = $_SESSION['user_id'];
@@ -1307,3 +1307,4 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
     <script src="assets/js/toast_manager.js"></script>
 </body>
 </html>
+

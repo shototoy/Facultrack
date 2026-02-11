@@ -1,7 +1,7 @@
 <?php
 require_once 'assets/php/common_utilities.php';
 initializeSession();
-$pdo = initializeDatabase();
+$pdo = get_db_connection();
 $php_timezone = date_default_timezone_get();
 $mysql_timezone_map = [
     'Asia/Manila' => '+08:00',
@@ -1096,3 +1096,4 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
     <script src="assets/js/faculty.js"></script>
 </body>
 </html>
+
