@@ -449,25 +449,47 @@ function generateAnnouncementPDF(id, title, content, authorName, date) {
     `;
 }
 
-function printAnnouncement(id) {
-    const card = document.getElementById('announcement-' + id);
-    if (!card) return;
+function printAnnouncement(announcementOrId) {
+    let announcementId = announcementOrId;
+    let title = '';
+    let content = '';
+    let authorName = 'ADMINISTRATION';
+    let date = '';
 
-    const clone = card.cloneNode(true);
-    const btn = clone.querySelector('button');
-    if (btn) btn.remove();
+    if (announcementOrId && typeof announcementOrId === 'object') {
+        const announcement = announcementOrId;
+        announcementId = announcement.announcement_id || announcement.id || announcementId;
+        title = announcement.title || '';
+        content = announcement.content || '';
+        authorName = announcement.created_by_name || announcement.author_name || announcement.author || authorName;
+        if (announcement.created_at || announcement.date) {
+            const parsedDate = new Date(announcement.created_at || announcement.date);
+            date = Number.isNaN(parsedDate.getTime())
+                ? (announcement.created_at || announcement.date || '')
+                : parsedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' });
+        }
+    } else {
+        const card = document.getElementById('announcement-' + announcementId);
+        if (!card) return;
 
-    const title = clone.querySelector('.announcement-title').textContent;
-    const content = clone.querySelector('.announcement-content').textContent;
-    const authorElem = clone.querySelector('.announcement-author');
-    const authorName = authorElem ? authorElem.textContent.replace('By:', '').trim() : 'ADMINISTRATION';
+        const clone = card.cloneNode(true);
+        const btn = clone.querySelector('button');
+        if (btn) btn.remove();
 
-    const dateDiv = clone.querySelector('.announcement-date');
-    const date = (dateDiv && dateDiv.getAttribute('data-full-date'))
-        ? dateDiv.getAttribute('data-full-date')
-        : (dateDiv ? dateDiv.textContent.trim() : '');
+        title = clone.querySelector('.announcement-title').textContent;
+        content = clone.querySelector('.announcement-content').textContent;
+        const authorElem = clone.querySelector('.announcement-author');
+        authorName = authorElem ? authorElem.textContent.replace('By:', '').trim() : authorName;
 
-    const pdfContent = generateAnnouncementPDF(id, title, content, authorName, date);
+        const dateDiv = clone.querySelector('.announcement-date');
+        date = (dateDiv && dateDiv.getAttribute('data-full-date'))
+            ? dateDiv.getAttribute('data-full-date')
+            : (dateDiv ? dateDiv.textContent.trim() : '');
+    }
+
+    if (!title || !content) return;
+
+    const pdfContent = generateAnnouncementPDF(announcementId, title, content, authorName, date);
 
     const printWindow = window.open('', '_blank', 'width=850,height=1100');
     printWindow.document.write(pdfContent);

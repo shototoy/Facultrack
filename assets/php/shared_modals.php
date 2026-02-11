@@ -35,11 +35,13 @@ $role = $_SESSION['role'] ?? '';
                 <label class="form-label">Program *</label>
                 <select name="program" class="form-select">
                     <option value="">Select Program</option>
-                    <option value="Computer Science">Computer Science</option>
-                    <option value="Information Technology">Information Technology</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Business Administration">Business Administration</option>
-                    <option value="Education">Education</option>
+                    <?php if (isset($programs_data) && !empty($programs_data)): ?>
+                        <?php foreach ($programs_data as $program): ?>
+                            <option value="<?php echo htmlspecialchars($program['program_name']); ?>">
+                                <?php echo htmlspecialchars($program['program_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </select>
             </div>
             <?php endif; ?>

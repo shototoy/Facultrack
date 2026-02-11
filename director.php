@@ -277,11 +277,13 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                             <label class="form-label">Program *</label>
                             <select name="program" id="editProgram" class="form-select">
                                 <option value="">Select Program</option>
-                                <option value="Computer Science">Computer Science</option>
-                                <option value="Information Technology">Information Technology</option>
-                                <option value="Engineering">Engineering</option>
-                                <option value="Business Administration">Business Administration</option>
-                                <option value="Education">Education</option>
+                                <?php if (!empty($programs_data)): ?>
+                                    <?php foreach ($programs_data as $program): ?>
+                                        <option value="<?php echo htmlspecialchars($program['program_name']); ?>">
+                                            <?php echo htmlspecialchars($program['program_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </select>
                         </div>
                         <div class="form-group">
@@ -333,6 +335,35 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             </div>
         </div>
     <script>
+        async function loadProgramsForSelect(selectElement, selectedProgram) {
+            if (!selectElement) return;
+            selectElement.innerHTML = '<option value="">Select Program</option>';
+            try {
+                const response = await fetch('assets/php/polling_api.php?action=get_programs');
+                const result = await response.json();
+                if (result.success && Array.isArray(result.programs)) {
+                    result.programs.forEach(program => {
+                        const option = document.createElement('option');
+                        option.value = program.program_name;
+                        option.textContent = program.program_name;
+                        selectElement.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading programs:', error);
+            }
+            if (selectedProgram) {
+                const hasOption = Array.from(selectElement.options)
+                    .some(option => option.value === selectedProgram);
+                if (!hasOption) {
+                    const option = document.createElement('option');
+                    option.value = selectedProgram;
+                    option.textContent = selectedProgram;
+                    selectElement.appendChild(option);
+                }
+                selectElement.value = selectedProgram;
+            }
+        }
         async function openEditFacultyModal(facultyId) {
             if(window.event) window.event.stopPropagation();
             const modal = document.getElementById('editFacultyModal');
@@ -343,10 +374,10 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 const result = await response.json();
                 if (result.success) {
                     const data = result.data;
+                    await loadProgramsForSelect(document.getElementById('editProgram'), data.program);
                     document.getElementById('editFacultyId').value = data.faculty_id;
                     document.getElementById('editFullName').value = data.full_name;
                     document.getElementById('editUsername').value = data.username;
-                    document.getElementById('editProgram').value = data.program;
                     document.getElementById('editContactEmail').value = data.contact_email;
                     document.getElementById('editContactPhone').value = data.contact_phone;
                     modal.classList.add('show');
