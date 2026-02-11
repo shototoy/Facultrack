@@ -47,7 +47,12 @@ async function loadProgramCourses(programId) {
 window.loadProgramCourses = loadProgramCourses;
 async function loadIFTLFaculty() {
     const container = document.querySelector('#iftl-content .table-container');
-    container.innerHTML = '<div class="loading-spinner"></div> Loading faculty list...';
+    container.innerHTML = `
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading faculty list...</div>
+        </div>
+    `;
     try {
         const response = await fetch('assets/php/polling_api.php?action=get_iftl_faculty_list');
         const data = await response.json();
