@@ -1,6 +1,5 @@
 <?php
 function fetchAnnouncements($pdo, $userRole, $limit = 10) {
-    // If the user is the Campus Director, fetch all active announcements
     if ($userRole === 'campus_director') {
         $announcements_query = "
             SELECT a.*, u.full_name as created_by_name,
