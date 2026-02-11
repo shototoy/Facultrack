@@ -1424,7 +1424,6 @@ body:has(.table-container) .tab-content.active {
     gap: 6px;
     height: 100%;
     border-bottom: none;
-    /* Let the tr border handle it or keep it? */
 }
 
 
@@ -3845,4 +3844,16 @@ body:has(.faculty-grid) .tab-content.active,
     100% {
         transform: rotate(360deg);
     }
+}
+
+.loading-spinner-sm {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-left-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    vertical-align: middle;
+    margin-right: 5px;
 }
