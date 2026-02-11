@@ -31,6 +31,12 @@ function switchTab(tabName) {
     courseCards.forEach(card => card.style.display = 'block');
     const classCards = document.querySelectorAll('.class-card');
     classCards.forEach(card => card.style.display = 'block');
+    const allTableRows = document.querySelectorAll('.data-table tbody tr');
+    allTableRows.forEach(row => {
+        if (!row.classList.contains('expansion-row')) {
+            row.style.display = '';
+        }
+    });
 }
 function exportData(type) {
     const config = {

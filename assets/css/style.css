@@ -1296,7 +1296,7 @@ body:has(.table-container) .tab-content.active {
         max-height: none;
         overflow: visible;
         overflow-y: auto;
-        overflow-x: hidden;
+        overflow-x: auto;
     }
 
     .data-table {
@@ -1378,7 +1378,7 @@ body:has(.table-container) .tab-content.active {
 
 .table-container .data-table th,
 .table-container .data-table td {
-    padding: 8px 12px;
+    padding: 4px 6px;
     text-align: left;
     border-bottom: 1px solid rgba(222, 226, 230, 0.4);
     transition: background-color 0.2s ease, box-shadow 0.2s ease;
@@ -1424,6 +1424,25 @@ body:has(.table-container) .tab-content.active {
     gap: 6px;
     height: 100%;
     border-bottom: none;
+}
+
+@media (max-width: 480px) {
+    .table-container .data-table .actions-column {
+        flex-wrap: nowrap;
+        gap: 8px;
+        white-space: nowrap;
+        min-width: auto;
+        display: flex;
+        justify-content: flex-start;
+    }
+
+    .action-btn,
+    .delete-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        flex: 0 0 auto;
+        /* Prevent shrinking */
+    }
 }
 
 

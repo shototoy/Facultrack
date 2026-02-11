@@ -235,9 +235,9 @@ $role = $_SESSION['role'] ?? '';
                 <div class="form-group">
                     <label class="form-label">Priority</label>
                     <select name="priority" class="form-select">
-                        <option value="normal">Normal</option>
-                        <option value="important">Important</option>
-                        <option value="urgent">Urgent</option>
+                        <option value="low">Normal</option>
+                        <option value="medium">Important</option>
+                        <option value="high">Urgent</option>
                     </select>
                 </div>
                 <div class="form-group">

@@ -4,6 +4,8 @@ function createSearchResultActions() {
         searchInput.addEventListener('input', function () {
             const query = this.value.toLowerCase();
             const activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab) return;
+
             if (activeTab.id === 'faculty-content') {
                 searchTable(query, 'faculty');
             } else if (activeTab.id === 'classes-content') {
@@ -11,7 +13,7 @@ function createSearchResultActions() {
             } else if (activeTab.id === 'courses-content') {
                 searchTable(query, 'course');
             } else if (activeTab.id === 'announcements-content') {
-                searchTable(query, 'announcement');
+                searchTable(query, 'announcements');
             } else if (activeTab.id === 'iftl-content') {
                 searchTable(query, 'iftl');
             }
@@ -122,6 +124,7 @@ function searchTable(query, type) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    createSearchResultActions();
     const iftlTabBtn = document.querySelector('button[data-tab="iftl"]');
     if (iftlTabBtn) {
         iftlTabBtn.addEventListener('click', function () {
