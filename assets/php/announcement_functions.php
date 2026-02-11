@@ -1,5 +1,26 @@
 <?php
 function fetchAnnouncements($pdo, $userRole, $limit = 10) {
+    // If the user is the Campus Director, fetch all active announcements
+    if ($userRole === 'campus_director') {
+        $announcements_query = "
+            SELECT a.*, u.full_name as created_by_name,
+                   DATE_FORMAT(a.created_at, '%M %d, %Y at %h:%i %p') as formatted_date,
+                   CASE 
+                       WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN CONCAT(TIMESTAMPDIFF(MINUTE, a.created_at, NOW()), ' minutes ago')
+                       WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, a.created_at, NOW()), ' hours ago')
+                       WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, a.created_at, NOW()), ' days ago')
+                       ELSE '1 week ago'
+                   END as time_ago
+            FROM announcements a 
+            JOIN users u ON a.created_by = u.user_id 
+            WHERE a.is_active = TRUE 
+            ORDER BY a.created_at DESC 
+            LIMIT " . intval($limit);
+        $stmt = $pdo->prepare($announcements_query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     $targetAudiences = ['all'];
     switch ($userRole) {
         case 'faculty':

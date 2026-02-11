@@ -1433,7 +1433,7 @@ switch ($action) {
         $emails = [];
         try {
             if (strtolower($audience) === 'all' || strtolower($audience) === 'faculty' || strtolower($audience) === 'all faculty') {
-                $stmt = $pdo->prepare("SELECT contact_email FROM faculty WHERE contact_email IS NOT NULL AND contact_email != '' AND is_active = TRUE");
+                $stmt = $pdo->prepare("SELECT contact_email FROM faculty WHERE contact_email IS NOT NULL AND contact_email != ''");
                 $stmt->execute();
                 $emails = $stmt->fetchAll(PDO::FETCH_COLUMN);
             } elseif (strtolower($audience) === 'program_chairs' || strtolower($audience) === 'program chairs') {
@@ -1443,14 +1443,13 @@ switch ($action) {
                     JOIN users u ON f.user_id = u.user_id 
                     WHERE u.role = 'program_chair' 
                     AND f.contact_email IS NOT NULL 
-                    AND f.contact_email != '' 
-                    AND f.is_active = TRUE
+                    AND f.contact_email != ''
                 ");
                 $stmt->execute();
                 $emails = $stmt->fetchAll(PDO::FETCH_COLUMN);
             } else {
                 // Assume audience is a program name
-                $stmt = $pdo->prepare("SELECT contact_email FROM faculty WHERE program = ? AND contact_email IS NOT NULL AND contact_email != '' AND is_active = TRUE");
+                $stmt = $pdo->prepare("SELECT contact_email FROM faculty WHERE program = ? AND contact_email IS NOT NULL AND contact_email != ''");
                 $stmt->execute([$audience]);
                 $emails = $stmt->fetchAll(PDO::FETCH_COLUMN);
             }
