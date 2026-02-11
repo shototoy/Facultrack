@@ -154,8 +154,8 @@ function getProgramClasses($pdo, $user_id) {
                COUNT(DISTINCT s.faculty_id) as assigned_faculty
         FROM classes c
         JOIN users u ON c.user_id = u.user_id
-        LEFT JOIN curriculum curr ON c.year_level = curr.year_level 
-                                  AND c.semester = curr.semester 
+        LEFT JOIN curriculum curr ON c.year_level = curr.year_level
+                                  AND c.semester = curr.semester
                                   AND curr.is_active = TRUE
         LEFT JOIN schedules s ON c.class_id = s.class_id AND s.is_active = TRUE
         WHERE c.program_chair_id = ? AND c.is_active = TRUE
@@ -167,7 +167,7 @@ function getProgramClasses($pdo, $user_id) {
 }
 function getAllFacultyProgram($pdo) {
     $faculty_query = "
-        SELECT 
+        SELECT
             f.faculty_id,
             u.full_name,
             f.employee_id,
@@ -177,20 +177,20 @@ function getAllFacultyProgram($pdo) {
             f.contact_phone,
             f.current_location,
             f.last_location_update,
-            CASE 
+            CASE
                 WHEN f.is_active = 1 THEN 'Available'
                 ELSE 'Offline'
             END as status,
             COALESCE(
-                (SELECT CASE 
+                (SELECT CASE
                     WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
                     WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
                     WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
                     ELSE 'Over a week ago'
                 END
-                FROM location_history lh 
-                WHERE lh.faculty_id = f.faculty_id 
-                ORDER BY lh.time_set DESC 
+                FROM location_history lh
+                WHERE lh.faculty_id = f.faculty_id
+                ORDER BY lh.time_set DESC
                 LIMIT 1),
                 'No location history'
             ) as last_updated
@@ -266,9 +266,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_courses_and_classes') {
 if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
     try {
         $faculty_id = $_POST['faculty_id'];
-        $course_code = $_POST['course_code']; 
+        $course_code = $_POST['course_code'];
         $class_id = $_POST['class_id'];
-        $days = $_POST['days']; 
+        $days = $_POST['days'];
         $time_start = $_POST['time_start'];
         $time_end = $_POST['time_end'];
         $room = $_POST['room'] ?? null;
@@ -290,7 +290,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
             echo json_encode(['success' => false, 'message' => 'Course not assigned to this class curriculum']);
             exit;
         }
-        $faculty_conflict_query = "SELECT course_code, time_start, time_end, days FROM schedules 
+        $faculty_conflict_query = "SELECT course_code, time_start, time_end, days FROM schedules
                                  WHERE faculty_id = ? AND is_active = TRUE";
         if ($is_edit) {
             $faculty_conflict_query .= " AND NOT (course_code = ? AND time_start = ? AND days = ?)";
@@ -309,7 +309,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
                 }
             }
         }
-        $room_conflict_query = "SELECT course_code, time_start, time_end, days FROM schedules 
+        $room_conflict_query = "SELECT course_code, time_start, time_end, days FROM schedules
                               WHERE room = ? AND is_active = TRUE";
         if ($is_edit) {
             $room_conflict_query .= " AND NOT (course_code = ? AND time_start = ? AND days = ?)";
@@ -329,12 +329,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
             }
         }
         if ($is_edit) {
-            $update_query = "UPDATE schedules 
-                            SET faculty_id = ?, course_code = ?, class_id = ?, days = ?, 
+            $update_query = "UPDATE schedules
+                            SET faculty_id = ?, course_code = ?, class_id = ?, days = ?,
                                 time_start = ?, time_end = ?, room = ?
                             WHERE course_code = ? AND time_start = ? AND days = ? AND is_active = TRUE";
             $stmt = $pdo->prepare($update_query);
-            if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room, 
+            if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room,
                                $original_course, $original_time_start, $original_days])) {
                 echo json_encode(['success' => true, 'message' => 'Course assignment updated successfully']);
             } else {
@@ -343,7 +343,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
         } else {
             $current_year = date('Y');
             $academic_year = $current_year . '-' . substr($current_year + 1, -2);
-            $insert_query = "INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, semester, academic_year, is_active) 
+            $insert_query = "INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, semester, academic_year, is_active)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)";
             $stmt = $pdo->prepare($insert_query);
             if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room, '1st', $academic_year])) {
@@ -362,7 +362,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
         $course_code = $_POST['course_code'];
         $curriculum_query = "
             SELECT curriculum_id, year_level, semester
-            FROM curriculum 
+            FROM curriculum
             WHERE course_code = ? AND is_active = TRUE
             ORDER BY year_level, semester";
         $stmt = $pdo->prepare($curriculum_query);
@@ -384,8 +384,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
             SELECT cur.curriculum_id, cur.year_level, cur.semester,
                    GROUP_CONCAT(DISTINCT c.class_code SEPARATOR ', ') as class_names
             FROM curriculum cur
-            LEFT JOIN classes c ON c.year_level = cur.year_level 
-                                AND c.semester = cur.semester 
+            LEFT JOIN classes c ON c.year_level = cur.year_level
+                                AND c.semester = cur.semester
                                 AND c.is_active = TRUE
             WHERE cur.course_code = ? AND cur.is_active = TRUE
             GROUP BY cur.curriculum_id, cur.year_level, cur.semester
@@ -407,7 +407,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum
         $course_code = $_POST['course_code'];
         $year_level = $_POST['year_level'];
         $semester = $_POST['semester'];
-        $check_query = "SELECT COUNT(*) as count FROM curriculum 
+        $check_query = "SELECT COUNT(*) as count FROM curriculum
                        WHERE course_code = ? AND year_level = ? AND semester = ? AND is_active = TRUE";
         $check_stmt = $pdo->prepare($check_query);
         $check_stmt->execute([$course_code, $year_level, $semester]);
@@ -416,7 +416,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum
             echo json_encode(['success' => false, 'message' => 'This course is already assigned to that year level and semester']);
             exit;
         }
-        $insert_query = "INSERT INTO curriculum (course_code, year_level, semester, program_chair_id, is_active) 
+        $insert_query = "INSERT INTO curriculum (course_code, year_level, semester, program_chair_id, is_active)
                         VALUES (?, ?, ?, ?, TRUE)";
         $stmt = $pdo->prepare($insert_query);
         if ($stmt->execute([$course_code, $year_level, $semester, $user_id])) {
@@ -464,9 +464,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_classes_for_course') {
         $classes_query = "
             SELECT DISTINCT c.class_id, c.class_code, c.class_name, c.year_level, c.semester
             FROM classes c
-            JOIN curriculum cur ON c.year_level = cur.year_level 
+            JOIN curriculum cur ON c.year_level = cur.year_level
                                 AND c.semester = cur.semester
-            WHERE cur.course_code = ? AND cur.is_active = TRUE AND c.is_active = TRUE 
+            WHERE cur.course_code = ? AND cur.is_active = TRUE AND c.is_active = TRUE
             AND c.program_chair_id = ?
             ORDER BY c.year_level, c.class_name";
         $stmt = $pdo->prepare($classes_query);
@@ -494,7 +494,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_faculty_schedules') {
         ]);
     } catch (Exception $e) {
         echo json_encode([
-            'success' => false, 
+            'success' => false,
             'message' => 'Error fetching faculty schedules: ' . $e->getMessage()
         ]);
     }
@@ -513,7 +513,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
         $original_time_start = $is_edit ? $_POST['original_time_start'] : '';
         $original_days = $is_edit ? $_POST['original_days'] : '';
         $conflicts = [];
-        $faculty_check = "SELECT s.course_code, s.time_start, s.time_end, s.days, s.room 
+        $faculty_check = "SELECT s.course_code, s.time_start, s.time_end, s.days, s.room
                          FROM schedules s
                          JOIN courses c ON s.course_code = c.course_code
                          WHERE s.faculty_id = ? AND s.is_active = TRUE";
@@ -543,8 +543,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
                 $new_start = strtotime($time_start);
                 $new_end = strtotime($time_end);
                 if (($new_start < $schedule_end) && ($new_end > $schedule_start)) {
-                    $conflicts[] = "Faculty conflict: Already teaching {$schedule['course_code']} at " . 
-                                 date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) . 
+                    $conflicts[] = "Faculty conflict: Already teaching {$schedule['course_code']} at " .
+                                 date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) .
                                  " on " . $schedule['days'];
                 }
             }
@@ -580,8 +580,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
                 $new_start = strtotime($time_start);
                 $new_end = strtotime($time_end);
                 if (($new_start < $schedule_end) && ($new_end > $schedule_start)) {
-                    $conflicts[] = "Class conflict: {$schedule['course_code']} already scheduled with {$schedule['faculty_name']} at " . 
-                                 date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) . 
+                    $conflicts[] = "Class conflict: {$schedule['course_code']} already scheduled with {$schedule['faculty_name']} at " .
+                                 date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) .
                                  " on " . $schedule['days'];
                 }
             }
@@ -619,8 +619,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
                     $new_start = strtotime($time_start);
                     $new_end = strtotime($time_end);
                     if (($new_start < $schedule_end) && ($new_end > $schedule_start)) {
-                        $conflicts[] = "Room conflict: {$room} already booked for {$schedule['course_code']} with {$schedule['faculty_name']} at " . 
-                                     date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) . 
+                        $conflicts[] = "Room conflict: {$room} already booked for {$schedule['course_code']} with {$schedule['faculty_name']} at " .
+                                     date('g:i A', $schedule_start) . "-" . date('g:i A', $schedule_end) .
                                      " on " . $schedule['days'];
                     }
                 }
@@ -643,8 +643,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
 if (isset($_POST['action']) && $_POST['action'] === 'get_course_curriculum') {
     try {
         $course_code = $_POST['course_code'];
-        $curriculum_query = "SELECT DISTINCT year_level, semester 
-                           FROM curriculum 
+        $curriculum_query = "SELECT DISTINCT year_level, semester
+                           FROM curriculum
                            WHERE course_code = ? AND is_active = TRUE
                            ORDER BY year_level, semester";
         $stmt = $pdo->prepare($curriculum_query);
@@ -664,8 +664,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_course_curriculum') {
 }
 if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
     try {
-        $room_query = "SELECT DISTINCT room 
-                      FROM schedules 
+        $room_query = "SELECT DISTINCT room
+                      FROM schedules
                       WHERE room IS NOT NULL AND room != '' AND is_active = TRUE
                       ORDER BY room";
         $stmt = $pdo->prepare($room_query);
@@ -701,8 +701,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
             'classes' => [],
             'rooms' => []
         ];
-        $courses_query = "SELECT DISTINCT c.course_code, c.course_description, c.units 
-                         FROM courses c 
+        $courses_query = "SELECT DISTINCT c.course_code, c.course_description, c.units
+                         FROM courses c
                          WHERE c.is_active = TRUE
                          ORDER BY c.course_code";
         $courses_stmt = $pdo->prepare($courses_query);
@@ -711,24 +711,24 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
         if ($selected_course) {
             $classes_query = "SELECT DISTINCT cl.class_id, cl.class_code, cl.class_name, cl.year_level
                              FROM classes cl
-                             JOIN curriculum cur ON cl.year_level = cur.year_level 
+                             JOIN curriculum cur ON cl.year_level = cur.year_level
                                                 AND cl.semester = cur.semester
-                             WHERE cur.course_code = ? AND cur.is_active = TRUE 
+                             WHERE cur.course_code = ? AND cur.is_active = TRUE
                              AND cl.is_active = TRUE AND cl.program_chair_id = ?
                              ORDER BY cl.year_level, cl.class_name";
             $classes_stmt = $pdo->prepare($classes_query);
             $classes_stmt->execute([$selected_course, $user_id]);
         } else {
-            $classes_query = "SELECT class_id, class_code, class_name, year_level 
-                             FROM classes 
-                             WHERE program_chair_id = ? AND is_active = TRUE 
+            $classes_query = "SELECT class_id, class_code, class_name, year_level
+                             FROM classes
+                             WHERE program_chair_id = ? AND is_active = TRUE
                              ORDER BY year_level, class_name";
             $classes_stmt = $pdo->prepare($classes_query);
             $classes_stmt->execute([$user_id]);
         }
         $response['classes'] = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
-        $room_query = "SELECT DISTINCT room 
-                      FROM schedules 
+        $room_query = "SELECT DISTINCT room
+                      FROM schedules
                       WHERE room IS NOT NULL AND room != '' AND is_active = TRUE
                       ORDER BY room";
         $stmt = $pdo->prepare($room_query);
@@ -966,7 +966,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
     <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
         <div class="content-wrapper" id="contentWrapper">
-            <?php 
+            <?php
             $online_count = array_reduce($faculty_data, function($count, $faculty) {
                 return $count + ($faculty['status'] === 'available' ? 1 : 0);
             }, 0);
@@ -1048,12 +1048,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                         if (existingEmpty) existingEmpty.remove();
                         if (facultyData.length === 0) {
                             facultyGrid.insertAdjacentHTML('beforeend', getEmptyStateHTML(
-                                'No faculty members found', 
+                                'No faculty members found',
                                 'No faculty members are currently assigned to the <?php echo htmlspecialchars($program); ?> program'
                             ));
                         } else {
                             facultyData.forEach(faculty => {
-                                const cardHTML = window.livePollingManager ? 
+                                const cardHTML = window.livePollingManager ?
                                     window.livePollingManager.createFacultyCard(faculty) :
                                     createFacultyCardFallback(faculty);
                                 facultyGrid.insertAdjacentHTML('beforeend', cardHTML);
@@ -1068,7 +1068,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                         return `
                             <div class="faculty-card" data-faculty-id="${faculty.faculty_id}" data-name="${escapeHtml(faculty.full_name)}">
                                 <div class="faculty-avatar">${initials}</div>
-                                <div class="faculty-name">${escapeHtml(faculty.full_name)}</div>   
+                                <div class="faculty-name">${escapeHtml(faculty.full_name)}</div>
                                 <div class="location-info">
                                     <div class="location-status">
                                         <span class="status-dot status-${statusClass}"></span>

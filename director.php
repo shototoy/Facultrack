@@ -34,7 +34,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
 <body>
     <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
-        <?php 
+        <?php
         $online_faculty = count(array_filter($faculty_data, function($faculty) {
             return $faculty['status'] === 'Available';
         }));
@@ -197,20 +197,20 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     <div class="iftl-controls" style="margin-bottom: 20px;">
                         <label for="iftlWeekSelect">Select Week:</label>
                         <select id="iftlWeekSelect" class="form-select" onchange="loadFacultyIFTL()">
-                            
+
                         </select>
                     </div>
                     <div id="iftlContent" class="schedule-table-container">
-                        
+
                         <div class="loading">Select a week to view IFTL</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <?php 
+    <?php
     $GLOBALS['program_chairs'] = $program_chairs;
-    include 'assets/php/shared_modals.php'; 
+    include 'assets/php/shared_modals.php';
     ?>
     <script src="assets/js/shared_modals.js"></script>
     <script>
@@ -304,7 +304,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </div>
             </div>
         </div>
-        
+
         <div class="modal-overlay" id="facultyDetailsModal">
             <div class="modal medium-modal">
                 <div class="modal-header">
@@ -313,12 +313,12 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </div>
                 <div class="modal-body">
                     <div id="facultyDetailsContent" class="details-grid">
-                        
+
                     </div>
                 </div>
             </div>
         </div>
-        
+
         <div class="modal-overlay" id="announcementDetailsModal">
             <div class="modal medium-modal">
                 <div class="modal-header">
@@ -327,7 +327,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </div>
                 <div class="modal-body">
                     <div id="announcementDetailsContent" class="details-grid">
-                        
+
                     </div>
                 </div>
             </div>
@@ -376,7 +376,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                             if (result.success) {
                                 alert('Faculty updated successfully');
                                 closeModal('editFacultyModal');
-                                location.reload(); 
+                                location.reload();
                             } else {
                                 alert('Error updating faculty: ' + result.message);
                             }
@@ -400,7 +400,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 if (result.success) {
                     alert('Faculty updated successfully');
                     closeModal('editFacultyModal');
-                    location.reload(); 
+                    location.reload();
                 } else {
                     alert('Error updating faculty: ' + result.message);
                 }

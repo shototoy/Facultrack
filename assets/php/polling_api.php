@@ -23,7 +23,7 @@ if (basename($_SERVER['PHP_SELF']) === 'polling_api.php') {
 }
 function getAllFaculty($pdo) {
     $faculty_query = "
-        SELECT 
+        SELECT
             f.faculty_id,
             u.full_name,
             f.employee_id,
@@ -33,22 +33,22 @@ function getAllFaculty($pdo) {
             f.contact_phone,
             f.current_location,
             f.last_location_update,
-            CASE 
+            CASE
                 WHEN f.is_active = 1 THEN f.status
                 ELSE 'Offline'
             END as status,
             f.is_active as connection_status,
             f.status as activity_status,
             COALESCE(
-                (SELECT CASE 
+                (SELECT CASE
                     WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
                     WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
                     WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
                     ELSE 'Over a week ago'
                 END
-                FROM location_history lh 
-                WHERE lh.faculty_id = f.faculty_id 
-                ORDER BY lh.time_set DESC 
+                FROM location_history lh
+                WHERE lh.faculty_id = f.faculty_id
+                ORDER BY lh.time_set DESC
                 LIMIT 1),
                 'No location history'
             ) as last_updated
@@ -62,7 +62,7 @@ function getAllFaculty($pdo) {
 }
 function getAllClasses($pdo) {
     $classes_query = "
-        SELECT 
+        SELECT
             c.class_id,
             c.class_code,
             c.class_name,
@@ -84,7 +84,7 @@ function getAllClasses($pdo) {
 }
 function getAllCourses($pdo) {
     $courses_query = "
-        SELECT 
+        SELECT
             c.course_id,
             c.course_code,
             c.course_description,
@@ -103,7 +103,7 @@ function getAllCourses($pdo) {
 }
 function getAllPrograms($pdo) {
     $programs_query = "
-        SELECT 
+        SELECT
             p.program_id,
             p.program_code,
             p.program_name,
@@ -121,7 +121,7 @@ function getAllPrograms($pdo) {
 }
 function getAllAnnouncements($pdo) {
     $all_announcements_query = "
-        SELECT 
+        SELECT
             a.announcement_id,
             a.title,
             a.content,
@@ -161,9 +161,9 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
     $viewing_day = $days;
     $schedule_query = "
         SELECT s.*, c.course_description, cl.class_name, cl.class_code,
-            CASE 
+            CASE
                 WHEN '$viewing_day' = '$today_code' THEN
-                    CASE 
+                    CASE
                         WHEN TIME(NOW()) > s.time_end THEN 'finished'
                         WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 'ongoing'
                         WHEN TIME(NOW()) < s.time_start THEN 'upcoming'
@@ -192,7 +192,7 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
         JOIN classes cl ON s.class_id = cl.class_id
         WHERE s.faculty_id = ? AND s.is_active = TRUE AND s.faculty_id IS NOT NULL
         AND (
-            (s.days = '$viewing_day') OR 
+            (s.days = '$viewing_day') OR
             (s.days = 'MW' AND '$viewing_day' IN ('M', 'W')) OR
             (s.days = 'MF' AND '$viewing_day' IN ('M', 'F')) OR
             (s.days = 'WF' AND '$viewing_day' IN ('W', 'F')) OR
@@ -200,10 +200,10 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
             (s.days = 'TTH' AND '$viewing_day' IN ('T', 'TH')) OR
             (s.days = 'MTWTHF' AND '$viewing_day' IN ('M', 'T', 'W', 'TH', 'F'))
         )
-        ORDER BY 
-            CASE 
+        ORDER BY
+            CASE
                 WHEN '$viewing_day' = '$today_code' THEN
-                    CASE 
+                    CASE
                         WHEN TIME(NOW()) > s.time_end THEN 1
                         WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 2
                         WHEN TIME(NOW()) < s.time_start THEN 3
@@ -255,9 +255,9 @@ function getScheduleStatus($status) {
 function markFacultyAttendance($pdo, $user_id, $schedule_id) {
     try {
         $pdo->beginTransaction();
-    $location_query = "SELECT s.room, c.course_code, c.course_description 
-                      FROM schedules s 
-                      JOIN courses c ON s.course_code = c.course_code 
+    $location_query = "SELECT s.room, c.course_code, c.course_description
+                      FROM schedules s
+                      JOIN courses c ON s.course_code = c.course_code
                       WHERE s.schedule_id = ? AND s.is_active = TRUE";
     $stmt = $pdo->prepare($location_query);
     $stmt->execute([$schedule_id]);
@@ -342,7 +342,7 @@ function getClassFaculty($pdo, $user_id) {
             f.faculty_id,
             u.full_name as faculty_name,
             f.current_location,
-            CASE 
+            CASE
                 WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN 'available'
                 WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN 'busy'
                 ELSE 'offline'
@@ -351,8 +351,8 @@ function getClassFaculty($pdo, $user_id) {
         FROM faculty f
         JOIN users u ON f.user_id = u.user_id
         JOIN schedules s ON f.faculty_id = s.faculty_id
-        WHERE f.is_active = TRUE 
-        AND s.is_active = TRUE 
+        WHERE f.is_active = TRUE
+        AND s.is_active = TRUE
         AND s.class_id = ?
         AND s.faculty_id IS NOT NULL";
     $stmt = $pdo->prepare($faculty_query);
@@ -372,8 +372,8 @@ function getFacultyCoursesForClass($pdo, $user_id) {
     $today_code = $day_mapping[$current_day];
     $courses_query = "
         SELECT s.faculty_id, s.course_code, c.course_description, s.time_start, s.time_end, s.room,
-            CASE 
-                WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end 
+            CASE
+                WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end
                      AND (
                          (s.days = '$today_code') OR
                          (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
@@ -383,7 +383,7 @@ function getFacultyCoursesForClass($pdo, $user_id) {
                          (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
                          (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
                      ) THEN 'current'
-                WHEN TIME(NOW()) < s.time_start 
+                WHEN TIME(NOW()) < s.time_start
                      AND (
                          (s.days = '$today_code') OR
                          (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
@@ -764,27 +764,27 @@ switch ($action) {
                         f.faculty_id,
                         u.full_name as faculty_name,
                         f.current_location,
-                        CASE 
+                        CASE
                             WHEN f.is_active = 1 THEN f.status
                             ELSE 'Offline'
                         END as status,
                         COALESCE(
-                            (SELECT CASE 
+                            (SELECT CASE
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
                                 ELSE 'Over a week ago'
                             END
-                            FROM location_history lh 
-                            WHERE lh.faculty_id = f.faculty_id 
-                            ORDER BY lh.time_set DESC 
+                            FROM location_history lh
+                            WHERE lh.faculty_id = f.faculty_id
+                            ORDER BY lh.time_set DESC
                             LIMIT 1),
                             'No location history'
                         ) as last_updated
                     FROM faculty f
                     JOIN users u ON f.user_id = u.user_id
                     JOIN schedules s ON f.faculty_id = s.faculty_id
-                    WHERE s.is_active = TRUE 
+                    WHERE s.is_active = TRUE
                     AND s.class_id = ?
                 ";
                 $stmt = $pdo->prepare($faculty_query);
@@ -799,27 +799,27 @@ switch ($action) {
                 $stmt = $pdo->prepare("UPDATE faculty SET is_active = 1 WHERE user_id = ?");
                 $stmt->execute([$user_id]);
                 $faculty_query = "
-                    SELECT 
+                    SELECT
                         f.faculty_id,
                         f.user_id,
                         u.full_name as faculty_name,
                         f.current_location,
                         f.last_location_update,
-                        CASE 
+                        CASE
                             WHEN f.is_active = 1 THEN f.status
                             ELSE 'Offline'
                         END as status,
                         COALESCE(
-                            (SELECT CASE 
+                            (SELECT CASE
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 1 MINUTE) THEN 'Just now'
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 60 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
                                 ELSE 'Over a week ago'
                             END
-                            FROM location_history lh 
-                            WHERE lh.faculty_id = f.faculty_id 
-                            ORDER BY lh.time_set DESC 
+                            FROM location_history lh
+                            WHERE lh.faculty_id = f.faculty_id
+                            ORDER BY lh.time_set DESC
                             LIMIT 1),
                             'No location history'
                         ) as last_updated
@@ -848,21 +848,21 @@ switch ($action) {
                         f.faculty_id,
                         u.full_name as faculty_name,
                         f.current_location,
-                        CASE 
+                        CASE
                             WHEN f.is_active = 1 THEN f.status
                             ELSE 'Offline'
                         END as status,
                         COALESCE(
-                            (SELECT CASE 
+                            (SELECT CASE
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 1 MINUTE) THEN 'Just now'
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 60 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
                                 ELSE 'Over a week ago'
                             END
-                            FROM location_history lh 
-                            WHERE lh.faculty_id = f.faculty_id 
-                            ORDER BY lh.time_set DESC 
+                            FROM location_history lh
+                            WHERE lh.faculty_id = f.faculty_id
+                            ORDER BY lh.time_set DESC
                             LIMIT 1),
                             'No location history'
                         ) as last_updated
@@ -883,21 +883,21 @@ switch ($action) {
                         f.faculty_id,
                         u.full_name as faculty_name,
                         f.current_location,
-                        CASE 
+                        CASE
                             WHEN f.is_active = 1 THEN f.status
                             ELSE 'Offline'
                         END as status,
                         COALESCE(
-                            (SELECT CASE 
+                            (SELECT CASE
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 1 MINUTE) THEN 'Just now'
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 60 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
                                 WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
                                 ELSE 'Over a week ago'
                             END
-                            FROM location_history lh 
-                            WHERE lh.faculty_id = f.faculty_id 
-                            ORDER BY lh.time_set DESC 
+                            FROM location_history lh
+                            WHERE lh.faculty_id = f.faculty_id
+                            ORDER BY lh.time_set DESC
                             LIMIT 1),
                             'No location history'
                         ) as last_updated
@@ -969,10 +969,10 @@ switch ($action) {
                 sendJsonResponse(['success' => false, 'message' => 'Faculty not found']);
             }
             $limit = 10;
-            $query = "SELECT location, time_set, time_changed 
-                      FROM location_history 
-                      WHERE faculty_id = ? 
-                      ORDER BY time_set DESC 
+            $query = "SELECT location, time_set, time_changed
+                      FROM location_history
+                      WHERE faculty_id = ?
+                      ORDER BY time_set DESC
                       LIMIT " . $limit;
             $stmt = $pdo->prepare($query);
             $stmt->execute([$faculty_info['faculty_id']]);
@@ -981,7 +981,7 @@ switch ($action) {
             if (!empty($history)) {
                 foreach ($history as $index => $h) {
                     $isCurrent = $index === 0 && $h['time_changed'] === null;
-                    $timeDisplay = $h['time_changed'] 
+                    $timeDisplay = $h['time_changed']
                         ? date('M j, Y g:i A', strtotime($h['time_changed']))
                         : date('M j, Y g:i A', strtotime($h['time_set']));
                     $html .= '<div class="history-item' . ($isCurrent ? ' current-location' : '') . '">';
@@ -1003,17 +1003,17 @@ switch ($action) {
     case 'get_iftl_faculty_list':
         validateUserSession('campus_director');
         try {
-            $week_identifier = date('Y') . '-W' . date('W'); 
+            $week_identifier = date('Y') . '-W' . date('W');
             $query = "
-                SELECT 
-                    f.faculty_id, 
-                    u.full_name, 
-                    f.program, 
+                SELECT
+                    f.faculty_id,
+                    u.full_name,
+                    f.program,
                     f.status,
                     f.current_location,
-                    (SELECT COUNT(*) 
-                     FROM iftl_weekly_compliance iwc 
-                     WHERE iwc.faculty_id = f.faculty_id 
+                    (SELECT COUNT(*)
+                     FROM iftl_weekly_compliance iwc
+                     WHERE iwc.faculty_id = f.faculty_id
                      AND iwc.week_identifier = ?) as has_iftl
                 FROM faculty f
                 JOIN users u ON f.user_id = u.user_id
@@ -1023,7 +1023,7 @@ switch ($action) {
             $stmt = $pdo->prepare($query);
             $stmt->execute([$week_identifier]);
             $faculty_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            if (empty($faculty_list)) { 
+            if (empty($faculty_list)) {
                 $debug_query = "SELECT u.full_name, u.role FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.is_active = TRUE";
                 $stmt_debug = $pdo->prepare($debug_query);
                 $stmt_debug->execute();
@@ -1084,7 +1084,7 @@ switch ($action) {
             } else if ($role === 'program_chair') {
                 $user_id = $_SESSION['user_id'];
                 $classes_query = "
-                    SELECT 
+                    SELECT
                         c.class_id,
                         c.class_code,
                         c.class_name,
@@ -1112,7 +1112,7 @@ switch ($action) {
                 $stmt->execute([$program_chair_program]);
                 $program_id = $stmt->fetchColumn();
                 $courses_query = "
-                    SELECT 
+                    SELECT
                         c.course_id,
                         c.course_code,
                         c.course_description,
@@ -1123,7 +1123,7 @@ switch ($action) {
                     FROM courses c
                     LEFT JOIN programs p ON c.program_id = p.program_id
                     LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
-                    WHERE c.is_active = TRUE 
+                    WHERE c.is_active = TRUE
                     AND (c.program_id = ? OR c.program_id IS NULL)
                     GROUP BY c.course_id
                     ORDER BY c.course_code";
@@ -1141,20 +1141,20 @@ switch ($action) {
                     $faculty_query = "
                         SELECT f.faculty_id, u.full_name as faculty_name, f.program, f.current_location, f.last_location_update,
                                f.office_hours, f.contact_email, f.contact_phone, f.is_active,
-                               CASE 
+                               CASE
                                    WHEN f.is_active = 1 THEN f.status
                                    ELSE 'Offline'
                                END as status,
                                COALESCE(
-                                   (SELECT CASE 
+                                   (SELECT CASE
                                        WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
                                        WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
                                        WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
                                        ELSE 'Over a week ago'
                                    END
-                                   FROM location_history lh 
-                                   WHERE lh.faculty_id = f.faculty_id 
-                                   ORDER BY lh.time_set DESC 
+                                   FROM location_history lh
+                                   WHERE lh.faculty_id = f.faculty_id
+                                   ORDER BY lh.time_set DESC
                                    LIMIT 1),
                                    'No location history'
                                ) as last_updated
@@ -1173,7 +1173,7 @@ switch ($action) {
             } else if ($role === 'faculty') {
                 $user_id = $_SESSION['user_id'];
                 $stmt = $pdo->prepare("
-                    SELECT 
+                    SELECT
                         f.faculty_id,
                         u.full_name,
                         f.employee_id,
@@ -1183,7 +1183,7 @@ switch ($action) {
                         f.contact_phone,
                         f.current_location,
                         f.last_location_update,
-                        CASE 
+                        CASE
                             WHEN f.is_active = 1 THEN f.status
                             ELSE 'Offline'
                         END as status,
@@ -1200,7 +1200,7 @@ switch ($action) {
                 }
                 if ($tab === 'announcements') {
                     $announcements_query = "
-                        SELECT 
+                        SELECT
                             a.announcement_id,
                             a.title,
                             a.content,
@@ -1210,7 +1210,7 @@ switch ($action) {
                             u.full_name as created_by_name
                         FROM announcements a
                         JOIN users u ON a.created_by = u.user_id
-                        WHERE a.is_active = TRUE 
+                        WHERE a.is_active = TRUE
                         AND (a.target_audience = 'all' OR a.target_audience = 'faculty')
                         ORDER BY a.created_at DESC";
                     $stmt = $pdo->prepare($announcements_query);
@@ -1275,8 +1275,8 @@ switch ($action) {
             $today_code = $day_mapping[$current_day];
             $schedule_query = "
                 SELECT s.*, c.course_description, cl.class_name, cl.class_code, cl.total_students,
-                    CASE 
-                        WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end 
+                    CASE
+                        WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end
                              AND (
                                  (s.days = '$today_code') OR
                                  (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
@@ -1286,7 +1286,7 @@ switch ($action) {
                                  (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
                                  (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
                              ) THEN 'ongoing'
-                        WHEN TIME(NOW()) < s.time_start 
+                        WHEN TIME(NOW()) < s.time_start
                              AND (
                                  (s.days = '$today_code') OR
                                  (s.days = 'MW' AND '$today_code' IN ('M', 'W')) OR
@@ -1311,8 +1311,8 @@ switch ($action) {
                     (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
                     (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
                 )
-                ORDER BY 
-                    CASE 
+                ORDER BY
+                    CASE
                         WHEN TIME(NOW()) > s.time_end THEN 1
                         WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 2
                         WHEN TIME(NOW()) < s.time_start THEN 3
@@ -1364,12 +1364,12 @@ switch ($action) {
             $compliance_id = $stmt->fetchColumn();
             if ($compliance_id) {
                 $schedule_query = "
-                    SELECT 
+                    SELECT
                         e.entry_id as schedule_id,
                         e.time_start,
                         e.time_end,
                         e.day_of_week,
-                        CASE 
+                        CASE
                             WHEN e.day_of_week = 'Monday' THEN 'M'
                             WHEN e.day_of_week = 'Tuesday' THEN 'T'
                             WHEN e.day_of_week = 'Wednesday' THEN 'W'
@@ -1377,9 +1377,9 @@ switch ($action) {
                             WHEN e.day_of_week = 'Friday' THEN 'F'
                             WHEN e.day_of_week = 'Saturday' THEN 'S'
                             WHEN e.day_of_week = 'Sunday' THEN 'SUN'
-                            ELSE '' 
+                            ELSE ''
                         END as days,
-                        CASE 
+                        CASE
                             WHEN e.status = 'Leave' THEN 'LEAVE'
                             WHEN e.status = 'Vacant' THEN 'VACANT'
                             WHEN e.course_code IS NOT NULL AND e.course_code != '' THEN e.course_code
@@ -1414,7 +1414,7 @@ switch ($action) {
                 $schedule_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
             sendJsonResponse([
-                'success' => true, 
+                'success' => true,
                 'schedules' => $schedule_data,
                 'is_iftl' => !!$compliance_id,
                 'week' => $current_week,
@@ -1438,17 +1438,17 @@ switch ($action) {
                 $emails = $stmt->fetchAll(PDO::FETCH_COLUMN);
             } elseif (strtolower($audience) === 'program_chairs' || strtolower($audience) === 'program chairs') {
                  $stmt = $pdo->prepare("
-                    SELECT f.contact_email 
-                    FROM faculty f 
-                    JOIN users u ON f.user_id = u.user_id 
-                    WHERE u.role = 'program_chair' 
-                    AND f.contact_email IS NOT NULL 
+                    SELECT f.contact_email
+                    FROM faculty f
+                    JOIN users u ON f.user_id = u.user_id
+                    WHERE u.role = 'program_chair'
+                    AND f.contact_email IS NOT NULL
                     AND f.contact_email != ''
                 ");
                 $stmt->execute();
                 $emails = $stmt->fetchAll(PDO::FETCH_COLUMN);
             } else {
-                // Assume audience is a program name
+
                 $stmt = $pdo->prepare("SELECT contact_email FROM faculty WHERE program = ? AND contact_email IS NOT NULL AND contact_email != ''");
                 $stmt->execute([$audience]);
                 $emails = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -1474,7 +1474,7 @@ switch ($action) {
             $faculty_id = $faculty_info['faculty_id'];
             $schedule_data = getScheduleForDays($pdo, $faculty_id, $days);
             sendJsonResponse([
-                'success' => true, 
+                'success' => true,
                 'schedules' => $schedule_data,
                 'tab' => $days,
                 'timestamp' => date('Y-m-d H:i:s')
@@ -1555,7 +1555,7 @@ switch ($action) {
             }
             $pdo->beginTransaction();
             $classes_query = "
-                SELECT c.class_id, c.year_level, c.program_chair_id 
+                SELECT c.class_id, c.year_level, c.program_chair_id
                 FROM classes c
                 WHERE c.is_active = TRUE";
             $stmt = $pdo->prepare($classes_query);
@@ -1567,7 +1567,7 @@ switch ($action) {
                 break;
             }
             $update_classes_query = "
-                UPDATE classes 
+                UPDATE classes
                 SET semester = ?, academic_year = ?, updated_at = NOW()
                 WHERE class_id IN (" . implode(',', array_column($classes, 'class_id')) . ")";
             $stmt = $pdo->prepare($update_classes_query);
@@ -1582,10 +1582,10 @@ switch ($action) {
                 $stmt = $pdo->prepare($delete_schedules);
                 $stmt->execute([$class_id]);
                 $curriculum_query = "
-                    SELECT curr.course_code 
+                    SELECT curr.course_code
                     FROM curriculum curr
-                    WHERE curr.year_level = ? 
-                    AND curr.semester = ? 
+                    WHERE curr.year_level = ?
+                    AND curr.semester = ?
                     AND curr.program_chair_id = ?
                     AND curr.is_active = TRUE";
                 $stmt = $pdo->prepare($curriculum_query);
@@ -1593,8 +1593,8 @@ switch ($action) {
                 $curriculum_courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($curriculum_courses as $course) {
                     $insert_schedule = "
-                        INSERT INTO schedules (course_code, class_id, faculty_id, section, days, time_start, time_end, 
-                                             room, semester, academic_year, is_active, created_at, updated_at) 
+                        INSERT INTO schedules (course_code, class_id, faculty_id, section, days, time_start, time_end,
+                                             room, semester, academic_year, is_active, created_at, updated_at)
                         VALUES (?, ?, NULL, 'TBA', 'TBA', '00:00:00', '00:00:00', 'TBA', ?, ?, TRUE, NOW(), NOW())";
                     $stmt = $pdo->prepare($insert_schedule);
                     $stmt->execute([
@@ -1726,7 +1726,7 @@ switch ($action) {
                 throw new Exception('Missing required fields');
             }
             $stmt = $pdo->prepare("
-                UPDATE announcements 
+                UPDATE announcements
                 SET title = ?, content = ?, priority = ?, target_audience = ?
                 WHERE announcement_id = ?
             ");
@@ -1843,7 +1843,7 @@ function fetchAddedRecord($pdo, $action, $id) {
             $stmt = $pdo->prepare("
                 SELECT f.faculty_id, u.full_name, f.employee_id, f.program, f.office_hours,
                        f.contact_email, f.contact_phone, f.current_location, f.last_location_update,
-                       CASE 
+                       CASE
                            WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN 'Available'
                            WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN 'Busy'
                            ELSE 'Offline'
@@ -1904,8 +1904,8 @@ function fetchAddedRecord($pdo, $action, $id) {
         return ['success' => false, 'message' => 'Failed to fetch added record'];
     }
     return [
-        'success' => true, 
-        'data' => $record, 
+        'success' => true,
+        'data' => $record,
         'message' => ucfirst(str_replace('add_', '', $action)) . ' added successfully',
         'action' => 'add',
         'entity_type' => str_replace('add_', '', $action),
@@ -1974,9 +1974,9 @@ function getAllCurrentEntities($pdo, $role, $tab = null) {
 function generateIFTLFromStandard($pdo, $faculty_id) {
     if (!$faculty_id) return [];
     $stmt = $pdo->prepare("
-        SELECT s.*, c.class_name 
-        FROM schedules s 
-        LEFT JOIN classes c ON s.class_id = c.class_id 
+        SELECT s.*, c.class_name
+        FROM schedules s
+        LEFT JOIN classes c ON s.class_id = c.class_id
         WHERE s.faculty_id = ? AND s.is_active = 1
     ");
     $stmt->execute([$faculty_id]);
@@ -1995,7 +1995,7 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
             } else {
                 $valid_days = ['M', 'T', 'W', 'F', 'S'];
                 if (in_array($days_str[$i], $valid_days)) {
-                     $parsed_days[] = $days_str[$i]; 
+                     $parsed_days[] = $days_str[$i];
                 }
                 $i++;
             }
@@ -2008,7 +2008,7 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
                     'time_end' => $sched['time_end'],
                     'course_code' => $sched['course_code'],
                     'room' => $sched['room'],
-                    'activity_type' => $sched['class_name'] ?? 'Class', 
+                    'activity_type' => $sched['class_name'] ?? 'Class',
                     'status' => 'Regular',
                     'remarks' => '',
                     'is_modified' => 0

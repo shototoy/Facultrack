@@ -80,7 +80,7 @@ function setupAcademicYear() {
         input.value = `${y}-${(y + 1).toString().slice(-2)}`;
         input.style.backgroundColor = '#f8f9fa';
         input.title = 'Auto-generated based on current year (for new classes only)';
-        input.readOnly = true;  
+        input.readOnly = true;
     }
 }
 document.addEventListener('DOMContentLoaded', () => {
@@ -142,8 +142,8 @@ function setupSearchFunctionality() {
     }
     if (searchContainer && searchBar) {
         document.addEventListener('click', function(event) {
-            if (!searchBar.contains(event.target) && 
-                !event.target.closest('.search-toggle') && 
+            if (!searchBar.contains(event.target) &&
+                !event.target.closest('.search-toggle') &&
                 searchContainer.classList.contains('expanded')) {
                 if (searchInput.value.trim() === '') {
                     toggleSearch();

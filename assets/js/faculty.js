@@ -494,10 +494,10 @@ function addIFTLEntry() {
         day_of_week: 'Monday',
         time_start: '08:00:00',
         time_end: '09:00:00',
-        course_code: '', 
-        room: '', 
-        activity_type: '', 
-        status: 'Regular', 
+        course_code: '',
+        room: '',
+        activity_type: '',
+        status: 'Regular',
         remarks: '',
         is_modified: 1
     });
@@ -506,8 +506,8 @@ function addIFTLEntry() {
 }
 function generateTimeOptions(selectedTime) {
     let options = '';
-    const startHour = 7; 
-    const endHour = 21; 
+    const startHour = 7;
+    const endHour = 21;
     for (let h = startHour; h <= endHour; h++) {
         for (let m = 0; m < 60; m += 30) {
             const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`;

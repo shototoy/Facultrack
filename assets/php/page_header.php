@@ -1094,12 +1094,12 @@ function closeSidebar() {
     .header-content {
         display: grid !important;
         grid-template-columns: 1fr auto !important;
-        grid-template-areas: 
+        grid-template-areas:
             "title actions"
             "user user"
             "stats stats";
         gap: 10px !important;
-        flex-direction: column !important; 
+        flex-direction: column !important;
         align-items: stretch !important;
     }
     .header-middle {
@@ -1128,8 +1128,8 @@ function closeSidebar() {
         justify-content: flex-end !important;
         margin-top: 0 !important;
     }
-    .header-right { 
-        display: contents !important; 
+    .header-right {
+        display: contents !important;
         order: unset !important;
         width: auto !important;
         margin-top: 0 !important;
@@ -1181,7 +1181,7 @@ function closeSidebar() {
         overflow-x: auto !important;
         gap: 8px !important;
         width: 100% !important;
-        padding-bottom: 5px !important; 
+        padding-bottom: 5px !important;
         justify-content: flex-start !important;
         margin-top: 0 !important;
     }

@@ -827,7 +827,7 @@ class LivePollingManager {
         }
         const currentIds = Array.from(container.querySelectorAll('tr:not(.expansion-row)')).map(row => {
             const idField = this.getIdField(type).replace('_', '-');
-            return row.getAttribute(`data-${idField}`); 
+            return row.getAttribute(`data-${idField}`);
         }).filter(id => id);
         const newIds = newData.map(item => item[this.getIdField(type)].toString());
         const hasIdMismatch = newIds.some(id => !currentIds.includes(id)) || currentIds.some(id => !newIds.includes(id));
@@ -1275,7 +1275,7 @@ class LivePollingManager {
         return `
             <div class="faculty-card" data-name="${escapeHtml(faculty.full_name)}" ${!isProgram ? `data-faculty-id="${faculty.faculty_id}"` : ''}>
                 <div class="faculty-avatar">${initials}</div>
-                <div class="faculty-name">${escapeHtml(faculty.full_name)}</div>   
+                <div class="faculty-name">${escapeHtml(faculty.full_name)}</div>
                 <div class="location-info">
                     <div class="location-status">
                         <span class="status-dot status-${statusClass}"></span>

@@ -4,16 +4,16 @@ function fetchAnnouncements($pdo, $userRole, $limit = 10) {
         $announcements_query = "
             SELECT a.*, u.full_name as created_by_name,
                    DATE_FORMAT(a.created_at, '%M %d, %Y at %h:%i %p') as formatted_date,
-                   CASE 
+                   CASE
                        WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN CONCAT(TIMESTAMPDIFF(MINUTE, a.created_at, NOW()), ' minutes ago')
                        WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, a.created_at, NOW()), ' hours ago')
                        WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, a.created_at, NOW()), ' days ago')
                        ELSE '1 week ago'
                    END as time_ago
-            FROM announcements a 
-            JOIN users u ON a.created_by = u.user_id 
-            WHERE a.is_active = TRUE 
-            ORDER BY a.created_at DESC 
+            FROM announcements a
+            JOIN users u ON a.created_by = u.user_id
+            WHERE a.is_active = TRUE
+            ORDER BY a.created_at DESC
             LIMIT " . intval($limit);
         $stmt = $pdo->prepare($announcements_query);
         $stmt->execute();
@@ -37,17 +37,17 @@ function fetchAnnouncements($pdo, $userRole, $limit = 10) {
     $announcements_query = "
         SELECT a.*, u.full_name as created_by_name,
                DATE_FORMAT(a.created_at, '%M %d, %Y at %h:%i %p') as formatted_date,
-               CASE 
+               CASE
                    WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN CONCAT(TIMESTAMPDIFF(MINUTE, a.created_at, NOW()), ' minutes ago')
                    WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, a.created_at, NOW()), ' hours ago')
                    WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, a.created_at, NOW()), ' days ago')
                    ELSE '1 week ago'
                END as time_ago
-        FROM announcements a 
-        JOIN users u ON a.created_by = u.user_id 
-        WHERE a.is_active = TRUE 
+        FROM announcements a
+        JOIN users u ON a.created_by = u.user_id
+        WHERE a.is_active = TRUE
         AND a.target_audience IN ($placeholders)
-        ORDER BY a.created_at DESC 
+        ORDER BY a.created_at DESC
         LIMIT " . intval($limit);
     $stmt = $pdo->prepare($announcements_query);
     $stmt->execute($targetAudiences);
@@ -55,13 +55,13 @@ function fetchAnnouncements($pdo, $userRole, $limit = 10) {
 }
 function getAnnouncementCategory($target_audience) {
     switch ($target_audience) {
-        case 'faculty': 
+        case 'faculty':
             return 'Faculty';
-        case 'classes': 
+        case 'classes':
             return 'Classes';
-        case 'program_chairs': 
+        case 'program_chairs':
             return 'Admin';
-        default: 
+        default:
             return 'General';
     }
 }

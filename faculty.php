@@ -10,32 +10,32 @@ $mysql_timezone_map = [
     'America/New_York' => '-05:00',
     'America/Los_Angeles' => '-08:00'
 ];
-$mysql_timezone = $mysql_timezone_map[$php_timezone] ?? '+08:00'; 
+$mysql_timezone = $mysql_timezone_map[$php_timezone] ?? '+08:00';
 $pdo->exec("SET time_zone = '$mysql_timezone'");
 $current_time = date('H:i:s');
 $current_date = date('Y-m-d');
 $current_day = date('w');
 function getFacultyInfo($pdo, $user_id) {
     $faculty_query = "
-        SELECT 
-            f.*, 
+        SELECT
+            f.*,
             u.full_name,
             COALESCE(
-                (SELECT CASE 
+                (SELECT CASE
                     WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 1 MINUTE) THEN 'Just now'
                     WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 60 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
                     WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
                     WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
                     ELSE 'Over a week ago'
                 END
-                FROM location_history lh 
-                WHERE lh.faculty_id = f.faculty_id 
-                ORDER BY lh.time_set DESC 
+                FROM location_history lh
+                WHERE lh.faculty_id = f.faculty_id
+                ORDER BY lh.time_set DESC
                 LIMIT 1),
                 'No location history'
             ) as last_updated
-        FROM faculty f 
-        JOIN users u ON f.user_id = u.user_id 
+        FROM faculty f
+        JOIN users u ON f.user_id = u.user_id
         WHERE f.user_id = ? AND u.is_active = TRUE";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute([$user_id]);
@@ -43,10 +43,10 @@ function getFacultyInfo($pdo, $user_id) {
 }
 function getLocationHistory($pdo, $faculty_id, $limit = 10) {
     $limit = (int)$limit;
-    $query = "SELECT location, time_set, time_changed 
-              FROM location_history 
-              WHERE faculty_id = ? 
-              ORDER BY time_set DESC 
+    $query = "SELECT location, time_set, time_changed
+              FROM location_history
+              WHERE faculty_id = ?
+              ORDER BY time_set DESC
               LIMIT " . $limit;
     $stmt = $pdo->prepare($query);
     $stmt->execute([$faculty_id]);
@@ -312,14 +312,14 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             }
             body {
                 overflow-y: auto !important;
-                padding-bottom: 120px !important; 
+                padding-bottom: 120px !important;
                 padding-top: 20px !important;
             }
             .dashboard-grid {
                 display: grid !important;
                 grid-template-columns: 1fr !important;
                 grid-template-rows: auto 1fr !important;
-                height: auto !important; 
+                height: auto !important;
                 min-height: calc(100vh - 120px) !important;
                 gap: 12px !important;
             }
@@ -338,9 +338,9 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 order: 2 !important;
                 padding: 12px !important;
                 padding-bottom: 100px !important;
-                overflow-y: visible !important; 
+                overflow-y: visible !important;
                 border: none !important;
-                max-height: none !important; 
+                max-height: none !important;
             }
             .schedule-section.scroll-mode-active {
                 max-height: none !important;
@@ -348,18 +348,18 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             }
             .actions-section {
                 position: fixed !important;
-                bottom: 20px !important; 
-                left: 20px !important; 
+                bottom: 20px !important;
+                left: 20px !important;
                 right: 20px !important;
                 width: auto !important;
                 z-index: 1000 !important;
                 background: rgba(255, 255, 255, 0.98) !important;
-                border: 1px solid rgba(46, 125, 50, 0.2) !important; 
-                border-radius: 12px !important; 
+                border: 1px solid rgba(46, 125, 50, 0.2) !important;
+                border-radius: 12px !important;
                 box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15) !important;
                 backdrop-filter: blur(10px) !important;
                 height: auto !important;
-                min-height: 80px !important; 
+                min-height: 80px !important;
                 order: 3 !important;
                 transform: none !important;
                 opacity: 0 !important;
@@ -824,7 +824,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
     <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
         <div class="content-wrapper" id="contentWrapper">
-            <?php 
+            <?php
             $ongoing_classes = count(array_filter($today_schedule, function($schedule) {
                 return $schedule['status'] === 'ongoing';
             }));
@@ -855,7 +855,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                     <div class="schedule-header">
                         <h3>Schedule</h3>
                         <div class="schedule-date">
-                            <?php 
+                            <?php
                             $display_date = (isset($DEBUG_MODE) && $DEBUG_MODE && isset($DEBUG_DATE)) ? date('F j, Y - l', strtotime($DEBUG_DATE)) : date('F j, Y - l');
                             echo $display_date;
                             ?>
@@ -864,7 +864,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         <div class="schedule-tabs">
                             <?php if (!empty($schedule_tabs)): ?>
                                 <?php foreach ($schedule_tabs as $index => $tab): ?>
-                                <button class="schedule-tab <?php echo $index === 0 ? 'active' : ''; ?>" 
+                                <button class="schedule-tab <?php echo $index === 0 ? 'active' : ''; ?>"
                                         onclick="switchScheduleTab('<?php echo $tab; ?>', this)">
                                     <?php echo $tab; ?>
                                 </button>
@@ -977,7 +977,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                     </div>
                     <div class="form-group">
                         <label class="form-label">Custom Location</label>
-                        <input type="text" id="customLocation" name="custom_location" class="form-input" 
+                        <input type="text" id="customLocation" name="custom_location" class="form-input"
                             placeholder="Type custom location if not in list above">
                         <small class="form-help">Leave empty to use selected location above</small>
                     </div>
@@ -1035,7 +1035,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
                             <label class="form-label">Select Week</label>
                             <select id="facultyIFTLWeekSelect" class="form-select" onchange="loadFacultyIFTLData()">
-                                
+
                             </select>
                         </div>
                         <div class="iftl-actions" style="display: flex; gap: 10px;">

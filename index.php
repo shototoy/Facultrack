@@ -27,17 +27,17 @@ if (!isset($_GET['ready']) && empty($_POST)) {
             border-top: 4px solid #ffffff;
             animation: spin 1s linear infinite;
             margin-bottom: 1.5rem;
-            z-index: 10000; 
+            z-index: 10000;
             margin-top: 2rem;
         }
-        .loading-text { 
-            font-size: 1.2rem; 
-            margin-bottom: 1rem; 
+        .loading-text {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
             color: #ffffff;
             font-weight: 500;
             letter-spacing: 0.5px;
             text-align: center;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.5); 
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
             z-index: 10000;
         }
         .progress-bar-bg {
@@ -105,7 +105,7 @@ if (!isset($_GET['ready']) && empty($_POST)) {
             })
             .catch(error => {
                 console.log('Polling...', error);
-                setTimeout(checkServer, 1000); 
+                setTimeout(checkServer, 1000);
             });
         }
         checkServer();
@@ -227,12 +227,12 @@ try {
         SELECT username, role, full_name FROM users WHERE role = 'campus_director' AND is_active = 1
         UNION ALL
         SELECT username, role, full_name FROM users WHERE role = 'program_chair' AND is_active = 1
-        UNION ALL 
+        UNION ALL
         SELECT username, role, full_name FROM users WHERE role = 'faculty' AND is_active = 1
         UNION ALL
         SELECT username, role, full_name FROM users WHERE role = 'class' AND is_active = 1
-        ORDER BY 
-            CASE role 
+        ORDER BY
+            CASE role
                 WHEN 'campus_director' THEN 1
                 WHEN 'program_chair' THEN 2
                 WHEN 'faculty' THEN 3
@@ -299,20 +299,20 @@ try {
             border: 1px solid rgba(255, 255, 255, 0.4);
             color: #000;
             font-weight: 600;
-            font-size: 1.2rem; 
-            padding: 16px; 
+            font-size: 1.2rem;
+            padding: 16px;
         }
         .form-input:focus {
             background: rgba(255, 255, 255, 0.9) !important;
             box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
         }
         #password {
-            margin-bottom: 3rem; 
+            margin-bottom: 3rem;
         }
         .form-label {
             color: #fff;
             text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            font-size: 1.3rem; 
+            font-size: 1.3rem;
             margin-bottom: 10px;
         }
         .login-btn {
@@ -343,7 +343,7 @@ try {
         }
         @media (max-width: 768px) {
             .login-card {
-                padding: 30px; 
+                padding: 30px;
                 min-height: auto;
                 width: 90%;
             }
@@ -383,19 +383,19 @@ try {
             <form method="POST" action="">
                 <div class="form-group">
                     <label class="form-label" for="username">Username</label>
-                    <input type="text" 
-                           class="form-input" 
-                           id="username" 
-                           name="username" 
-                           value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" 
+                    <input type="text"
+                           class="form-input"
+                           id="username"
+                           name="username"
+                           value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>"
                            required>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="password">Password</label>
-                    <input type="password" 
-                           class="form-input" 
-                           id="password" 
-                           name="password" 
+                    <input type="password"
+                           class="form-input"
+                           id="password"
+                           name="password"
                            required>
                 </div>
                 <button type="submit" class="login-btn">Sign In</button>
@@ -405,15 +405,15 @@ try {
                 <?php foreach ($demo_accounts as $account): ?>
                     <form method="POST" action="" style="display: inline;">
                         <input type="hidden" name="username" value="<?php echo $account['username']; ?>">
-                        <input type="hidden" name="password" value="<?php 
+                        <input type="hidden" name="password" value="<?php
                             if ($account['role'] === 'campus_director') echo 'admin123';
                             elseif ($account['role'] === 'program_chair') echo 'chair123';
                             elseif ($account['role'] === 'faculty') echo 'prof123';
                             else echo 'class123';
                         ?>">
                         <div class="demo-account" onclick="this.parentNode.submit()">
-                            <strong><?php echo ucfirst(str_replace('_', ' ', $account['role'])); ?>:</strong> <?php echo $account['username']; ?> / 
-                            <?php 
+                            <strong><?php echo ucfirst(str_replace('_', ' ', $account['role'])); ?>:</strong> <?php echo $account['username']; ?> /
+                            <?php
                                 if ($account['role'] === 'campus_director') echo 'admin123';
                                 elseif ($account['role'] === 'program_chair') echo 'chair123';
                                 elseif ($account['role'] === 'faculty') echo 'prof123';

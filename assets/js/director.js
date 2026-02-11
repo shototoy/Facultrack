@@ -115,7 +115,7 @@ function searchTable(query, type) {
         if (isVisible) visibleCount++;
     });
 }
-// printAnnouncement and emailAnnouncement are now handled in shared_functions.js and announcement_functions.php
+
 document.addEventListener('DOMContentLoaded', function () {
     const iftlTabBtn = document.querySelector('button[data-tab="iftl"]');
     if (iftlTabBtn) {

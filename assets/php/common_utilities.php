@@ -51,7 +51,7 @@ function formatTime($time) {
     return date('g:i A', strtotime($time));
 }
 function getFacultyStatusSQL() {
-    return "CASE 
+    return "CASE
         WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN 'available'
         WHEN f.last_location_update > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN 'busy'
         ELSE 'offline'
@@ -59,15 +59,15 @@ function getFacultyStatusSQL() {
 }
 function getTimeAgoSQL() {
     return "COALESCE(
-        (SELECT CASE 
+        (SELECT CASE
             WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
             WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
             WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
             ELSE 'Over a week ago'
         END
-        FROM location_history lh 
-        WHERE lh.faculty_id = f.faculty_id 
-        ORDER BY lh.time_set DESC 
+        FROM location_history lh
+        WHERE lh.faculty_id = f.faculty_id
+        ORDER BY lh.time_set DESC
         LIMIT 1),
         'No location history'
     ) as last_updated";

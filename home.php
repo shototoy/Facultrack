@@ -30,17 +30,17 @@ function getClassAnnouncements($pdo) {
     $announcements_query = "
         SELECT a.*, u.full_name as created_by_name,
                DATE_FORMAT(a.created_at, '%M %d, %Y at %h:%i %p') as formatted_date,
-               CASE 
+               CASE
                    WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 2 HOUR) THEN CONCAT(TIMESTAMPDIFF(MINUTE, a.created_at, NOW()), ' minutes ago')
                    WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, a.created_at, NOW()), ' hours ago')
                    WHEN a.created_at > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, a.created_at, NOW()), ' days ago')
                    ELSE '1 week ago'
                END as time_ago
-        FROM announcements a 
-        JOIN users u ON a.created_by = u.user_id 
-        WHERE a.is_active = TRUE 
+        FROM announcements a
+        JOIN users u ON a.created_by = u.user_id
+        WHERE a.is_active = TRUE
         AND (a.target_audience = 'all' OR a.target_audience = 'classes')
-        ORDER BY a.created_at DESC 
+        ORDER BY a.created_at DESC
         LIMIT 10";
     $stmt = $pdo->prepare($announcements_query);
     $stmt->execute();
@@ -68,7 +68,7 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
     $today_code = $day_mapping[$current_day];
     $courses_query = "
         SELECT s.course_code, c.course_description, s.days, s.time_start, s.time_end, s.room,
-        CASE 
+        CASE
             WHEN TIME(NOW()) > s.time_end THEN 'finished'
             WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 'current'
             WHEN TIME(NOW()) < s.time_start THEN 'upcoming'
@@ -86,8 +86,8 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
             (s.days = 'TTH' AND '$today_code' IN ('T', 'TH')) OR
             (s.days = 'MTWTHF' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F'))
         )
-        ORDER BY 
-            CASE 
+        ORDER BY
+            CASE
                 WHEN TIME(NOW()) > s.time_end THEN 1
                 WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end THEN 2
                 WHEN TIME(NOW()) < s.time_start THEN 3
@@ -112,7 +112,7 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
     <?php include 'assets/php/feather_icons.php'; ?>
     <div class="main-container">
         <div class="content-wrapper" id="contentWrapper">
-            <?php 
+            <?php
             $online_faculty = count(array_filter($faculty_data, function($faculty) {
                 return $faculty['status'] === 'available';
             }));
@@ -155,17 +155,17 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                 <?php foreach ($faculty_courses[$faculty['faculty_id']] as $course): ?>
                 <div class="course-info course-<?php echo $course['status']; ?>">
                     <div class="course-content">
-                        <strong><?php echo htmlspecialchars($course['course_code']); ?>:</strong> 
+                        <strong><?php echo htmlspecialchars($course['course_code']); ?>:</strong>
                         <?php echo htmlspecialchars($course['course_description']); ?>
                         <br>
                         <small>
-                            <?php echo strtoupper($course['days']); ?> | 
-                            <?php echo formatTime($course['time_start']); ?> - <?php echo formatTime($course['time_end']); ?> | 
+                            <?php echo strtoupper($course['days']); ?> |
+                            <?php echo formatTime($course['time_start']); ?> - <?php echo formatTime($course['time_end']); ?> |
                             <?php echo htmlspecialchars($course['room']); ?>
                         </small>
                     </div>
                     <span class="course-status-label status-<?php echo $course['status']; ?>">
-                        <?php 
+                        <?php
                             switch($course['status']) {
                                 case 'current': echo 'CURRENT'; break;
                                 case 'upcoming': echo 'UPCOMING'; break;
@@ -181,7 +181,7 @@ function getFacultyCourses($pdo, $faculty_id, $class_id) {
                         <div class="location-status">
                             <span class="status-dot status-<?php echo $faculty['status']; ?>"></span>
                             <span class="location-text">
-                                <?php 
+                                <?php
                                     switch($faculty['status']) {
                                         case 'available': echo 'Available'; break;
                                         case 'offline': echo 'Offline'; break;

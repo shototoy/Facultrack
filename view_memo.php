@@ -1,7 +1,7 @@
 <?php
 require_once 'assets/php/common_utilities.php';
 
-// Check if ID is provided
+
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     die("Invalid announcement ID.");
 }
@@ -9,11 +9,11 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 $id = intval($_GET['id']);
 $pdo = get_db_connection();
 
-// Fetch announcement details
+
 $stmt = $pdo->prepare("
     SELECT a.*, u.full_name as created_by_name
-    FROM announcements a 
-    LEFT JOIN users u ON a.created_by = u.user_id 
+    FROM announcements a
+    LEFT JOIN users u ON a.created_by = u.user_id
     WHERE a.announcement_id = ? AND a.is_active = TRUE
 ");
 $stmt->execute([$id]);
@@ -29,7 +29,7 @@ $authorName = $announcement['created_by_name'] ? htmlspecialchars($announcement[
 $date = date('F d, Y', strtotime($announcement['created_at']));
 $year = date('Y', strtotime($announcement['created_at']));
 
-// Determine base URL
+
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
 $host = $_SERVER['HTTP_HOST'];
 $dir = dirname($_SERVER['PHP_SELF']);
@@ -42,8 +42,8 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
     <title>Print Announcement - <?php echo $title; ?></title>
     <base href="<?php echo $appRoot; ?>">
     <style>
-        body { 
-            font-family: 'Times New Roman', Times, serif; 
+        body {
+            font-family: 'Times New Roman', Times, serif;
             margin: 0;
             padding: 0;
             min-height: 100vh;
@@ -55,7 +55,7 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
             padding-top: 20px;
             padding-bottom: 20px;
         }
-        
+
         .page {
             width: 8.5in;
             min-height: 11in;
@@ -77,17 +77,17 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
         .background-layer img {
             width: 100%;
             height: 100%;
-            object-fit: fill; 
+            object-fit: fill;
         }
 
         .content-wrapper {
-            padding: 154px 96px 96px 96px; 
+            padding: 154px 96px 96px 96px;
             position: relative;
             z-index: 1;
         }
 
         .document-header {
-            position: absolute; 
+            position: absolute;
             top: 15px;
             left: 25px;
             width: 75%;
@@ -97,20 +97,20 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
             height: 90px;
             z-index: 2;
         }
-        
+
         .logos-left {
             display: flex;
             gap: 15px;
             align-items: center;
             margin-right: 25px;
         }
-        
+
         .logo {
             width: 75px;
             height: 75px;
             object-fit: contain;
         }
-        
+
         .header-text {
             text-align: left;
             color: #000;
@@ -132,7 +132,7 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
         }
 
         .office-title-block {
-            margin-top: 30px;  
+            margin-top: 30px;
             text-align: center;
             margin-bottom: 35px;
         }
@@ -170,20 +170,20 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
                 margin-bottom: 30px;
         }
 
-        .content { 
-            font-size: 12pt; 
-            line-height: 1.5; 
-            color: #000; 
-            margin-bottom: 50px; 
-            white-space: pre-wrap; 
+        .content {
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #000;
+            margin-bottom: 50px;
+            white-space: pre-wrap;
             text-align: justify;
             font-family: Arial, sans-serif;
         }
-        
+
         .footer-text {
             position: absolute;
             bottom: 48px;
-            left: 96px; 
+            left: 96px;
             right: 96px;
             text-align: center;
             font-family: Arial, sans-serif;
@@ -200,7 +200,7 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
 
         @media print {
             @page { margin: 0; size: letter portrait; }
-            body { 
+            body {
                 background: white;
                 display: block;
                 padding: 0;
@@ -214,8 +214,8 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
             }
             .background-layer {
                 display: block !important;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
     </style>
@@ -229,7 +229,7 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
         <div class="content-wrapper">
             <!-- Header removed as requested -->
             <div class="document-header" style="display: none;">
-                
+
             </div>
 
             <div class="office-title-block">
@@ -239,19 +239,19 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
 
             <div class="memo-info">
                 <div style="font-weight: bold; margin-bottom: 20px;">OFFICE MEMORANDUM No. <?php echo $id; ?>, Series <?php echo $year; ?></div>
-                
+
                 <div class="memo-row"><span class="memo-label">TO:</span> <span class="memo-value">CAMPUS DESIGNATED PERSONNEL</span></div>
                 <div class="memo-row"><span class="memo-label">FROM:</span> <span class="memo-value"><?php echo strtoupper($authorName); ?></span></div>
                 <div class="memo-row" style="margin-left: 100px; margin-top: -8px; font-weight: normal; font-size: 10pt;">Campus Director</div>
-                
+
                 <div class="memo-row"><span class="memo-label">SUBJECT:</span> <span class="memo-value" style="text-transform: uppercase;"><?php echo $title; ?></span></div>
                 <div class="memo-row"><span class="memo-label">DATE:</span> <span class="memo-value"><?php echo $date; ?></span></div>
             </div>
-            
+
             <div class="memo-line"></div>
-            
+
             <div class="content"><?php echo $content; ?></div>
-            
+
             <div class="signatory">
                 <p>For your information and guidance.</p>
             </div>
@@ -259,9 +259,9 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
 
         <!-- Footer removed as requested -->
         <div class="footer-text" style="display: none;">
-            <span>VISION:</span> A leading University in advancing scholarly innovation, multi-cultural convergence, and responsive public service in a borderless Region. | 
-            <span>MISSION:</span> The University shall primarily provide advanced instruction and professional training in science and technology, agriculture, fisheries, education and other relevant fields of study. It shall also undertake research and extension services, and provide progressive leadership in its areas of specialization. | 
-            <span>MAXIM:</span> Generator of Solutions. | 
+            <span>VISION:</span> A leading University in advancing scholarly innovation, multi-cultural convergence, and responsive public service in a borderless Region. |
+            <span>MISSION:</span> The University shall primarily provide advanced instruction and professional training in science and technology, agriculture, fisheries, education and other relevant fields of study. It shall also undertake research and extension services, and provide progressive leadership in its areas of specialization. |
+            <span>MAXIM:</span> Generator of Solutions. |
             <span>CORE VALUES:</span> Patriotism, Respect, Integrity, Zeal, Excellence in Public Service.
         </div>
     </div>

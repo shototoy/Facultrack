@@ -226,7 +226,7 @@ async function handleFormSubmission(form, type) {
 }
 
 function generateAnnouncementPDF(id, title, content, authorName, date) {
-    // Dynamically determine app root to support both localhost and production (Railway)
+
     const path = window.location.pathname;
     const directory = path.substring(0, path.lastIndexOf('/'));
     const appRoot = window.location.origin + directory + '/';
@@ -240,18 +240,18 @@ function generateAnnouncementPDF(id, title, content, authorName, date) {
             <style>
                 @media print {
                     @page { margin: 0; size: letter portrait; }
-                    body { 
-                        margin: 0; 
+                    body {
+                        margin: 0;
                         padding: 0;
-                        -webkit-print-color-adjust: exact; 
-                        print-color-adjust: exact; 
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
                     }
                     .background-layer {
                         display: block !important;
                     }
                 }
-                body { 
-                    font-family: 'Times New Roman', Times, serif; 
+                body {
+                    font-family: 'Times New Roman', Times, serif;
                     margin: 0;
                     padding: 0;
                     min-height: 100vh;
@@ -269,17 +269,17 @@ function generateAnnouncementPDF(id, title, content, authorName, date) {
                 .background-layer img {
                     width: 100%;
                     height: 100%;
-                    object-fit: fill; 
+                    object-fit: fill;
                 }
 
                 .content-wrapper {
-                    padding: 154px 96px 96px 96px; 
+                    padding: 154px 96px 96px 96px;
                     position: relative;
                     z-index: 1;
                 }
 
                 .document-header {
-                    position: absolute; 
+                    position: absolute;
                     top: 15px;
                     left: 25px;
                     width: 75%;
@@ -288,20 +288,20 @@ function generateAnnouncementPDF(id, title, content, authorName, date) {
                     justify-content: flex-start;
                     height: 90px;
                 }
-                
+
                 .logos-left {
                     display: flex;
                     gap: 15px;
                     align-items: center;
                     margin-right: 25px;
                 }
-                
+
                 .logo {
                     width: 75px;
                     height: 75px;
                     object-fit: contain;
                 }
-                
+
                 .header-text {
                     text-align: left;
                     color: #000;
@@ -323,7 +323,7 @@ function generateAnnouncementPDF(id, title, content, authorName, date) {
                 }
 
                 .office-title-block {
-                    margin-top: 30px;  
+                    margin-top: 30px;
                     text-align: center;
                     margin-bottom: 35px;
                 }
@@ -361,20 +361,20 @@ function generateAnnouncementPDF(id, title, content, authorName, date) {
                      margin-bottom: 30px;
                 }
 
-                .content { 
-                    font-size: 12pt; 
-                    line-height: 1.5; 
-                    color: #000; 
-                    margin-bottom: 50px; 
-                    white-space: pre-wrap; 
+                .content {
+                    font-size: 12pt;
+                    line-height: 1.5;
+                    color: #000;
+                    margin-bottom: 50px;
+                    white-space: pre-wrap;
                     text-align: justify;
                     font-family: Arial, sans-serif;
                 }
-                
+
                 .footer-text {
                     position: fixed;
                     bottom: 48px;
-                    left: 96px; 
+                    left: 96px;
                     right: 96px;
                     text-align: center;
                     font-family: Arial, sans-serif;
@@ -397,7 +397,7 @@ function generateAnnouncementPDF(id, title, content, authorName, date) {
             <div class="content-wrapper">
                 <!-- Header removed as requested -->
                 <div class="document-header" style="display: none;">
-                    
+
                 </div>
 
                 <div class="office-title-block">
@@ -407,19 +407,19 @@ function generateAnnouncementPDF(id, title, content, authorName, date) {
 
                 <div class="memo-info">
                     <div style="font-weight: bold; margin-bottom: 20px;">OFFICE MEMORANDUM No. ${id}, Series ${new Date(date).getFullYear() || new Date().getFullYear()}</div>
-                    
+
                     <div class="memo-row"><span class="memo-label">TO:</span> <span class="memo-value">CAMPUS DESIGNATED PERSONNEL</span></div>
                     <div class="memo-row"><span class="memo-label">FROM:</span> <span class="memo-value">${authorName.toUpperCase()}</span></div>
                     <div class="memo-row" style="margin-left: 100px; margin-top: -8px; font-weight: normal; font-size: 10pt;">Campus Director</div>
-                    
+
                     <div class="memo-row"><span class="memo-label">SUBJECT:</span> <span class="memo-value" style="text-transform: uppercase;">${title}</span></div>
                     <div class="memo-row"><span class="memo-label">DATE:</span> <span class="memo-value">${date}</span></div>
                 </div>
-                
+
                 <div class="memo-line"></div>
-                
+
                 <div class="content">${content}</div>
-                
+
                 <div class="signatory">
                     <p>For your information and guidance.</p>
                 </div>
@@ -427,9 +427,9 @@ function generateAnnouncementPDF(id, title, content, authorName, date) {
 
             <!-- Footer removed as requested -->
             <div class="footer-text" style="display: none;">
-                <span>VISION:</span> A leading University in advancing scholarly innovation, multi-cultural convergence, and responsive public service in a borderless Region. | 
-                <span>MISSION:</span> The University shall primarily provide advanced instruction and professional training in science and technology, agriculture, fisheries, education and other relevant fields of study. It shall also undertake research and extension services, and provide progressive leadership in its areas of specialization. | 
-                <span>MAXIM:</span> Generator of Solutions. | 
+                <span>VISION:</span> A leading University in advancing scholarly innovation, multi-cultural convergence, and responsive public service in a borderless Region. |
+                <span>MISSION:</span> The University shall primarily provide advanced instruction and professional training in science and technology, agriculture, fisheries, education and other relevant fields of study. It shall also undertake research and extension services, and provide progressive leadership in its areas of specialization. |
+                <span>MAXIM:</span> Generator of Solutions. |
                 <span>CORE VALUES:</span> Patriotism, Respect, Integrity, Zeal, Excellence in Public Service.
             </div>
 
@@ -471,7 +471,7 @@ function printAnnouncement(id) {
 async function emailAnnouncement(announcement) {
     const subject = encodeURIComponent(`Announcement: ${announcement.title}`);
 
-    // Dynamically determine app root to support both localhost and production (Railway)
+
     const path = window.location.pathname;
     const directory = path.substring(0, path.lastIndexOf('/'));
     const appRoot = window.location.origin + directory + '/';

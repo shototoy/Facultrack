@@ -308,7 +308,7 @@ $role = $_SESSION['role'] ?? '';
                 <button class="pagination-btn active" onclick="showCourseLoadPage(1)" data-page="1">MWF Schedule</button>
                 <button class="pagination-btn" onclick="showCourseLoadPage(2)" data-page="2">TTH Schedule</button>
             </div>
-            
+
             <div id="courseLoadContent">
                 <div class="mobile-page-content">
                     <div class="mobile-page page-1 active">
@@ -370,7 +370,7 @@ $role = $_SESSION['role'] ?? '';
                 <label class="form-label">Academic Year *</label>
                 <select name="academic_year" class="form-select" required onchange="loadClassesForSemester(document.querySelector('[name=semester]').value)">
                     <option value="">Select Academic Year</option>
-                    <?php 
+                    <?php
                     $current_year = date('Y');
                     for ($i = $current_year - 2; $i <= $current_year + 2; $i++) {
                         $ay = $i . '-' . ($i + 1);

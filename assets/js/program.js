@@ -2006,8 +2006,8 @@ function loadCourseAndClassData() {
                     courseSelect.innerHTML = '<option value="">Choose a course...</option>';
                     data.courses.forEach(course => {
                         courseSelect.innerHTML += `
-                        <option value="${course.course_code}" 
-                                data-units="${course.units}" 
+                        <option value="${course.course_code}"
+                                data-units="${course.units}"
                                 data-description="${course.course_description}">
                             ${course.course_code} - ${course.course_description}
                         </option>
