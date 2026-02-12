@@ -43,6 +43,13 @@ if ($pos !== false) {
 } else {
     echo "DID NOT FIND 'DIR-1' in SQL file!<br>";
 }
+$pos_dean = strpos($content, "dean_id");
+if ($pos_dean !== false) {
+    echo "Found 'dean_id' at position $pos_dean. Context:<br>";
+    echo "<pre>" . htmlspecialchars(substr($content, $pos_dean - 100, 200)) . "</pre>";
+} else {
+    echo "DID NOT FIND 'dean_id' in SQL file!<br>";
+}
 $pos2 = strpos($content, "\n(41,");
 if ($pos2 !== false) {
     echo "Found line starting with (41, at position $pos2. Context:<br>";

@@ -3714,6 +3714,92 @@ body:has(.faculty-grid) .tab-content.active,
     flex-shrink: 0;
 }
 
+.dean-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    padding: 16px;
+}
+
+.dean-card {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eee;
+}
+
+.dean-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dean-programs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dean-program-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.dean-program-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.dean-program-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.dean-program-code {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.dean-program-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.dean-program-actions .form-select {
+    min-width: 180px;
+}
+
+@media (max-width: 768px) {
+    .dean-program-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dean-program-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .dean-program-actions .form-select {
+        width: 100%;
+    }
+}
+
 .loading-container {
     display: flex;
     flex-direction: column;

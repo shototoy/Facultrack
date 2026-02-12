@@ -2100,11 +2100,13 @@ function handleDayCheckboxChange(checkbox) {
 }
 function exportSchedule(facultyId) {
     const facultyName = facultyNames[facultyId] || 'Unknown Faculty';
+    const deanName = (window.facultyDeanNames && window.facultyDeanNames[facultyId]) || 'Dean';
+    const directorName = window.campusDirectorName || 'Campus Director';
     const schedules = facultySchedules[facultyId] || [];
     const { mwfSchedules, tthSchedules } = separateSchedulesByType(schedules);
     const summary = calculateSummaryData(schedules);
     const exportWindow = window.open('', '_blank', 'width=1200,height=800');
-    exportWindow.document.write(generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary));
+    exportWindow.document.write(generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, deanName, directorName));
     exportWindow.document.close();
     exportWindow.onload = () => {
         if (typeof html2canvas === 'undefined') {

@@ -108,9 +108,12 @@ function getAllPrograms($pdo) {
             p.program_code,
             p.program_name,
             p.program_description,
+            p.dean_id,
+            u.full_name as dean_name,
             p.created_at,
             COUNT(c.course_id) as course_count
         FROM programs p
+        LEFT JOIN users u ON p.dean_id = u.user_id
         LEFT JOIN courses c ON p.program_id = c.program_id AND c.is_active = TRUE
         WHERE p.is_active = TRUE
         GROUP BY p.program_id
@@ -118,6 +121,46 @@ function getAllPrograms($pdo) {
     $stmt = $pdo->prepare($programs_query);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+function getDeanCandidates($pdo) {
+    $query = "
+        SELECT u.user_id, u.full_name
+        FROM users u
+        WHERE u.role = 'faculty' AND u.is_active = TRUE
+        ORDER BY u.full_name
+    ";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+function buildDeanProgramGroups($programs) {
+    $groups = [];
+    foreach ($programs as $program) {
+        $dean_id = $program['dean_id'] ?? null;
+        $key = $dean_id ? (string)$dean_id : 'unassigned';
+        if (!isset($groups[$key])) {
+            $groups[$key] = [
+                'dean_id' => $dean_id,
+                'dean_name' => $dean_id ? ($program['dean_name'] ?? 'Unknown Dean') : 'Unassigned',
+                'programs' => []
+            ];
+        }
+        $groups[$key]['programs'][] = [
+            'program_id' => $program['program_id'],
+            'program_code' => $program['program_code'],
+            'program_name' => $program['program_name'],
+            'program_description' => $program['program_description'],
+            'dean_id' => $dean_id,
+            'dean_name' => $program['dean_name'] ?? null
+        ];
+    }
+    $group_list = array_values($groups);
+    usort($group_list, function($a, $b) {
+        if ($a['dean_id'] === null) return -1;
+        if ($b['dean_id'] === null) return 1;
+        return strcasecmp($a['dean_name'], $b['dean_name']);
+    });
+    return $group_list;
 }
 function getAllAnnouncements($pdo) {
     $all_announcements_query = "
@@ -1238,6 +1281,48 @@ switch ($action) {
         $programs = getAllPrograms($pdo);
         sendJsonResponse(['success' => true, 'programs' => $programs]);
         break;
+    case 'get_dean_programs':
+        validateUserSession('campus_director');
+        try {
+            $programs = getAllPrograms($pdo);
+            $dean_candidates = getDeanCandidates($pdo);
+            $groups = buildDeanProgramGroups($programs);
+            sendJsonResponse([
+                'success' => true,
+                'dean_groups' => $groups,
+                'dean_candidates' => $dean_candidates
+            ]);
+        } catch (Exception $e) {
+            sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        }
+        break;
+    case 'update_program_dean':
+        validateUserSession('campus_director');
+        try {
+            $program_id = $_POST['program_id'] ?? null;
+            $dean_id = $_POST['dean_id'] ?? null;
+            if (!$program_id) {
+                sendJsonResponse(['success' => false, 'message' => 'Program ID is required']);
+                break;
+            }
+            if ($dean_id === '' || $dean_id === 'null') {
+                $dean_id = null;
+            }
+            if ($dean_id !== null) {
+                $stmt = $pdo->prepare("SELECT user_id FROM users WHERE user_id = ? AND role = 'faculty' AND is_active = TRUE");
+                $stmt->execute([$dean_id]);
+                if (!$stmt->fetchColumn()) {
+                    sendJsonResponse(['success' => false, 'message' => 'Selected dean is not available']);
+                    break;
+                }
+            }
+            $stmt = $pdo->prepare("UPDATE programs SET dean_id = ? WHERE program_id = ?");
+            $stmt->execute([$dean_id, $program_id]);
+            sendJsonResponse(['success' => true, 'message' => 'Dean assignment updated']);
+        } catch (Exception $e) {
+            sendJsonResponse(['success' => false, 'message' => 'Error updating dean assignment: ' . $e->getMessage()]);
+        }
+        break;
     case 'get_program_courses':
         $program_id = $_GET['program_id'] ?? $_POST['program_id'] ?? null;
         if (!$program_id) {
@@ -1358,6 +1443,17 @@ switch ($action) {
         }
         try {
             $current_week = date('Y') . '-W' . date('W');
+            $faculty_info_query = "
+                SELECT f.program, p.dean_id, u.full_name as dean_name
+                FROM faculty f
+                LEFT JOIN programs p ON f.program = p.program_name
+                LEFT JOIN users u ON p.dean_id = u.user_id
+                WHERE f.faculty_id = ?
+                LIMIT 1
+            ";
+            $stmt = $pdo->prepare($faculty_info_query);
+            $stmt->execute([$faculty_id]);
+            $faculty_info = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
             $compliance_query = "SELECT compliance_id FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ?";
             $stmt = $pdo->prepare($compliance_query);
             $stmt->execute([$faculty_id, $current_week]);
@@ -1418,6 +1514,8 @@ switch ($action) {
                 'schedules' => $schedule_data,
                 'is_iftl' => !!$compliance_id,
                 'week' => $current_week,
+                'faculty_program' => $faculty_info['program'] ?? null,
+                'dean_name' => $faculty_info['dean_name'] ?? null,
                 'timestamp' => date('Y-m-d H:i:s')
             ]);
         } catch (Exception $e) {

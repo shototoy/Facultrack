@@ -451,6 +451,7 @@ CREATE TABLE `programs` (
   `program_code` varchar(20) NOT NULL,
   `program_name` varchar(100) NOT NULL,
   `program_description` text DEFAULT NULL,
+  `dean_id` int(11) DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -460,10 +461,10 @@ CREATE TABLE `programs` (
 -- Dumping data for table `programs`
 --
 
-INSERT INTO `programs` (`program_id`, `program_code`, `program_name`, `program_description`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'CS', 'Computer Science', 'Bachelor of Science in Computer Science', 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45'),
-(2, 'IT', 'Information Technology', 'Bachelor of Science in Information Technology', 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45'),
-(3, 'IS', 'Information Systems', 'Bachelor of Science in Information Systems', 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45');
+INSERT INTO `programs` (`program_id`, `program_code`, `program_name`, `program_description`, `dean_id`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'CS', 'Computer Science', 'Bachelor of Science in Computer Science', 9, 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45'),
+(2, 'IT', 'Information Technology', 'Bachelor of Science in Information Technology', 9, 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45'),
+(3, 'IS', 'Information Systems', 'Bachelor of Science in Information Systems', 9, 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45');
 
 -- --------------------------------------------------------
 
@@ -520,41 +521,41 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `username`, `password`, `full_name`, `role`, `created_at`, `updated_at`, `is_active`) VALUES
-(1, 'admin', 'admin123', 'Campus Director', 'campus_director', '2025-11-27 10:06:45', '2026-02-03 03:35:01', 1),
+(1, 'admin', 'admin123', 'Rommel M. Lagumen', 'campus_director', '2025-11-27 10:06:45', '2026-02-03 03:35:01', 1),
 (2, 'chair_it', 'chair123', 'Dr. Information Technology Chair', 'program_chair', '2025-11-27 10:06:45', '2026-02-02 15:10:39', 1),
 (3, 'chair_is', 'chair123', 'Dr. Information Systems Chair', 'program_chair', '2025-11-27 10:06:45', '2026-01-26 05:04:07', 1),
-(4, 'alexis.apresto', 'prof123', 'Prof. Alexis Apresto', 'faculty', '2025-11-27 10:06:45', '2026-02-02 06:34:47', 1),
-(5, 'benedict.rabut', 'prof123', 'Prof. Benedict Rabut', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(7, 'cerilo.rubin', 'prof123', 'Prof. Cerilo Rubin Jr.', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(8, 'cyrus.rael', 'prof123', 'Prof. Cyrus Rael', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(9, 'elbren.antonio', 'prof123', 'Prof. Elbren Antonio', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(10, 'elmer.buenavides', 'prof123', 'Prof. Elmer Buenavides', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(11, 'esnehara.bagundang', 'prof123', 'Prof. Esnehara Bagundang', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(12, 'florlyn.remegio', 'prof123', 'Prof. Florlyn Remegio', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(13, 'gerold.delapena', 'prof123', 'Prof. Gerold Dela Peña', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(14, 'gregorio.ilao', 'prof123', 'Prof. Gregorio Ilao', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(15, 'ivy.madriaga', 'prof123', 'Prof. Ivy Lynn Madriaga', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(16, 'jaymark.arendain', 'prof123', 'Prof. Jaymark Arendain', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(17, 'joe.selayro', 'prof123', 'Prof. Joe Selayro', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(18, 'kristine.ampas', 'prof123', 'Prof. Kristine Mae Ampas', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(19, 'kyrene.dizon', 'prof123', 'Prof. Kyrene Dizon', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(20, 'marhodora.gallo', 'prof123', 'Prof. Ma. Rhodora Gallo', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(21, 'markjovic.daday', 'prof123', 'Prof. Mark Jovic Daday', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(22, 'marygrace.perocho', 'prof123', 'Prof. Mary Grace Perocho', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(23, 'romaamor.prades', 'prof123', 'Prof. Roma Amor Prades', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(24, 'velessa.dulin', 'prof123', 'Prof. Velessa Jane Dulin', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(25, 'zius.apresto', 'prof123', 'Prof. Zius Apresto', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(26, 'charlu.pemintel', 'prof123', 'Prof. Charlu Pemintel', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(27, 'doreen.tampus', 'prof123', 'Prof. Doreen Tampus', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(28, 'edralin.mesias', 'prof123', 'Prof. Edralin Mesias', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(29, 'eulogio.apellido', 'prof123', 'Prof. Eulogio Apellido', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(30, 'johnty.ventilacion', 'prof123', 'Prof. Johnty Ventilacion', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(31, 'lowell.espinosa', 'prof123', 'Prof. Lowell Espinosa', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(32, 'maryrolanne.fuentes', 'prof123', 'Prof. Mary Rolanne Fuentes', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(33, 'marygrace.bialen', 'prof123', 'Prof. Mary Grace Bialen', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(34, 'maryjoy.carnazo', 'prof123', 'Prof. Mary Joy Carnazo', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(35, 'may.gallano', 'prof123', 'Prof. May Gallano', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(36, 'nora.moya', 'prof123', 'Prof. Nora Moya', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(4, 'alexis.apresto', 'prof123', 'Alexis Apresto', 'faculty', '2025-11-27 10:06:45', '2026-02-02 06:34:47', 1),
+(5, 'benedict.rabut', 'prof123', 'Benedict Rabut', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(7, 'cerilo.rubin', 'prof123', 'Cerilo Rubin Jr.', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(8, 'cyrus.rael', 'prof123', 'Cyrus Rael', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(9, 'elbren.antonio', 'prof123', 'Elbren Antonio', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(10, 'elmer.buenavides', 'prof123', 'Elmer Buenavides', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(11, 'esnehara.bagundang', 'prof123', 'Esnehara Bagundang', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(12, 'florlyn.remegio', 'prof123', 'Florlyn Remegio', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(13, 'gerold.delapena', 'prof123', 'Gerold Dela Peña', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(14, 'gregorio.ilao', 'prof123', 'Gregorio Ilao', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(15, 'ivy.madriaga', 'prof123', 'Ivy Lynn Madriaga', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(16, 'jaymark.arendain', 'prof123', 'Jaymark Arendain', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(17, 'joe.selayro', 'prof123', 'Joe Selayro', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(18, 'kristine.ampas', 'prof123', 'Kristine Mae Ampas', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(19, 'kyrene.dizon', 'prof123', 'Kyrene Dizon', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(20, 'marhodora.gallo', 'prof123', 'Ma. Rhodora Gallo', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(21, 'markjovic.daday', 'prof123', 'Mark Jovic Daday', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(22, 'marygrace.perocho', 'prof123', 'Mary Grace Perocho', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(23, 'romaamor.prades', 'prof123', 'Roma Amor Prades', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(24, 'velessa.dulin', 'prof123', 'Velessa Jane Dulin', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(25, 'zius.apresto', 'prof123', 'Zius Apresto', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(26, 'charlu.pemintel', 'prof123', 'Charlu Pemintel', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(27, 'doreen.tampus', 'prof123', 'Doreen Tampus', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(28, 'edralin.mesias', 'prof123', 'Edralin Mesias', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(29, 'eulogio.apellido', 'prof123', 'Eulogio Apellido', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(30, 'johnty.ventilacion', 'prof123', 'Johnty Ventilacion', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(31, 'lowell.espinosa', 'prof123', 'Lowell Espinosa', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(32, 'maryrolanne.fuentes', 'prof123', 'Mary Rolanne Fuentes', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(33, 'marygrace.bialen', 'prof123', 'Mary Grace Bialen', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(34, 'maryjoy.carnazo', 'prof123', 'Mary Joy Carnazo', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(35, 'may.gallano', 'prof123', 'May Gallano', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
+(36, 'nora.moya', 'prof123', 'Nora Moya', 'faculty', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (42, 'it1a_class', 'class123', 'IT 1A Class Account', 'class', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (43, 'it1b_class', 'class123', 'IT 1B Class Account', 'class', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (44, 'it2a_class', 'class123', 'IT 2A Class Account', 'class', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
@@ -661,7 +662,8 @@ ALTER TABLE `programs`
   ADD PRIMARY KEY (`program_id`),
   ADD UNIQUE KEY `program_code` (`program_code`),
   ADD KEY `idx_programs_code` (`program_code`),
-  ADD KEY `idx_programs_active` (`is_active`);
+  ADD KEY `idx_programs_active` (`is_active`),
+  ADD KEY `idx_programs_dean` (`dean_id`);
 
 --
 -- Indexes for table `schedules`
@@ -777,6 +779,12 @@ ALTER TABLE `classes`
 --
 ALTER TABLE `courses`
   ADD CONSTRAINT `fk_courses_program` FOREIGN KEY (`program_id`) REFERENCES `programs` (`program_id`);
+
+--
+-- Constraints for table `programs`
+--
+ALTER TABLE `programs`
+  ADD CONSTRAINT `programs_ibfk_1` FOREIGN KEY (`dean_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `curriculum`

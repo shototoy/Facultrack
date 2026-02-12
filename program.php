@@ -6,6 +6,9 @@ $pdo->exec("SET time_zone = '+08:00'");
 validateUserSession('program_chair');
 $user_id = $_SESSION['user_id'];
 $program_chair_name = $_SESSION['full_name'];
+$stmt = $pdo->prepare("SELECT full_name FROM users WHERE role = 'campus_director' AND is_active = TRUE ORDER BY user_id LIMIT 1");
+$stmt->execute();
+$campus_director_name = $stmt->fetchColumn() ?: 'Campus Director';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
     switch ($_POST['action']) {
@@ -172,6 +175,7 @@ function getAllFacultyProgram($pdo) {
             u.full_name,
             f.employee_id,
             f.program,
+            u2.full_name as dean_name,
             f.office_hours,
             f.contact_email,
             f.contact_phone,
@@ -196,6 +200,8 @@ function getAllFacultyProgram($pdo) {
             ) as last_updated
         FROM faculty f
         JOIN users u ON f.user_id = u.user_id
+        LEFT JOIN programs p ON f.program = p.program_name
+        LEFT JOIN users u2 ON p.dean_id = u2.user_id
         ORDER BY u.full_name";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute();
@@ -1020,16 +1026,22 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                     </div>
                     <script>
                     window.facultyData = <?php echo json_encode($faculty_data); ?>;
+                    window.campusDirectorName = <?php echo json_encode($campus_director_name); ?>;
                     const facultyNames = {};
                     const facultySchedules = {};
+                    const facultyDeanNames = {};
                     const phpFacultyData = <?php echo json_encode($faculty_data); ?> || [];
                     const phpFacultySchedules = <?php echo json_encode($faculty_schedules); ?> || {};
                     phpFacultyData.forEach(faculty => {
                         facultyNames[faculty.faculty_id] = faculty.full_name;
+                        if (faculty.dean_name) {
+                            facultyDeanNames[faculty.faculty_id] = faculty.dean_name;
+                        }
                     });
                     Object.keys(phpFacultySchedules).forEach(facultyId => {
                         facultySchedules[facultyId] = phpFacultySchedules[facultyId];
                     });
+                    window.facultyDeanNames = facultyDeanNames;
                     function getEmptyStateHTML(title, description) {
                         return `
                             <div class="empty-state-container">

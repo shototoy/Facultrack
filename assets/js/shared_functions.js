@@ -11,6 +11,9 @@ function switchTab(tabName) {
     tabButtons.forEach(button => button.classList.remove('active'));
     document.getElementById(tabName + '-content').classList.add('active');
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    if (tabName === 'dean' && typeof loadDeanAssignments === 'function') {
+        loadDeanAssignments();
+    }
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.value = '';

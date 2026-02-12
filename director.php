@@ -63,6 +63,9 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             <button class="tab-button" onclick="switchTab('announcements')" data-tab="announcements">
                 <svg class="feather feather-sm"><use href="#bell"></use></svg> Announcements
             </button>
+            <button class="tab-button" onclick="switchTab('dean')" data-tab="dean">
+                <svg class="feather feather-sm"><use href="#users"></use></svg> Deans
+            </button>
             <button class="tab-button" onclick="switchTab('iftl')" data-tab="iftl">
                 <svg class="feather feather-sm"><use href="#calendar"></use></svg> IFTL
             </button>
@@ -187,6 +190,17 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </div>
             </div>
         </div>
+        <div class="tab-content" id="dean-content">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 class="table-title">Program Deans</h3>
+                </div>
+                <div class="empty-state">
+                    <h3>Dean assignments will be displayed here.</h3>
+                    <p>Select the Deans tab to load program assignments.</p>
+                </div>
+            </div>
+        </div>
         <div class="modal-overlay" id="directorIFTLModal">
             <div class="modal large-modal">
                 <div class="modal-header">
@@ -215,6 +229,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
     <script src="assets/js/shared_modals.js"></script>
     <script>
         window.userRole = 'campus_director';
+        window.campusDirectorName = <?php echo json_encode($director_name); ?>;
     </script>
     <script src="assets/js/polling_config.js"></script>
     <script src="assets/js/toast_manager.js"></script>

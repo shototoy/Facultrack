@@ -1,10 +1,12 @@
 function printFacultySchedule(facultyId) {
     const facultyName = facultyNames[facultyId] || 'Unknown Faculty';
+    const deanName = (window.facultyDeanNames && window.facultyDeanNames[facultyId]) || 'Dean';
+    const directorName = window.campusDirectorName || 'Campus Director';
     const schedules = facultySchedules[facultyId] || [];
     const { mwfSchedules, tthSchedules } = separateSchedulesByType(schedules);
     const summary = calculateSummaryData(schedules);
     const printWindow = window.open('', '_blank', 'width=1200,height=800');
-    printWindow.document.write(generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary));
+    printWindow.document.write(generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, deanName, directorName));
     printWindow.document.close();
     printWindow.onload = () => {
         setTimeout(() => printWindow.print(), 500);
@@ -188,7 +190,9 @@ function calculateRowspan(startTime, endTime, scheduleType) {
     const slotDuration = scheduleType === 'MWF' ? 1 : 1.5;
     return Math.ceil(durationHours / slotDuration);
 }
-function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
+function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, deanName, directorName) {
+    const safeDeanName = deanName || 'Dean';
+    const safeDirectorName = directorName || 'Campus Director';
     return `
 <!DOCTYPE html>
 <html>
@@ -391,11 +395,13 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary) {
                 </div>
                 <div class="footer-section">
                     <p style="margin-top: 8px;">Recommending Approval:</p>
-                    <p class="signature-line">Dean</p>
+                    <p class="signature-line">${safeDeanName}</p>
+                    <p>Dean</p>
                 </div>
                 <div class="footer-section">
                     <p>Approved by:</p>
-                    <p class="signature-line">Campus Director</p>
+                    <p class="signature-line">${safeDirectorName}</p>
+                    <p>Campus Director</p>
                 </div>
             </div>
         </div>

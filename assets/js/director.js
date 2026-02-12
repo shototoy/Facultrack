@@ -14,6 +14,8 @@ function createSearchResultActions() {
                 searchTable(query, 'course');
             } else if (activeTab.id === 'announcements-content') {
                 searchTable(query, 'announcements');
+            } else if (activeTab.id === 'dean-content') {
+                searchTable(query, 'dean');
             } else if (activeTab.id === 'iftl-content') {
                 searchTable(query, 'iftl');
             }
@@ -99,6 +101,116 @@ async function loadIFTLFaculty() {
         container.innerHTML = '<div class="error-message">Failed to load faculty list.</div>';
     }
 }
+async function loadDeanAssignments() {
+    const container = document.querySelector('#dean-content .table-container');
+    if (!container) return;
+    container.innerHTML = `
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading dean assignments...</div>
+        </div>
+    `;
+    try {
+        const response = await fetch('assets/php/polling_api.php?action=get_dean_programs');
+        const data = await response.json();
+        if (!data.success) {
+            container.innerHTML = `<div class="error-message">Error: ${escapeHtml(data.message || 'Failed to load dean assignments')}</div>`;
+            return;
+        }
+        const deanGroups = data.dean_groups || [];
+        const deanCandidates = data.dean_candidates || [];
+        if (deanGroups.length === 0) {
+            container.innerHTML = '<div class="empty-state"><h3>No programs found.</h3></div>';
+            return;
+        }
+        let html = `
+            <div class="table-header">
+                <h3 class="table-title">Program Deans</h3>
+            </div>
+            <div class="dean-grid">
+        `;
+        deanGroups.forEach(group => {
+            const deanName = group.dean_name || 'Unassigned';
+            const programs = group.programs || [];
+            const programCount = programs.length;
+            const programLabel = programCount === 1 ? 'program' : 'programs';
+            const programRows = programs.map(program => {
+                const options = buildDeanOptions(deanCandidates, program.dean_id);
+                return `
+                    <div class="dean-program-item" data-program-id="${program.program_id}">
+                        <div class="dean-program-meta">
+                            <div class="dean-program-name">${escapeHtml(program.program_name)}</div>
+                            <div class="dean-program-code">${escapeHtml(program.program_code)}</div>
+                        </div>
+                        <div class="dean-program-actions">
+                            <select class="form-select dean-select" data-program-id="${program.program_id}">
+                                ${options}
+                            </select>
+                            <button class="action-btn edit-btn" onclick="event.stopPropagation(); updateProgramDean(${program.program_id})" title="Assign Dean">
+                                <svg class="feather feather-sm"><use href="#edit"></use></svg> Assign
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            html += `
+                <div class="dean-card" data-dean-id="${group.dean_id || ''}">
+                    <div class="dean-header">
+                        <div class="iftl-avatar">${getInitials(deanName)}</div>
+                        <div class="iftl-info">
+                            <div class="iftl-name">${escapeHtml(deanName)}</div>
+                            <div class="iftl-program">${programCount} ${programLabel}</div>
+                        </div>
+                    </div>
+                    <div class="dean-programs">
+                        ${programRows || '<div class="empty-state"><h3>No programs assigned.</h3></div>'}
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading dean assignments:', error);
+        container.innerHTML = '<div class="error-message">Failed to load dean assignments.</div>';
+    }
+}
+function buildDeanOptions(candidates, selectedId) {
+    const selectedValue = selectedId ? String(selectedId) : '';
+    const options = [
+        `<option value="" ${selectedValue === '' ? 'selected' : ''}>Unassigned</option>`
+    ];
+    candidates.forEach(candidate => {
+        const value = String(candidate.user_id);
+        const isSelected = value === selectedValue ? 'selected' : '';
+        options.push(`<option value="${value}" ${isSelected}>${escapeHtml(candidate.full_name)}</option>`);
+    });
+    return options.join('');
+}
+async function updateProgramDean(programId) {
+    const select = document.querySelector(`.dean-select[data-program-id="${programId}"]`);
+    if (!select) return;
+    const deanId = select.value;
+    const formData = new FormData();
+    formData.append('action', 'update_program_dean');
+    formData.append('program_id', programId);
+    formData.append('dean_id', deanId);
+    try {
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if (result.success) {
+            showNotification(result.message || 'Dean assignment updated', 'success');
+            loadDeanAssignments();
+        } else {
+            showNotification(`Error: ${result.message || 'Failed to update dean'}`, 'error');
+        }
+    } catch (error) {
+        showNotification('Error updating dean assignment', 'error');
+    }
+}
 function getInitials(name) {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 }
@@ -108,6 +220,21 @@ function searchTable(query, type) {
         cards.forEach(card => {
             const text = card.textContent.toLowerCase();
             card.style.display = text.includes(query) ? 'flex' : 'none';
+        });
+        return;
+    }
+    if (type === 'dean') {
+        const cards = document.querySelectorAll('.dean-card');
+        cards.forEach(card => {
+            const programItems = card.querySelectorAll('.dean-program-item');
+            let visiblePrograms = 0;
+            programItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                const isVisible = text.includes(query);
+                item.style.display = isVisible ? '' : 'none';
+                if (isVisible) visiblePrograms++;
+            });
+            card.style.display = visiblePrograms > 0 || query === '' ? '' : 'none';
         });
         return;
     }
@@ -129,6 +256,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (iftlTabBtn) {
         iftlTabBtn.addEventListener('click', function () {
             loadIFTLFaculty();
+        });
+    }
+    const deanTabBtn = document.querySelector('button[data-tab="dean"]');
+    if (deanTabBtn) {
+        deanTabBtn.addEventListener('click', function () {
+            loadDeanAssignments();
         });
     }
 });
@@ -410,6 +543,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 window.facultyNames = {};
 window.facultySchedules = {};
+window.facultyDeanNames = {};
 let currentIFTLFacultyId = null;
 async function openIFTLModal(facultyId, facultyName) {
     window.facultyNames[facultyId] = facultyName;
@@ -428,6 +562,9 @@ async function openIFTLModal(facultyId, facultyName) {
         const result = await response.json();
         if (result.success) {
             window.facultySchedules[facultyId] = result.schedules;
+            if (result.dean_name) {
+                window.facultyDeanNames[facultyId] = result.dean_name;
+            }
             if (typeof printFacultySchedule === 'function') {
                 printFacultySchedule(facultyId);
             } else {
