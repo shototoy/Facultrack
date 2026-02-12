@@ -547,40 +547,81 @@ window.facultyDeanNames = {};
 let currentIFTLFacultyId = null;
 async function openIFTLModal(facultyId, facultyName) {
     window.facultyNames[facultyId] = facultyName;
-    const originalText = event ? event.target.innerHTML : '';
-    const button = event ? event.target.closest('button') : null;
-    if (button) {
-        button.disabled = true;
-        button.innerHTML = '<span class="loading-spinner-sm"></span> Loading...';
+    currentIFTLFacultyId = facultyId;
+    const title = document.getElementById('iftlFacultyName');
+    if (title) {
+        title.textContent = facultyName;
     }
+    if (typeof openModal === 'function') {
+        openModal('directorIFTLModal');
+    } else {
+        const modal = document.getElementById('directorIFTLModal');
+        if (modal) {
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    loadDirectorIFTLWeeks();
+    const content = document.getElementById('iftlContent');
+    if (content) {
+        content.innerHTML = '<div class="loading">Select a week to print IFTL.</div>';
+    }
+}
+
+async function loadDirectorIFTLWeeks() {
+    const select = document.getElementById('iftlWeekSelect');
+    if (!select) return;
+    select.innerHTML = '<option>Loading weeks...</option>';
+    try {
+        const response = await fetch('assets/php/polling_api.php?action=get_iftl_weeks_month');
+        const result = await response.json();
+        if (result.success) {
+            select.innerHTML = '';
+            result.weeks.forEach(week => {
+                const option = document.createElement('option');
+                option.value = week.identifier;
+                option.textContent = week.label;
+                option.dataset.startDate = week.start_date;
+                if (week.is_current) option.selected = true;
+                select.appendChild(option);
+            });
+            select.onchange = () => printIFTLForWeek();
+        } else {
+            select.innerHTML = '<option>Error loading weeks</option>';
+        }
+    } catch (e) {
+        select.innerHTML = '<option>Error loading weeks</option>';
+    }
+}
+async function printIFTLForWeek() {
+    const weekSelect = document.getElementById('iftlWeekSelect');
+    if (!weekSelect || !currentIFTLFacultyId) return;
+    const week = weekSelect.value;
+    const formData = new URLSearchParams();
+    formData.set('action', 'get_full_faculty_schedule');
+    formData.set('faculty_id', currentIFTLFacultyId);
+    formData.set('week_identifier', week);
     try {
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `action=get_full_faculty_schedule&faculty_id=${facultyId}`
+            body: formData.toString()
         });
         const result = await response.json();
         if (result.success) {
-            window.facultySchedules[facultyId] = result.schedules;
+            window.facultySchedules[currentIFTLFacultyId] = result.schedules;
             if (result.dean_name) {
-                window.facultyDeanNames[facultyId] = result.dean_name;
+                window.facultyDeanNames[currentIFTLFacultyId] = result.dean_name;
             }
             if (typeof printFacultySchedule === 'function') {
-                printFacultySchedule(facultyId);
-            } else {
-                console.error('printFacultySchedule function not found');
-                alert('Printing function not loaded. Please refresh the page.');
+                printFacultySchedule(currentIFTLFacultyId);
             }
-        } else {
-            alert('Error fetching schedule: ' + (result.message || 'Unknown error'));
+        } else if (typeof showNotification === 'function') {
+            showNotification(result.message || 'Failed to load schedule', 'error');
         }
     } catch (e) {
-        console.error("Error fetching schedule for print", e);
-        alert('Error fetching schedule data');
-    } finally {
-        if (button) {
-            button.disabled = false;
-            button.innerHTML = originalText || '<svg class="feather feather-sm"><use href="#calendar"></use></svg> IFTL';
+        if (typeof showNotification === 'function') {
+            showNotification('Error loading schedule', 'error');
         }
     }
 }

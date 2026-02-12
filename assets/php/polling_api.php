@@ -1443,6 +1443,7 @@ switch ($action) {
         }
         try {
             $current_week = date('Y') . '-W' . date('W');
+            $selected_week = $_POST['week_identifier'] ?? $current_week;
             $faculty_info_query = "
                 SELECT f.program, p.dean_id, u.full_name as dean_name
                 FROM faculty f
@@ -1456,46 +1457,54 @@ switch ($action) {
             $faculty_info = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
             $compliance_query = "SELECT compliance_id FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ?";
             $stmt = $pdo->prepare($compliance_query);
-            $stmt->execute([$faculty_id, $current_week]);
+            $stmt->execute([$faculty_id, $selected_week]);
             $compliance_id = $stmt->fetchColumn();
             if ($compliance_id) {
-                $schedule_query = "
-                    SELECT
-                        e.entry_id as schedule_id,
-                        e.time_start,
-                        e.time_end,
-                        e.day_of_week,
-                        CASE
-                            WHEN e.day_of_week = 'Monday' THEN 'M'
-                            WHEN e.day_of_week = 'Tuesday' THEN 'T'
-                            WHEN e.day_of_week = 'Wednesday' THEN 'W'
-                            WHEN e.day_of_week = 'Thursday' THEN 'TH'
-                            WHEN e.day_of_week = 'Friday' THEN 'F'
-                            WHEN e.day_of_week = 'Saturday' THEN 'S'
-                            WHEN e.day_of_week = 'Sunday' THEN 'SUN'
-                            ELSE ''
-                        END as days,
-                        CASE
-                            WHEN e.status = 'Leave' THEN 'LEAVE'
-                            WHEN e.status = 'Vacant' THEN 'VACANT'
-                            WHEN e.course_code IS NOT NULL AND e.course_code != '' THEN e.course_code
-                            ELSE e.activity_type
-                        END as course_code,
-                        e.room,
-                        e.class_name,
-                        e.status,
-                        c.course_description,
-                        c.units,
-                        cl.total_students,
-                        'iftl' as source
+                $standard_query = "
+                    SELECT s.*, c.course_description, c.units, cl.class_name, cl.class_code, cl.total_students
+                    FROM schedules s
+                    JOIN courses c ON s.course_code = c.course_code
+                    JOIN classes cl ON s.class_id = cl.class_id
+                    WHERE s.faculty_id = ? AND s.is_active = TRUE
+                    ORDER BY s.time_start";
+                $stmt = $pdo->prepare($standard_query);
+                $stmt->execute([$faculty_id]);
+                $standard_schedule = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $base_entries = splitScheduleByDay($standard_schedule);
+
+                $overlay_query = "
+                    SELECT e.entry_id, e.day_of_week, e.time_start, e.time_end, e.course_code, e.room,
+                           e.class_name, e.status, e.activity_type,
+                           c.course_description, c.units, cl.total_students
                     FROM iftl_entries e
                     LEFT JOIN courses c ON e.course_code = c.course_code
                     LEFT JOIN classes cl ON e.class_name = cl.class_name
                     WHERE e.compliance_id = ?
                     ORDER BY e.time_start";
-                $stmt = $pdo->prepare($schedule_query);
+                $stmt = $pdo->prepare($overlay_query);
                 $stmt->execute([$compliance_id]);
-                $schedule_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $overlay_entries = [];
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    $day_code = mapDayOfWeekToCode($row['day_of_week']);
+                    if (!$day_code) {
+                        continue;
+                    }
+                    $overlay_entries[] = [
+                        'schedule_id' => $row['entry_id'],
+                        'time_start' => $row['time_start'],
+                        'time_end' => $row['time_end'],
+                        'days' => $day_code,
+                        'course_code' => mapIFTLDisplayCourse($row),
+                        'room' => $row['room'],
+                        'class_name' => $row['class_name'],
+                        'status' => $row['status'],
+                        'course_description' => $row['course_description'],
+                        'units' => $row['units'],
+                        'total_students' => $row['total_students'],
+                        'source' => 'iftl'
+                    ];
+                }
+                $schedule_data = mergeScheduleEntriesByDayTime($base_entries, $overlay_entries);
             } else {
                 $schedule_query = "
                     SELECT s.*, c.course_description, cl.class_name, cl.class_code, cl.total_students,
@@ -1857,6 +1866,30 @@ switch ($action) {
         }
         sendJsonResponse(['success' => true, 'weeks' => $weeks]);
         break;
+    case 'get_iftl_weeks_month':
+        $year = isset($_GET['year']) ? intval($_GET['year']) : intval(date('Y'));
+        $month = isset($_GET['month']) ? intval($_GET['month']) : intval(date('n'));
+        $month_start = strtotime(sprintf('%04d-%02d-01', $year, $month));
+        $month_end = strtotime(date('Y-m-t', $month_start));
+        $weeks = [];
+        $week_start = strtotime('monday', $month_start);
+        if (date('Y-m-d', $week_start) < date('Y-m-d', $month_start)) {
+            $week_start = strtotime('+1 week', $week_start);
+        }
+        while ($week_start <= $month_end) {
+            $week_end = strtotime('+6 days', $week_start);
+            $week_identifier = date('Y-\WW', $week_start);
+            $is_current = (date('Y-m-d') >= date('Y-m-d', $week_start) && date('Y-m-d') <= date('Y-m-d', $week_end));
+            $weeks[] = [
+                'identifier' => $week_identifier,
+                'label' => ($is_current ? "[Current] " : "") . date('M d', $week_start) . " - " . date('M d', $week_end),
+                'start_date' => date('Y-m-d', $week_start),
+                'is_current' => $is_current
+            ];
+            $week_start = strtotime('+1 week', $week_start);
+        }
+        sendJsonResponse(['success' => true, 'weeks' => $weeks]);
+        break;
     case 'get_faculty_iftl':
         $target_faculty_id = $_POST['faculty_id'] ?? $_SESSION['faculty_id'] ?? null;
         if (!$target_faculty_id && $_SESSION['role'] === 'faculty') {
@@ -1871,7 +1904,9 @@ switch ($action) {
         if ($compliance && !isset($_POST['reset'])) {
             $stmt = $pdo->prepare("SELECT * FROM iftl_entries WHERE compliance_id = ? ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), time_start");
             $stmt->execute([$compliance['compliance_id']]);
-            $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $saved_entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $standard_entries = generateIFTLFromStandard($pdo, $target_faculty_id);
+            $entries = mergeIFTLWithStandard($standard_entries, $saved_entries);
         } else {
             $compliance = ['status' => 'None'];
             $entries = generateIFTLFromStandard($pdo, $target_faculty_id);
@@ -2122,6 +2157,144 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
         return strcmp($a['time_start'], $b['time_start']);
     });
     return $entries;
+}
+function mapDayOfWeekToCode($day_of_week) {
+    switch ($day_of_week) {
+        case 'Monday': return 'M';
+        case 'Tuesday': return 'T';
+        case 'Wednesday': return 'W';
+        case 'Thursday': return 'TH';
+        case 'Friday': return 'F';
+        case 'Saturday': return 'S';
+        case 'Sunday': return 'SUN';
+        default: return '';
+    }
+}
+function mapIFTLDisplayCourse($row) {
+    if (($row['status'] ?? '') === 'Leave') return 'LEAVE';
+    if (($row['status'] ?? '') === 'Vacant') return 'VACANT';
+    if (!empty($row['course_code'])) return $row['course_code'];
+    return $row['activity_type'] ?? '';
+}
+function timeToMinutes($time_value) {
+    if (!$time_value) return 0;
+    $parts = explode(':', $time_value);
+    $hours = intval($parts[0] ?? 0);
+    $minutes = intval($parts[1] ?? 0);
+    return ($hours * 60) + $minutes;
+}
+function entriesOverlap($start_a, $end_a, $start_b, $end_b) {
+    $a_start = timeToMinutes($start_a);
+    $a_end = timeToMinutes($end_a);
+    $b_start = timeToMinutes($start_b);
+    $b_end = timeToMinutes($end_b);
+    return ($a_start < $b_end) && ($a_end > $b_start);
+}
+function mergeIFTLWithStandard($standard_entries, $overlay_entries) {
+    if (empty($overlay_entries)) return $standard_entries;
+    $filtered = [];
+    foreach ($standard_entries as $entry) {
+        $overlap = false;
+        foreach ($overlay_entries as $overlay) {
+            if (($entry['day_of_week'] ?? '') !== ($overlay['day_of_week'] ?? '')) {
+                continue;
+            }
+            if (entriesOverlap($entry['time_start'], $entry['time_end'], $overlay['time_start'], $overlay['time_end'])) {
+                $overlap = true;
+                break;
+            }
+        }
+        if (!$overlap) {
+            $filtered[] = $entry;
+        }
+    }
+    $merged = array_merge($filtered, $overlay_entries);
+    usort($merged, function($a, $b) {
+        $days = ['Monday'=>1, 'Tuesday'=>2, 'Wednesday'=>3, 'Thursday'=>4, 'Friday'=>5, 'Saturday'=>6, 'Sunday'=>7];
+        $da = $days[$a['day_of_week']] ?? 8;
+        $db = $days[$b['day_of_week']] ?? 8;
+        if ($da !== $db) return $da - $db;
+        return strcmp($a['time_start'], $b['time_start']);
+    });
+    return $merged;
+}
+function splitScheduleByDay($schedules) {
+    $entries = [];
+    $day_map = [
+        'M' => 'M', 'T' => 'T', 'W' => 'W', 'TH' => 'TH', 'F' => 'F', 'S' => 'S', 'SAT' => 'S'
+    ];
+    foreach ($schedules as $sched) {
+        $days_str = strtoupper($sched['days'] ?? '');
+        $parsed_days = [];
+        $i = 0;
+        while ($i < strlen($days_str)) {
+            if ($i < strlen($days_str) - 1 && substr($days_str, $i, 2) === 'TH') {
+                $parsed_days[] = 'TH';
+                $i += 2;
+            } else {
+                $valid_days = ['M', 'T', 'W', 'F', 'S'];
+                if (in_array($days_str[$i], $valid_days)) {
+                    $parsed_days[] = $days_str[$i];
+                }
+                $i++;
+            }
+        }
+        foreach ($parsed_days as $d) {
+            if (!isset($day_map[$d])) {
+                continue;
+            }
+            $entries[] = [
+                'schedule_id' => $sched['schedule_id'] ?? null,
+                'time_start' => $sched['time_start'],
+                'time_end' => $sched['time_end'],
+                'days' => $day_map[$d],
+                'course_code' => $sched['course_code'],
+                'room' => $sched['room'],
+                'class_name' => $sched['class_name'] ?? null,
+                'status' => $sched['status'] ?? 'upcoming',
+                'course_description' => $sched['course_description'] ?? null,
+                'units' => $sched['units'] ?? null,
+                'total_students' => $sched['total_students'] ?? null,
+                'source' => $sched['source'] ?? 'standard'
+            ];
+        }
+    }
+    usort($entries, function($a, $b) {
+        $days = ['M'=>1, 'T'=>2, 'W'=>3, 'TH'=>4, 'F'=>5, 'S'=>6, 'SUN'=>7];
+        $da = $days[$a['days']] ?? 8;
+        $db = $days[$b['days']] ?? 8;
+        if ($da !== $db) return $da - $db;
+        return strcmp($a['time_start'], $b['time_start']);
+    });
+    return $entries;
+}
+function mergeScheduleEntriesByDayTime($base_entries, $overlay_entries) {
+    if (empty($overlay_entries)) return $base_entries;
+    $filtered = [];
+    foreach ($base_entries as $entry) {
+        $overlap = false;
+        foreach ($overlay_entries as $overlay) {
+            if (($entry['days'] ?? '') !== ($overlay['days'] ?? '')) {
+                continue;
+            }
+            if (entriesOverlap($entry['time_start'], $entry['time_end'], $overlay['time_start'], $overlay['time_end'])) {
+                $overlap = true;
+                break;
+            }
+        }
+        if (!$overlap) {
+            $filtered[] = $entry;
+        }
+    }
+    $merged = array_merge($filtered, $overlay_entries);
+    usort($merged, function($a, $b) {
+        $days = ['M'=>1, 'T'=>2, 'W'=>3, 'TH'=>4, 'F'=>5, 'S'=>6, 'SUN'=>7];
+        $da = $days[$a['days']] ?? 8;
+        $db = $days[$b['days']] ?? 8;
+        if ($da !== $db) return $da - $db;
+        return strcmp($a['time_start'], $b['time_start']);
+    });
+    return $merged;
 }
 ?>
 
