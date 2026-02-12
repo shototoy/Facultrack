@@ -303,6 +303,20 @@ INSERT INTO `curriculum` (`curriculum_id`, `course_code`, `year_level`, `semeste
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `deans`
+--
+
+CREATE TABLE `deans` (
+  `dean_id` int(11) NOT NULL,
+  `faculty_id` int(11) NOT NULL,
+  `program_id` int(11) NOT NULL,
+  `assigned_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `faculty`
 --
 
@@ -412,6 +426,7 @@ CREATE TABLE `iftl_weekly_compliance` (
   `week_identifier` varchar(20) NOT NULL COMMENT 'Format: YYYY-Wxx',
   `week_start_date` date NOT NULL,
   `status` enum('Draft','Submitted','Approved','Rejected') DEFAULT 'Draft',
+  `is_override` tinyint(1) NOT NULL DEFAULT 0,
   `submitted_at` timestamp NULL DEFAULT NULL,
   `reviewed_at` timestamp NULL DEFAULT NULL,
   `reviewer_id` int(11) DEFAULT NULL,
@@ -419,12 +434,6 @@ CREATE TABLE `iftl_weekly_compliance` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `iftl_weekly_compliance`
---
-
-INSERT INTO `iftl_weekly_compliance` (`compliance_id`, `faculty_id`, `week_identifier`, `week_start_date`, `status`, `submitted_at`, `reviewed_at`, `reviewer_id`, `created_at`, `updated_at`) VALUES
-(5, 3, '2026-W06', '2026-02-02', 'Submitted', NULL, NULL, NULL, '2026-02-02 06:34:51', '2026-02-02 06:35:21');
 
 -- --------------------------------------------------------
 
@@ -630,6 +639,14 @@ ALTER TABLE `faculty`
   ADD KEY `idx_faculty_employee` (`employee_id`);
 
 --
+-- Indexes for table `deans`
+--
+ALTER TABLE `deans`
+  ADD PRIMARY KEY (`dean_id`),
+  ADD UNIQUE KEY `uniq_program_id` (`program_id`),
+  ADD KEY `idx_deans_faculty_id` (`faculty_id`);
+
+--
 -- Indexes for table `iftl_entries`
 --
 ALTER TABLE `iftl_entries`
@@ -716,6 +733,12 @@ ALTER TABLE `curriculum`
   MODIFY `curriculum_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=106;
 
 --
+-- AUTO_INCREMENT for table `deans`
+--
+ALTER TABLE `deans`
+  MODIFY `dean_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT for table `faculty`
 --
 ALTER TABLE `faculty`
@@ -779,6 +802,13 @@ ALTER TABLE `classes`
 --
 ALTER TABLE `courses`
   ADD CONSTRAINT `fk_courses_program` FOREIGN KEY (`program_id`) REFERENCES `programs` (`program_id`);
+
+--
+-- Constraints for table `deans`
+--
+ALTER TABLE `deans`
+  ADD CONSTRAINT `fk_deans_faculty` FOREIGN KEY (`faculty_id`) REFERENCES `faculty` (`faculty_id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_deans_program` FOREIGN KEY (`program_id`) REFERENCES `programs` (`program_id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `programs`
