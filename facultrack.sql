@@ -403,16 +403,7 @@ CREATE TABLE `iftl_entries` (
 --
 -- Dumping data for table `iftl_entries`
 --
-
-INSERT INTO `iftl_entries` (`entry_id`, `compliance_id`, `day_of_week`, `time_start`, `time_end`, `course_code`, `class_name`, `room`, `activity_type`, `status`, `remarks`, `created_at`, `is_modified`) VALUES
-(33, 5, 'Monday', '08:00:00', '09:00:00', 'VACATION', NULL, 'Japan', '', 'Regular', '', '2026-02-02 06:35:21', 1),
-(34, 5, 'Monday', '09:00:00', '15:00:00', 'AT316', NULL, 'Room 201', 'Information Systems 2021-2022', 'Regular', '', '2026-02-02 06:35:21', 1),
-(35, 5, 'Tuesday', '07:30:00', '10:00:00', 'CC112', NULL, 'Room 101', 'Information Technology 2023-2024', 'Regular', '', '2026-02-02 06:35:21', 1),
-(36, 5, 'Wednesday', '08:00:00', '09:00:00', 'ACCTG111', NULL, 'Computer Lab 2', 'Information Technology 2023-2024', 'Regular', '', '2026-02-02 06:35:21', 1),
-(37, 5, 'Wednesday', '09:00:00', '15:00:00', 'AT316', NULL, 'Room 201', 'Information Systems 2021-2022', 'Regular', '', '2026-02-02 06:35:21', 1),
-(38, 5, 'Thursday', '07:30:00', '10:00:00', 'CC112', NULL, 'Room 101', 'Information Technology 2023-2024', 'Regular', '', '2026-02-02 06:35:21', 1),
-(39, 5, 'Friday', '08:00:00', '09:00:00', 'ACCTG111', NULL, 'Computer Lab 2', 'Information Technology 2023-2024', 'Regular', '', '2026-02-02 06:35:21', 1),
-(40, 5, 'Friday', '13:00:00', '17:00:00', 'CC112', NULL, 'Room 102', 'Information Systems 2023-2024', 'Regular', '', '2026-02-02 06:35:21', 1);
+-- No seed rows for iftl_entries to avoid FK dependency on specific weekly compliance IDs during fresh installs.
 
 -- --------------------------------------------------------
 
