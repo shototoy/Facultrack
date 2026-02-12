@@ -309,9 +309,16 @@ INSERT INTO `curriculum` (`curriculum_id`, `course_code`, `year_level`, `semeste
 CREATE TABLE `deans` (
   `dean_id` int(11) NOT NULL,
   `faculty_id` int(11) NOT NULL,
+  `program` varchar(100) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
   `program_id` int(11) NOT NULL,
-  `assigned_at` timestamp NULL DEFAULT current_timestamp()
+  `assigned_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `deans`
+--
+-- No seed rows for deans. Dean assignments can be created from the Director dashboard.
 
 
 -- --------------------------------------------------------
@@ -424,6 +431,11 @@ CREATE TABLE `iftl_weekly_compliance` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `iftl_weekly_compliance`
+--
+-- No seed rows for iftl_weekly_compliance to keep fresh installs clean.
 
 
 -- --------------------------------------------------------
@@ -727,7 +739,7 @@ ALTER TABLE `curriculum`
 -- AUTO_INCREMENT for table `deans`
 --
 ALTER TABLE `deans`
-  MODIFY `dean_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `dean_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- AUTO_INCREMENT for table `faculty`
@@ -739,13 +751,13 @@ ALTER TABLE `faculty`
 -- AUTO_INCREMENT for table `iftl_entries`
 --
 ALTER TABLE `iftl_entries`
-  MODIFY `entry_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `entry_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- AUTO_INCREMENT for table `iftl_weekly_compliance`
 --
 ALTER TABLE `iftl_weekly_compliance`
-  MODIFY `compliance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `compliance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- AUTO_INCREMENT for table `location_history`
