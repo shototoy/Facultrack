@@ -1041,7 +1041,6 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                         <div class="iftl-actions" style="display: flex; gap: 10px;">
                             <button class="btn-primary iftl-btn" id="iftlDraftBtn" onclick="saveIFTLData('Draft')">Save Draft</button>
                             <button class="btn-primary iftl-btn" id="iftlSubmitBtn" style="background: #e65100;" onclick="saveIFTLData('Submitted')">Submit</button>
-                            <button class="btn-primary iftl-btn" id="iftlApprovedBtn" style="background: #4CAF50;" disabled>Approved</button>
                             <button class="btn-secondary iftl-btn" id="iftlResetBtn" onclick="regenerateIFTLWeek()" title="Reset to standard schedule">Reset</button>
                         </div>
                     </div>
@@ -1090,11 +1089,11 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             }
         }
     </script>
-    <script src="assets/js/polling_config.js"></script>
-    <script src="assets/js/toast_manager.js"></script>
-    <script src="assets/js/shared_functions.js"></script>
-    <script src="assets/js/live_polling.js"></script>
-    <script src="assets/js/faculty.js"></script>
+    <script src="assets/js/polling_config.js?v=<?php echo filemtime(__DIR__ . '/assets/js/polling_config.js'); ?>"></script>
+    <script src="assets/js/toast_manager.js?v=<?php echo filemtime(__DIR__ . '/assets/js/toast_manager.js'); ?>"></script>
+    <script src="assets/js/shared_functions.js?v=<?php echo filemtime(__DIR__ . '/assets/js/shared_functions.js'); ?>"></script>
+    <script src="assets/js/live_polling.js?v=<?php echo filemtime(__DIR__ . '/assets/js/live_polling.js'); ?>"></script>
+    <script src="assets/js/faculty.js?v=<?php echo filemtime(__DIR__ . '/assets/js/faculty.js'); ?>"></script>
 </body>
 </html>
 

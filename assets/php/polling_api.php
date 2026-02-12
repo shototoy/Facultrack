@@ -1480,7 +1480,7 @@ switch ($action) {
         }
         try {
             $current_week = date('Y') . '-W' . date('W');
-            $selected_week = $_POST['week_identifier'] ?? $current_week;
+            $selected_week = normalizeWeekIdentifier($_POST['week_identifier'] ?? $current_week);
             $faculty_info_query = "
                 SELECT f.program, p.dean_id, u.full_name as dean_name
                 FROM faculty f
@@ -1492,23 +1492,21 @@ switch ($action) {
             $stmt = $pdo->prepare($faculty_info_query);
             $stmt->execute([$faculty_id]);
             $faculty_info = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-            $compliance_query = "SELECT compliance_id FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ?";
+            ensureIftlOverrideColumn($pdo);
+            $compliance_query = "SELECT * FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ? ORDER BY updated_at DESC, compliance_id DESC LIMIT 1";
             $stmt = $pdo->prepare($compliance_query);
             $stmt->execute([$faculty_id, $selected_week]);
-            $compliance_id = $stmt->fetchColumn();
+            $compliance = $stmt->fetch(PDO::FETCH_ASSOC);
+            $compliance_id = $compliance['compliance_id'] ?? null;
+            $is_override = false;
             if ($compliance_id) {
-                $standard_query = "
-                    SELECT s.*, c.course_description, c.units, cl.class_name, cl.class_code, cl.total_students
-                    FROM schedules s
-                    JOIN courses c ON s.course_code = c.course_code
-                    JOIN classes cl ON s.class_id = cl.class_id
-                    WHERE s.faculty_id = ? AND s.is_active = TRUE
-                    ORDER BY s.time_start";
-                $stmt = $pdo->prepare($standard_query);
-                $stmt->execute([$faculty_id]);
-                $standard_schedule = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                $base_entries = splitScheduleByDay($standard_schedule);
+                $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM iftl_entries WHERE compliance_id = ?");
+                $count_stmt->execute([$compliance_id]);
+                $entry_count = (int)$count_stmt->fetchColumn();
+                $is_override = ((int)($compliance['is_override'] ?? 0) === 1) || $entry_count > 0;
+            }
 
+            if ($compliance_id && $is_override) {
                 $overlay_query = "
                     SELECT e.entry_id, e.day_of_week, e.time_start, e.time_end, e.course_code, e.room,
                            e.class_name, e.status, e.activity_type,
@@ -1541,7 +1539,7 @@ switch ($action) {
                         'source' => 'iftl'
                     ];
                 }
-                $schedule_data = mergeScheduleEntriesByDayTime($base_entries, $overlay_entries);
+                $schedule_data = $overlay_entries;
             } else {
                 $schedule_query = "
                     SELECT s.*, c.course_description, cl.class_name, cl.class_code, cl.total_students,
@@ -1558,7 +1556,7 @@ switch ($action) {
             sendJsonResponse([
                 'success' => true,
                 'schedules' => $schedule_data,
-                'is_iftl' => !!$compliance_id,
+                'is_iftl' => !!($compliance_id && $is_override),
                 'week' => $current_week,
                 'faculty_program' => $faculty_info['program'] ?? null,
                 'dean_name' => $faculty_info['dean_name'] ?? null,
@@ -1939,22 +1937,26 @@ switch ($action) {
         sendJsonResponse(['success' => true, 'weeks' => $weeks]);
         break;
     case 'get_faculty_iftl':
+        ensureIftlOverrideColumn($pdo);
         $target_faculty_id = $_POST['faculty_id'] ?? $_SESSION['faculty_id'] ?? null;
         if (!$target_faculty_id && $_SESSION['role'] === 'faculty') {
              $stmt = $pdo->prepare("SELECT faculty_id FROM faculty WHERE user_id = ?");
              $stmt->execute([$_SESSION['user_id']]);
              $target_faculty_id = $stmt->fetchColumn();
         }
-        $week = $_POST['week'] ?? date('Y-\WW');
-        $stmt = $pdo->prepare("SELECT * FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ?");
+        $week = normalizeWeekIdentifier($_POST['week'] ?? date('Y-\WW'));
+        $stmt = $pdo->prepare("SELECT * FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ? ORDER BY updated_at DESC, compliance_id DESC LIMIT 1");
         $stmt->execute([$target_faculty_id, $week]);
         $compliance = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($compliance && !isset($_POST['reset'])) {
             $stmt = $pdo->prepare("SELECT * FROM iftl_entries WHERE compliance_id = ? ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), time_start");
             $stmt->execute([$compliance['compliance_id']]);
-            $saved_entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $standard_entries = generateIFTLFromStandard($pdo, $target_faculty_id);
-            $entries = mergeIFTLWithStandard($standard_entries, $saved_entries);
+            $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $is_override = ((int)($compliance['is_override'] ?? 0) === 1) || count($entries) > 0;
+            if (!$is_override) {
+                $compliance = ['status' => 'None'];
+                $entries = generateIFTLFromStandard($pdo, $target_faculty_id);
+            }
         } else {
             $compliance = ['status' => 'None'];
             $entries = generateIFTLFromStandard($pdo, $target_faculty_id);
@@ -1962,6 +1964,7 @@ switch ($action) {
         sendJsonResponse(['success' => true, 'compliance' => $compliance, 'entries' => $entries]);
         break;
     case 'save_iftl':
+        ensureIftlOverrideColumn($pdo);
         $compliance_id = $_POST['compliance_id'] ?? null;
         $faculty_id = $_POST['faculty_id'] ?? $_SESSION['faculty_id'] ?? null;
         if (!$faculty_id && $_SESSION['role'] === 'faculty') {
@@ -1969,24 +1972,28 @@ switch ($action) {
              $stmt->execute([$_SESSION['user_id']]);
              $faculty_id = $stmt->fetchColumn();
         }
-        $week_identifier = $_POST['week_identifier'];
+        $week_identifier = normalizeWeekIdentifier($_POST['week_identifier'] ?? date('Y-\WW'));
         $week_start_date = $_POST['week_start_date'];
         $status = $_POST['status'] ?? 'Draft';
         try {
             $pdo->beginTransaction();
-            if ($compliance_id) {
-                $stmt = $pdo->prepare("UPDATE iftl_weekly_compliance SET status = ?, updated_at = NOW() WHERE compliance_id = ?");
-                $stmt->execute([$status, $compliance_id]);
+            $existing_stmt = $pdo->prepare("SELECT compliance_id FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ? ORDER BY updated_at DESC, compliance_id DESC LIMIT 1");
+            $existing_stmt->execute([$faculty_id, $week_identifier]);
+            $existing_compliance_id = $existing_stmt->fetchColumn();
+
+            if ($existing_compliance_id) {
+                $compliance_id = $existing_compliance_id;
+                $stmt = $pdo->prepare("UPDATE iftl_weekly_compliance SET week_start_date = ?, status = ?, is_override = 1, updated_at = NOW() WHERE compliance_id = ?");
+                $stmt->execute([$week_start_date, $status, $compliance_id]);
             } else {
-                $stmt = $pdo->prepare("INSERT INTO iftl_weekly_compliance (faculty_id, week_identifier, week_start_date, status) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = NOW()");
+                $stmt = $pdo->prepare("INSERT INTO iftl_weekly_compliance (faculty_id, week_identifier, week_start_date, status, is_override) VALUES (?, ?, ?, ?, 1)");
                 $stmt->execute([$faculty_id, $week_identifier, $week_start_date, $status]);
                 $compliance_id = $pdo->lastInsertId();
-                 if ($compliance_id == 0) {
-                    $stmt = $pdo->prepare("SELECT compliance_id FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ?");
-                    $stmt->execute([$faculty_id, $week_identifier]);
-                    $compliance_id = $stmt->fetchColumn();
-                 }
             }
+
+            $cleanup_stmt = $pdo->prepare("DELETE FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ? AND compliance_id <> ?");
+            $cleanup_stmt->execute([$faculty_id, $week_identifier, $compliance_id]);
+
             $stmt = $pdo->prepare("DELETE FROM iftl_entries WHERE compliance_id = ?");
             $stmt->execute([$compliance_id]);
             $entries = json_decode($_POST['entries'], true);
@@ -2343,6 +2350,32 @@ function mergeScheduleEntriesByDayTime($base_entries, $overlay_entries) {
         return strcmp($a['time_start'], $b['time_start']);
     });
     return $merged;
+}
+
+function normalizeWeekIdentifier($weekIdentifier) {
+    $value = trim((string)$weekIdentifier);
+    if (preg_match('/^(\d{4})-W?(\d{1,2})$/i', $value, $matches)) {
+        return sprintf('%04d-W%02d', (int)$matches[1], (int)$matches[2]);
+    }
+    return date('Y-\\WW');
+}
+
+function ensureIftlOverrideColumn(PDO $pdo) {
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+    $checked = true;
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'iftl_weekly_compliance' AND COLUMN_NAME = 'is_override'");
+        $stmt->execute();
+        $exists = (int)$stmt->fetchColumn() > 0;
+        if (!$exists) {
+            $pdo->exec("ALTER TABLE iftl_weekly_compliance ADD COLUMN is_override TINYINT(1) NOT NULL DEFAULT 0 AFTER status");
+            $pdo->exec("UPDATE iftl_weekly_compliance iwc SET is_override = CASE WHEN EXISTS (SELECT 1 FROM iftl_entries ie WHERE ie.compliance_id = iwc.compliance_id) THEN 1 ELSE 0 END");
+        }
+    } catch (Exception $e) {
+    }
 }
 ?>
 

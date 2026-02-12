@@ -2237,35 +2237,40 @@ function submitAssignmentFromPanel() {
         });
 }
 function deleteAssignmentFromPanel() {
-    if (!confirm('Are you sure you want to delete this course assignment?')) {
+    const executeDelete = () => {
+        const originalCourseCode = document.getElementById('originalCourseCode').value;
+        const originalTimeStart = document.getElementById('originalTimeStart').value;
+        const originalDays = document.getElementById('originalDays').value;
+        const formData = new FormData();
+        formData.append('action', 'delete_schedule');
+        formData.append('faculty_id', currentFacultyId);
+        formData.append('course_code', originalCourseCode);
+        formData.append('time_start', originalTimeStart);
+        formData.append('days', originalDays);
+        fetch('program.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Course assignment deleted successfully!', 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showNotification(data.message || 'Failed to delete assignment', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Delete error:', error);
+                showNotification('An error occurred', 'error');
+            });
+    };
+
+    if (typeof confirmAction === 'function') {
+        confirmAction('Delete Assignment', 'Are you sure you want to delete this course assignment?', executeDelete);
         return;
     }
-    const originalCourseCode = document.getElementById('originalCourseCode').value;
-    const originalTimeStart = document.getElementById('originalTimeStart').value;
-    const originalDays = document.getElementById('originalDays').value;
-    const formData = new FormData();
-    formData.append('action', 'delete_schedule');
-    formData.append('faculty_id', currentFacultyId);
-    formData.append('course_code', originalCourseCode);
-    formData.append('time_start', originalTimeStart);
-    formData.append('days', originalDays);
-    fetch('program.php', {
-        method: 'POST',
-        body: formData
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showNotification('Course assignment deleted successfully!', 'success');
-                setTimeout(() => location.reload(), 800);
-            } else {
-                showNotification(data.message || 'Failed to delete assignment', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Delete error:', error);
-            showNotification('An error occurred', 'error');
-        });
+    executeDelete();
 }
 function viewClassDetails(classId) {
     showNotification('Class details view will be implemented soon', 'info');
@@ -2716,35 +2721,40 @@ function submitAssignment(formElement, isEditMode) {
         });
 }
 function deleteAssignment() {
-    if (!confirm('Are you sure you want to delete this course assignment?')) {
+    const executeDelete = () => {
+        const form = document.querySelector('form[id^="assignmentForm"]');
+        const originalCourse = form.querySelector('input[name="original_course_code"]').value;
+        const originalTime = form.querySelector('input[name="original_time_start"]').value;
+        const originalDays = form.querySelector('input[name="original_days"]').value;
+        const formData = new FormData();
+        formData.append('action', 'delete_schedule');
+        formData.append('faculty_id', currentFacultyId);
+        formData.append('course_code', originalCourse);
+        formData.append('time_start', originalTime);
+        formData.append('days', originalDays);
+        fetch('program.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Course assignment deleted successfully!', 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showNotification(data.message || 'Failed to delete assignment', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Delete error:', error);
+                showNotification('An error occurred', 'error');
+            });
+    };
+
+    if (typeof confirmAction === 'function') {
+        confirmAction('Delete Assignment', 'Are you sure you want to delete this course assignment?', executeDelete);
         return;
     }
-    const form = document.querySelector('form[id^="assignmentForm"]');
-    const originalCourse = form.querySelector('input[name="original_course_code"]').value;
-    const originalTime = form.querySelector('input[name="original_time_start"]').value;
-    const originalDays = form.querySelector('input[name="original_days"]').value;
-    const formData = new FormData();
-    formData.append('action', 'delete_schedule');
-    formData.append('faculty_id', currentFacultyId);
-    formData.append('course_code', originalCourse);
-    formData.append('time_start', originalTime);
-    formData.append('days', originalDays);
-    fetch('program.php', {
-        method: 'POST',
-        body: formData
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showNotification('Course assignment deleted successfully!', 'success');
-                setTimeout(() => location.reload(), 800);
-            } else {
-                showNotification(data.message || 'Failed to delete assignment', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Delete error:', error);
-            showNotification('An error occurred', 'error');
-        });
+    executeDelete();
 }
 

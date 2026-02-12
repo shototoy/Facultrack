@@ -346,6 +346,11 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             </div>
         </div>
     <script>
+        function notifyToast(message, type = 'info') {
+            if (typeof showNotification === 'function') {
+                showNotification(message, type);
+            }
+        }
         async function loadProgramsForSelect(selectElement, selectedProgram) {
             if (!selectElement) return;
             selectElement.innerHTML = '<option value="">Select Program</option>';
@@ -393,11 +398,11 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     document.getElementById('editContactPhone').value = data.contact_phone;
                     modal.classList.add('show');
                 } else {
-                    alert('Error fetching faculty details: ' + result.message);
+                    notifyToast('Error fetching faculty details: ' + result.message, 'error');
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error fetching details');
+                notifyToast('Error fetching details', 'error');
             }
         }
         async function submitEditFaculty() {
@@ -416,15 +421,15 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                             });
                             const result = await response.json();
                             if (result.success) {
-                                alert('Faculty updated successfully');
+                                notifyToast('Faculty updated successfully', 'success');
                                 closeModal('editFacultyModal');
                                 location.reload();
                             } else {
-                                alert('Error updating faculty: ' + result.message);
+                                notifyToast('Error updating faculty: ' + result.message, 'error');
                             }
                         } catch (e) {
                             console.error(e);
-                            alert('Error updating faculty');
+                            notifyToast('Error updating faculty', 'error');
                         }
                     }
                 );
@@ -440,15 +445,15 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 });
                 const result = await response.json();
                 if (result.success) {
-                    alert('Faculty updated successfully');
+                    notifyToast('Faculty updated successfully', 'success');
                     closeModal('editFacultyModal');
                     location.reload();
                 } else {
-                    alert('Error updating faculty: ' + result.message);
+                    notifyToast('Error updating faculty: ' + result.message, 'error');
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error updating faculty');
+                notifyToast('Error updating faculty', 'error');
             }
         }
         function openFacultyDetails(faculty) {
@@ -609,11 +614,11 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     closeModal('announcementDetailsModal');
                     modal.classList.add('show');
                 } else {
-                    alert('Error fetching announcement details: ' + result.message);
+                    notifyToast('Error fetching announcement details: ' + result.message, 'error');
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error fetching details');
+                notifyToast('Error fetching details', 'error');
             }
         }
         async function submitEditAnnouncement() {
@@ -632,15 +637,15 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                             });
                             const result = await response.json();
                             if (result.success) {
-                                alert('Announcement updated successfully');
+                                notifyToast('Announcement updated successfully', 'success');
                                 closeModal('editAnnouncementModal');
                                 location.reload();
                             } else {
-                                alert('Error updating announcement: ' + result.message);
+                                notifyToast('Error updating announcement: ' + result.message, 'error');
                             }
                         } catch (e) {
                             console.error(e);
-                            alert('Error updating announcement');
+                            notifyToast('Error updating announcement', 'error');
                         }
                     }
                 );
@@ -656,15 +661,15 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 });
                 const result = await response.json();
                 if (result.success) {
-                    alert('Announcement updated successfully');
+                    notifyToast('Announcement updated successfully', 'success');
                     closeModal('editAnnouncementModal');
                     location.reload();
                 } else {
-                    alert('Error updating announcement: ' + result.message);
+                    notifyToast('Error updating announcement: ' + result.message, 'error');
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error updating announcement');
+                notifyToast('Error updating announcement', 'error');
             }
         }
 

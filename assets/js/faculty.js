@@ -425,17 +425,17 @@ function renderEditableIFTL(entries, compliance) {
     const status = compliance.status || 'Draft';
     window.currentIFTLData = entries || [];
     window.currentIFTLStatus = status;
+    const draftBtn = document.getElementById('iftlDraftBtn');
+    const submitBtn = document.getElementById('iftlSubmitBtn');
+    const resetBtn = document.getElementById('iftlResetBtn');
+    const isLocked = status === 'Submitted' || status === 'Approved';
+    if (draftBtn) draftBtn.disabled = isLocked;
+    if (submitBtn) submitBtn.disabled = isLocked;
+    if (resetBtn) resetBtn.disabled = isLocked;
     let html = `
         <div class="iftl-status-header" style="margin-bottom:5px;">
             Status: <strong>${status}</strong>
             ${status === 'Submitted' ? '<span class="status-badge" style="background:#2196F3;color:white;">Submitted - Locked</span>' : ''}
-            ${status === 'Approved' ? '<span class="status-badge" style="background:#4CAF50;color:white;">Approved</span>' : ''}
-        </div>
-        <div class="iftl-action-btns" style="display: flex; gap: 10px; margin-bottom: 10px;">
-            <button class="btn-primary iftl-btn" id="iftlDraftBtn" ${status === 'Draft' ? '' : 'disabled'}>Save Draft</button>
-            <button class="btn-primary iftl-btn" id="iftlSubmitBtn" style="background: #e65100;" ${status === 'Draft' ? '' : 'disabled'}>Submit</button>
-            <button class="btn-primary iftl-btn" id="iftlApprovedBtn" style="background: #4CAF50;" ${status === 'Approved' ? '' : 'disabled'}>Approved</button>
-            <button class="btn-secondary iftl-btn" id="iftlResetBtn" ${status === 'Draft' ? '' : 'disabled'}>Reset</button>
         </div>
         <table class="data-table iftl-table editable-grid">
             <thead style="position: sticky; top: 0; background: white; z-index: 10;">
@@ -493,14 +493,6 @@ function renderEditableIFTL(entries, compliance) {
         `;
     }
     content.innerHTML = html;
-    // Button event bindings
-    document.getElementById('iftlDraftBtn').onclick = () => saveIFTLData('Draft');
-    document.getElementById('iftlSubmitBtn').onclick = () => saveIFTLData('Submitted');
-    document.getElementById('iftlResetBtn').onclick = () => regenerateIFTLWeek();
-    // Approved button is just a display
-    if (status !== 'Approved') {
-        document.getElementById('iftlApprovedBtn').disabled = true;
-    }
 }
 function addIFTLEntry() {
     if (!window.currentIFTLData) window.currentIFTLData = [];
@@ -554,13 +546,28 @@ function updateIFTLEntry(index, field, value) {
     }
 }
 function deleteIFTLEntry(index) {
-    if (confirm('Remove this entry?')) {
+    const proceed = () => {
         window.currentIFTLData.splice(index, 1);
         renderEditableIFTL(window.currentIFTLData, { status: window.currentIFTLStatus });
+    };
+    if (typeof confirmAction === 'function') {
+        confirmAction('Remove Entry', 'Remove this entry?', proceed);
+        return;
     }
+    proceed();
 }
-async function saveIFTLData(status) {
+async function saveIFTLData(status, skipConfirm = false) {
     if (window.currentIFTLStatus === 'Submitted' && status === 'Submitted') {
+        return;
+    }
+    if (status === 'Submitted' && !skipConfirm && typeof confirmAction === 'function') {
+        confirmAction(
+            'Submit IFTL',
+            'Are you sure you want to submit? This will lock your IFTL for this week.',
+            function () {
+                saveIFTLData('Submitted', true);
+            }
+        );
         return;
     }
     const rows = document.querySelectorAll('.editable-grid tbody tr[data-index]');
@@ -583,9 +590,7 @@ async function saveIFTLData(status) {
     const weekSelect = document.getElementById('facultyIFTLWeekSelect');
     const weekIdentifier = weekSelect.value;
     const weekStartDate = weekSelect.options[weekSelect.selectedIndex].dataset.startDate;
-    if (status === 'Submitted') {
-        if (!confirm('Are you sure you want to submit? This will lock your IFTL for this week.')) return;
-    }
+    if (status === 'Submitted' && !skipConfirm) return;
     try {
         const formData = new FormData();
         formData.append('action', 'save_iftl');
@@ -601,24 +606,35 @@ async function saveIFTLData(status) {
         if (result.success) {
             if (typeof showNotification === 'function') {
                 showNotification('IFTL Saved!', 'success');
-            } else {
-                alert('IFTL Saved!');
             }
             loadFacultyIFTLData();
         } else {
             if (typeof showNotification === 'function') {
                 showNotification('Error saving: ' + result.message, 'error');
-            } else {
-                alert('Error saving: ' + result.message);
             }
         }
     } catch (e) {
         console.error(e);
-        alert('Error saving IFTL');
+        if (typeof showNotification === 'function') {
+            showNotification('Error saving IFTL', 'error');
+        }
     }
 }
 async function regenerateIFTLWeek() {
-    if (!confirm("This will reset your custom entries for this week to the standard course load. Continue?")) return;
+    if (typeof confirmAction === 'function') {
+        confirmAction(
+            'Reset IFTL Week',
+            'This will reset your custom entries for this week to the standard course load. Continue?',
+            function () {
+                regenerateIFTLWeekConfirmed();
+            }
+        );
+        return;
+    }
+    regenerateIFTLWeekConfirmed();
+}
+
+async function regenerateIFTLWeekConfirmed() {
     const weekSelect = document.getElementById('facultyIFTLWeekSelect');
     const week = weekSelect.value;
     const content = document.getElementById('facultyIFTLContent');
@@ -627,7 +643,7 @@ async function regenerateIFTLWeek() {
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `action = get_faculty_iftl & week=${week}& reset=1`
+            body: `action=get_faculty_iftl&week=${encodeURIComponent(week)}&reset=1`
         });
         const result = await response.json();
         if (result.success) {

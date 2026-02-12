@@ -4,6 +4,52 @@ function escapeHtml(text) {
     div.textContent = text.toString();
     return div.innerHTML;
 }
+function confirmAction(title, message, onConfirm) {
+    if (typeof showConfirmation === 'function') {
+        showConfirmation(title, message, onConfirm);
+        return;
+    }
+
+    let overlay = document.getElementById('globalConfirmOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'globalConfirmOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:30000;';
+        overlay.innerHTML = `
+            <div style="background:#fff;border-radius:10px;max-width:430px;width:92%;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden;">
+                <div style="padding:14px 16px;border-bottom:1px solid #eee;font-size:1.05rem;font-weight:600;" id="globalConfirmTitle">Confirmation</div>
+                <div style="padding:16px;font-size:.95rem;color:#333;" id="globalConfirmMessage">Are you sure?</div>
+                <div style="padding:0 16px 16px;display:flex;gap:10px;justify-content:flex-end;">
+                    <button type="button" id="globalConfirmCancel" class="btn-secondary">Cancel</button>
+                    <button type="button" id="globalConfirmOk" class="btn-primary">Confirm</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function (event) {
+            if (event.target === overlay) {
+                overlay.style.display = 'none';
+                overlay._onConfirm = null;
+            }
+        });
+        overlay.querySelector('#globalConfirmCancel').addEventListener('click', function () {
+            overlay.style.display = 'none';
+            overlay._onConfirm = null;
+        });
+        overlay.querySelector('#globalConfirmOk').addEventListener('click', function () {
+            const callback = overlay._onConfirm;
+            overlay.style.display = 'none';
+            overlay._onConfirm = null;
+            if (typeof callback === 'function') callback();
+        });
+    }
+
+    overlay.querySelector('#globalConfirmTitle').textContent = title || 'Confirmation';
+    overlay.querySelector('#globalConfirmMessage').textContent = message || 'Are you sure you want to proceed?';
+    overlay._onConfirm = onConfirm;
+    overlay.style.display = 'flex';
+}
+window.confirmAction = confirmAction;
 function getActiveTabName() {
     const activeTab = document.querySelector('.tab-content.active');
     if (!activeTab || !activeTab.id) return null;
@@ -160,8 +206,8 @@ async function deleteEntity(action, id) {
     const idField = idFields[action] || 'id';
     const button = event.target;
     if (!button || !button.textContent) return;
-    if (typeof showConfirmation === 'function') {
-        showConfirmation(
+    if (typeof confirmAction === 'function') {
+        confirmAction(
             `Delete ${capitalize(label)}`,
             `Are you sure you want to delete this ${label}?`,
             async function () {
@@ -208,8 +254,8 @@ async function handleFormSubmission(form, type) {
         'programs': 'add_program'
     };
     const actionLabel = actionMap[type].replace('add_', '');
-    if (typeof showConfirmation === 'function') {
-        showConfirmation(
+    if (typeof confirmAction === 'function') {
+        confirmAction(
             `Add ${capitalize(actionLabel)}`,
             `Are you sure you want to add this ${actionLabel}?`,
             async function () {
