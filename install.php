@@ -1,6 +1,7 @@
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+mysqli_report(MYSQLI_REPORT_OFF);
 require_once 'assets/php/common_utilities.php';
 echo "<h1>Database Population Tool (mysqli)</h1>";
 $db_host = $servername;
@@ -32,7 +33,6 @@ if ($result = $mysqli->query("SHOW TABLES")) {
     }
     $result->free();
 }
-$mysqli->query("SET FOREIGN_KEY_CHECKS = 1");
 $content = file_get_contents($sql_file);
 echo "<h3>File Integrity Check</h3>";
 echo "File size: " . strlen($content) . " bytes<br>";
@@ -61,17 +61,21 @@ if ($mysqli->multi_query($content)) {
         if ($result = $mysqli->store_result()) {
             $result->free();
         }
-        if ($mysqli->more_results()) {
-        }
-    } while ($mysqli->next_result());
+    } while ($mysqli->more_results() && $mysqli->next_result());
+
+    $mysqli->query("SET FOREIGN_KEY_CHECKS = 1");
+
     if ($mysqli->errno) {
         echo "<h2 style='color:red'>Error executing statement: " . $mysqli->error . "</h2>";
+        echo "<p>Error code: " . $mysqli->errno . "</p>";
     } else {
         echo "<h2 style='color:green'>Success! Database populated.</h2>";
         echo "<p>You can now delete this file and <a href='index.php'>Login</a>.</p>";
     }
 } else {
+    $mysqli->query("SET FOREIGN_KEY_CHECKS = 1");
     echo "<h2 style='color:red'>First statement failed: " . $mysqli->error . "</h2>";
+    echo "<p>Error code: " . $mysqli->errno . "</p>";
 }
 $mysqli->close();
 ?>
