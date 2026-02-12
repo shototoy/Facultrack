@@ -3,6 +3,100 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 mysqli_report(MYSQLI_REPORT_OFF);
 require_once 'assets/php/common_utilities.php';
+
+function splitSqlStatements(string $sql): array {
+    $statements = [];
+    $buffer = '';
+    $length = strlen($sql);
+    $inSingle = false;
+    $inDouble = false;
+    $inBacktick = false;
+    $inLineComment = false;
+    $inBlockComment = false;
+
+    for ($index = 0; $index < $length; $index++) {
+        $char = $sql[$index];
+        $next = $index + 1 < $length ? $sql[$index + 1] : '';
+
+        if ($inLineComment) {
+            if ($char === "\n") {
+                $inLineComment = false;
+            }
+            continue;
+        }
+
+        if ($inBlockComment) {
+            if ($char === '*' && $next === '/') {
+                $inBlockComment = false;
+                $index++;
+            }
+            continue;
+        }
+
+        if (!$inSingle && !$inDouble && !$inBacktick) {
+            if ($char === '-' && $next === '-') {
+                $nextNext = $index + 2 < $length ? $sql[$index + 2] : '';
+                if ($nextNext === ' ' || $nextNext === "\t" || $nextNext === "\r" || $nextNext === "\n") {
+                    $inLineComment = true;
+                    $index++;
+                    continue;
+                }
+            }
+            if ($char === '#') {
+                $inLineComment = true;
+                continue;
+            }
+            if ($char === '/' && $next === '*') {
+                $inBlockComment = true;
+                $index++;
+                continue;
+            }
+        }
+
+        if ($char === "'" && !$inDouble && !$inBacktick) {
+            $escaped = $index > 0 && $sql[$index - 1] === '\\';
+            if (!$escaped) {
+                $inSingle = !$inSingle;
+            }
+            $buffer .= $char;
+            continue;
+        }
+
+        if ($char === '"' && !$inSingle && !$inBacktick) {
+            $escaped = $index > 0 && $sql[$index - 1] === '\\';
+            if (!$escaped) {
+                $inDouble = !$inDouble;
+            }
+            $buffer .= $char;
+            continue;
+        }
+
+        if ($char === '`' && !$inSingle && !$inDouble) {
+            $inBacktick = !$inBacktick;
+            $buffer .= $char;
+            continue;
+        }
+
+        if ($char === ';' && !$inSingle && !$inDouble && !$inBacktick) {
+            $statement = trim($buffer);
+            if ($statement !== '') {
+                $statements[] = $statement;
+            }
+            $buffer = '';
+            continue;
+        }
+
+        $buffer .= $char;
+    }
+
+    $tail = trim($buffer);
+    if ($tail !== '') {
+        $statements[] = $tail;
+    }
+
+    return $statements;
+}
+
 echo "<h1>Database Population Tool (mysqli)</h1>";
 $db_host = $servername;
 $db_user = $username;
@@ -25,6 +119,7 @@ $sql = file_get_contents($sql_file);
 if (empty($sql)) {
     die("Error: SQL file is empty");
 }
+$sql = preg_replace('/^\xEF\xBB\xBF/', '', $sql);
 $mysqli->query("SET FOREIGN_KEY_CHECKS = 0");
 if ($result = $mysqli->query("SHOW TABLES")) {
     while ($row = $result->fetch_row()) {
@@ -56,26 +151,50 @@ if ($pos2 !== false) {
     echo "<pre>" . htmlspecialchars(substr($content, $pos2 - 50, 100)) . "</pre>";
 }
 echo "Executing SQL...<br>";
-if ($mysqli->multi_query($content)) {
-    do {
-        if ($result = $mysqli->store_result()) {
-            $result->free();
-        }
-    } while ($mysqli->more_results() && $mysqli->next_result());
+$statements = splitSqlStatements($sql);
+echo "Total parsed SQL statements: " . count($statements) . "<br>";
 
-    $mysqli->query("SET FOREIGN_KEY_CHECKS = 1");
+$executed = 0;
+$failed = [];
 
-    if ($mysqli->errno) {
-        echo "<h2 style='color:red'>Error executing statement: " . $mysqli->error . "</h2>";
-        echo "<p>Error code: " . $mysqli->errno . "</p>";
-    } else {
-        echo "<h2 style='color:green'>Success! Database populated.</h2>";
-        echo "<p>You can now delete this file and <a href='index.php'>Login</a>.</p>";
+foreach ($statements as $statement) {
+    $normalized = strtoupper(trim($statement));
+    if (
+        $normalized === '' ||
+        str_starts_with($normalized, 'START TRANSACTION') ||
+        str_starts_with($normalized, 'COMMIT') ||
+        str_starts_with($normalized, 'ROLLBACK') ||
+        str_starts_with($normalized, 'SET FOREIGN_KEY_CHECKS')
+    ) {
+        continue;
     }
+
+    $ok = $mysqli->query($statement);
+    if ($ok) {
+        $executed++;
+    } else {
+        $failed[] = [
+            'code' => $mysqli->errno,
+            'error' => $mysqli->error,
+            'sql' => substr($statement, 0, 300)
+        ];
+    }
+}
+
+$mysqli->query("SET FOREIGN_KEY_CHECKS = 1");
+
+if (empty($failed)) {
+    echo "<h2 style='color:green'>Success! Database populated.</h2>";
+    echo "<p>Executed statements: {$executed}</p>";
+    echo "<p>You can now delete this file and <a href='index.php'>Login</a>.</p>";
 } else {
-    $mysqli->query("SET FOREIGN_KEY_CHECKS = 1");
-    echo "<h2 style='color:red'>First statement failed: " . $mysqli->error . "</h2>";
-    echo "<p>Error code: " . $mysqli->errno . "</p>";
+    echo "<h2 style='color:red'>Import completed with errors.</h2>";
+    echo "<p>Executed statements: {$executed}</p>";
+    echo "<p>Failed statements: " . count($failed) . "</p>";
+    echo "<h3>First error</h3>";
+    echo "<pre>Code: " . htmlspecialchars((string)$failed[0]['code']) . "\n"
+        . "Message: " . htmlspecialchars($failed[0]['error']) . "\n"
+        . "SQL: " . htmlspecialchars($failed[0]['sql']) . "</pre>";
 }
 $mysqli->close();
 ?>
