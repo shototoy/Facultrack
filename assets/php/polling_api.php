@@ -109,16 +109,23 @@ function getAllPrograms($pdo) {
             p.program_name,
             p.program_description,
             p.dean_id,
-            fdean.faculty_id as dean_faculty_id,
+            (
+                SELECT f2.faculty_id
+                FROM faculty f2
+                WHERE f2.user_id = p.dean_id AND f2.is_active = TRUE
+                ORDER BY f2.faculty_id ASC
+                LIMIT 1
+            ) as dean_faculty_id,
             u.full_name as dean_name,
             p.created_at,
-            COUNT(c.course_id) as course_count
+            (
+                SELECT COUNT(*)
+                FROM courses c
+                WHERE c.program_id = p.program_id AND c.is_active = TRUE
+            ) as course_count
         FROM programs p
         LEFT JOIN users u ON p.dean_id = u.user_id
-        LEFT JOIN faculty fdean ON fdean.user_id = p.dean_id AND fdean.is_active = TRUE
-        LEFT JOIN courses c ON p.program_id = c.program_id AND c.is_active = TRUE
         WHERE p.is_active = TRUE
-        GROUP BY p.program_id
         ORDER BY p.program_name";
     $stmt = $pdo->prepare($programs_query);
     $stmt->execute();
@@ -2088,11 +2095,14 @@ function fetchAddedRecord($pdo, $action, $id) {
         case 'add_program':
             $stmt = $pdo->prepare("
                 SELECT p.program_id, p.program_code, p.program_name, p.program_description,
-                       p.created_at, COUNT(c.course_id) as course_count
+                       p.created_at,
+                       (
+                           SELECT COUNT(*)
+                           FROM courses c
+                           WHERE c.program_id = p.program_id AND c.is_active = TRUE
+                       ) as course_count
                 FROM programs p
-                LEFT JOIN courses c ON p.program_id = c.program_id AND c.is_active = TRUE
                 WHERE p.program_id = ? AND p.is_active = TRUE
-                GROUP BY p.program_id
             ");
             break;
         default:
