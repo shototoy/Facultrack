@@ -3714,6 +3714,67 @@ body:has(.faculty-grid) .tab-content.active,
     flex-shrink: 0;
 }
 
+#iftlWeekBtnContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.iftl-week-btn {
+    width: 100%;
+    text-align: center;
+    padding: 10px 14px;
+    border: 1px solid var(--primary-green, #2d7d32);
+    border-radius: 8px;
+    background: var(--primary-green, #2d7d32);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.2;
+    min-height: 42px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.iftl-week-btn:hover {
+    filter: brightness(0.95);
+}
+
+.iftl-week-btn.current-week {
+    box-shadow: 0 0 0 2px rgba(45, 125, 50, 0.2);
+}
+
+.iftl-week-btn.is-submitted {
+    background: var(--primary-green, #2d7d32);
+    border-color: var(--primary-green, #2d7d32);
+    color: #fff;
+}
+
+.iftl-week-btn.no-entry,
+.iftl-week-btn:disabled {
+    background: #cfcfcf !important;
+    border-color: #b5b5b5 !important;
+    color: #5a5a5a !important;
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 1;
+}
+
+.iftl-week-btn.current-week.no-entry,
+.iftl-week-btn.current-week:disabled {
+    background: #c8c8c8 !important;
+    border-color: #acacac !important;
+    color: #4f4f4f !important;
+}
+
+.iftl-week-btn.no-entry:hover,
+.iftl-week-btn:disabled:hover {
+    filter: none;
+}
+
 .dean-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -3759,6 +3820,19 @@ body:has(.faculty-grid) .tab-content.active,
     display: flex;
     flex-direction: column;
     min-width: 0;
+}
+
+.announcement-content-box {
+    background: #f8f9fb;
+    border: 1px solid #d9e2ec;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.announcement-content-box:focus {
+    border-color: var(--primary-green, #2d7d32);
+    box-shadow: 0 0 0 2px rgba(45, 125, 50, 0.12);
+    outline: none;
 }
 
 .dean-program-name {

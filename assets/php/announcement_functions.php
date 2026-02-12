@@ -24,8 +24,27 @@ function fetchAnnouncements($pdo, $userRole, $limit = 10) {
     switch ($userRole) {
         case 'faculty':
             $targetAudiences[] = 'faculty';
+            // Check if this faculty is a dean (exists in deans table)
+            if (isset($_SESSION['user_id'])) {
+                $user_id = $_SESSION['user_id'];
+                $faculty_stmt = $pdo->prepare("SELECT faculty_id FROM faculty WHERE user_id = ? AND is_active = 1");
+                $faculty_stmt->execute([$user_id]);
+                $faculty_id = $faculty_stmt->fetchColumn();
+                if ($faculty_id) {
+                    try {
+                        $dean_stmt = $pdo->prepare("SELECT 1 FROM deans WHERE faculty_id = ? LIMIT 1");
+                        $dean_stmt->execute([$faculty_id]);
+                        if ($dean_stmt->fetchColumn()) {
+                            $targetAudiences[] = 'dean';
+                        }
+                    } catch (Exception $ignore) {
+                        // deans table may not exist in all deployments
+                    }
+                }
+            }
             break;
         case 'class':
+            $targetAudiences[] = 'class';
             $targetAudiences[] = 'classes';
             break;
         case 'program_chair':
@@ -33,7 +52,8 @@ function fetchAnnouncements($pdo, $userRole, $limit = 10) {
             $targetAudiences[] = 'faculty';
             break;
     }
-    $placeholders = implode(',', array_fill(0, count($targetAudiences), '?'));
+    // Announcements can have multiple audiences, so use FIND_IN_SET
+    $where = implode(' OR ', array_fill(0, count($targetAudiences), "FIND_IN_SET(?, a.target_audience) > 0"));
     $announcements_query = "
         SELECT a.*, u.full_name as created_by_name,
                DATE_FORMAT(a.created_at, '%M %d, %Y at %h:%i %p') as formatted_date,
@@ -46,7 +66,7 @@ function fetchAnnouncements($pdo, $userRole, $limit = 10) {
         FROM announcements a
         JOIN users u ON a.created_by = u.user_id
         WHERE a.is_active = TRUE
-        AND a.target_audience IN ($placeholders)
+        AND ($where)
         ORDER BY a.created_at DESC
         LIMIT " . intval($limit);
     $stmt = $pdo->prepare($announcements_query);
@@ -57,6 +77,7 @@ function getAnnouncementCategory($target_audience) {
     switch ($target_audience) {
         case 'faculty':
             return 'Faculty';
+        case 'class':
         case 'classes':
             return 'Classes';
         case 'program_chairs':

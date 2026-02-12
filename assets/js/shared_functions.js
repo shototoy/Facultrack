@@ -4,7 +4,36 @@ function escapeHtml(text) {
     div.textContent = text.toString();
     return div.innerHTML;
 }
+function getActiveTabName() {
+    const activeTab = document.querySelector('.tab-content.active');
+    if (!activeTab || !activeTab.id) return null;
+    return activeTab.id.replace('-content', '');
+}
+function persistActiveTab(tabName) {
+    if (!tabName) return;
+    try {
+        sessionStorage.setItem('facultrack_active_tab', tabName);
+    } catch (e) { }
+}
+function reloadSameTab() {
+    const tabName = getActiveTabName();
+    persistActiveTab(tabName);
+    window.location.reload();
+}
+function restoreActiveTabOnLoad() {
+    try {
+        const savedTab = sessionStorage.getItem('facultrack_active_tab');
+        if (!savedTab) return;
+        const tabButton = document.querySelector(`.tab-button[data-tab="${savedTab}"]`);
+        const tabContent = document.getElementById(`${savedTab}-content`);
+        if (tabButton && tabContent && typeof switchTab === 'function') {
+            switchTab(savedTab);
+        }
+        sessionStorage.removeItem('facultrack_active_tab');
+    } catch (e) { }
+}
 function switchTab(tabName) {
+    persistActiveTab(tabName);
     const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(content => content.classList.remove('active'));
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -150,7 +179,7 @@ async function deleteEntity(action, id) {
                     const result = await response.json();
                     if (result.success) {
                         showNotification(`${capitalize(label)} deleted successfully`, 'success');
-                        setTimeout(() => location.reload(), 500);
+                        setTimeout(() => reloadSameTab(), 350);
                     } else {
                         throw new Error(result.message || `Failed to delete ${label}`);
                     }
@@ -196,7 +225,7 @@ async function handleFormSubmission(form, type) {
                     const result = await response.json();
                     if (result.success) {
                         showNotification(result.message, 'success');
-                        setTimeout(() => location.reload(), 500);
+                        setTimeout(() => reloadSameTab(), 350);
                     } else {
                         throw new Error(result.message);
                     }
@@ -222,7 +251,7 @@ async function handleFormSubmission(form, type) {
         const result = await response.json();
         if (result.success) {
             showNotification(result.message, 'success');
-            setTimeout(() => location.reload(), 500);
+            setTimeout(() => reloadSameTab(), 350);
         } else {
             throw new Error(result.message);
         }
@@ -540,3 +569,8 @@ async function emailAnnouncement(announcement) {
 window.printAnnouncement = printAnnouncement;
 window.generateAnnouncementPDF = generateAnnouncementPDF;
 window.emailAnnouncement = emailAnnouncement;
+window.reloadSameTab = reloadSameTab;
+
+document.addEventListener('DOMContentLoaded', function () {
+    restoreActiveTabOnLoad();
+});

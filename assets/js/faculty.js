@@ -429,7 +429,13 @@ function renderEditableIFTL(entries, compliance) {
         <div class="iftl-status-header" style="margin-bottom:5px;">
             Status: <strong>${status}</strong>
             ${status === 'Submitted' ? '<span class="status-badge" style="background:#2196F3;color:white;">Submitted - Locked</span>' : ''}
-             ${status === 'Approved' ? '<span class="status-badge" style="background:#4CAF50;color:white;">Approved</span>' : ''}
+            ${status === 'Approved' ? '<span class="status-badge" style="background:#4CAF50;color:white;">Approved</span>' : ''}
+        </div>
+        <div class="iftl-action-btns" style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button class="btn-primary iftl-btn" id="iftlDraftBtn" ${status === 'Draft' ? '' : 'disabled'}>Save Draft</button>
+            <button class="btn-primary iftl-btn" id="iftlSubmitBtn" style="background: #e65100;" ${status === 'Draft' ? '' : 'disabled'}>Submit</button>
+            <button class="btn-primary iftl-btn" id="iftlApprovedBtn" style="background: #4CAF50;" ${status === 'Approved' ? '' : 'disabled'}>Approved</button>
+            <button class="btn-secondary iftl-btn" id="iftlResetBtn" ${status === 'Draft' ? '' : 'disabled'}>Reset</button>
         </div>
         <table class="data-table iftl-table editable-grid">
             <thead style="position: sticky; top: 0; background: white; z-index: 10;">
@@ -487,6 +493,14 @@ function renderEditableIFTL(entries, compliance) {
         `;
     }
     content.innerHTML = html;
+    // Button event bindings
+    document.getElementById('iftlDraftBtn').onclick = () => saveIFTLData('Draft');
+    document.getElementById('iftlSubmitBtn').onclick = () => saveIFTLData('Submitted');
+    document.getElementById('iftlResetBtn').onclick = () => regenerateIFTLWeek();
+    // Approved button is just a display
+    if (status !== 'Approved') {
+        document.getElementById('iftlApprovedBtn').disabled = true;
+    }
 }
 function addIFTLEntry() {
     if (!window.currentIFTLData) window.currentIFTLData = [];

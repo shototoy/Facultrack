@@ -1039,9 +1039,10 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                             </select>
                         </div>
                         <div class="iftl-actions" style="display: flex; gap: 10px;">
-                            <button class="btn-secondary" onclick="regenerateIFTLWeek()" title="Reset to standard schedule">Reset</button>
-                            <button class="btn-primary" onclick="saveIFTLData('Draft')">Save Draft</button>
-                            <button class="btn-primary" style="background: #e65100;" onclick="saveIFTLData('Submitted')">Submit</button>
+                            <button class="btn-primary iftl-btn" id="iftlDraftBtn" onclick="saveIFTLData('Draft')">Save Draft</button>
+                            <button class="btn-primary iftl-btn" id="iftlSubmitBtn" style="background: #e65100;" onclick="saveIFTLData('Submitted')">Submit</button>
+                            <button class="btn-primary iftl-btn" id="iftlApprovedBtn" style="background: #4CAF50;" disabled>Approved</button>
+                            <button class="btn-secondary iftl-btn" id="iftlResetBtn" onclick="regenerateIFTLWeek()" title="Reset to standard schedule">Reset</button>
                         </div>
                     </div>
                     <div id="facultyIFTLContent" class="schedule-table-container" style="flex: 1; overflow-y: auto; border: 1px solid #eee; border-radius: 8px;">

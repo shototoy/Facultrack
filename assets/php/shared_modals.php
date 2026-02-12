@@ -231,7 +231,7 @@ $role = $_SESSION['role'] ?? '';
             </div>
             <div class="form-group">
                 <label class="form-label">Content *</label>
-                <textarea name="content" class="form-textarea" required></textarea>
+                <textarea name="content" class="form-textarea announcement-content-box" required></textarea>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -244,12 +244,23 @@ $role = $_SESSION['role'] ?? '';
                 </div>
                 <div class="form-group">
                     <label class="form-label">Target Audience</label>
-                    <select name="target_audience" class="form-select">
-                        <option value="all">All Users</option>
-                        <option value="faculty">Faculty Only</option>
-                        <option value="program_chair">Program Chairs Only</option>
-                        <option value="students">Students Only</option>
-                    </select>
+                    <div class="checkbox-group" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
+                        <label style="display:flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;background:#f9f9f9;cursor:pointer;">
+                            <input type="checkbox" name="target_audience[]" value="faculty" style="accent-color:#007bff;"> Faculty
+                        </label>
+                        <label style="display:flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;background:#f9f9f9;cursor:pointer;">
+                            <input type="checkbox" name="target_audience[]" value="program_chairs" style="accent-color:#007bff;"> Program Chairs
+                        </label>
+                        <label style="display:flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;background:#f9f9f9;cursor:pointer;">
+                            <input type="checkbox" name="target_audience[]" value="class" style="accent-color:#007bff;"> Class
+                        </label>
+                        <label style="display:flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;background:#f9f9f9;cursor:pointer;">
+                            <input type="checkbox" name="target_audience[]" value="dean" style="accent-color:#007bff;"> Dean
+                        </label>
+                        <label style="margin-top:8px;display:block;padding:4px 8px;border:1px solid #ccc;border-radius:5px;background:#f9f9f9;cursor:pointer;width:max-content;">
+                            <input type="checkbox" name="target_audience[]" value="all" style="accent-color:#007bff;"> All Users
+                        </label>
+                    </div>
                 </div>
             </div>
             <div class="modal-actions">

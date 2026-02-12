@@ -32,7 +32,7 @@ CREATE TABLE `announcements` (
   `title` varchar(255) NOT NULL,
   `content` text NOT NULL,
   `priority` enum('high','medium','low') DEFAULT 'medium',
-  `target_audience` enum('all','faculty','classes','program_chairs') DEFAULT 'all',
+  `target_audience` varchar(100) NOT NULL DEFAULT 'all',
   `created_by` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),

@@ -209,13 +209,9 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 </div>
                 <div class="modal-body">
                     <div class="iftl-controls" style="margin-bottom: 20px;">
-                        <label for="iftlWeekSelect">Select Week:</label>
-                        <select id="iftlWeekSelect" class="form-select" onchange="loadFacultyIFTL()">
-
-                        </select>
+                        <div id="iftlWeekBtnContainer"></div>
                     </div>
                     <div id="iftlContent" class="schedule-table-container">
-
                         <div class="loading">Select a week to view IFTL</div>
                     </div>
                 </div>
@@ -531,8 +527,72 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             const modal = document.getElementById('announcementDetailsModal');
             modal.classList.add('show');
         }
+        function applyAudienceCheckboxRules(formElement) {
+            if (!formElement) return;
+            const allCheckbox = formElement.querySelector('input[name="target_audience[]"][value="all"]');
+            const audienceCheckboxes = Array.from(formElement.querySelectorAll('input[name="target_audience[]"]'));
+            if (!allCheckbox) return;
+
+            audienceCheckboxes.forEach(cb => {
+                if (cb === allCheckbox) return;
+                if (allCheckbox.checked) {
+                    cb.checked = false;
+                    cb.disabled = true;
+                } else {
+                    cb.disabled = false;
+                }
+            });
+        }
+
+        function setAudienceCheckboxes(formElement, audienceValue) {
+            if (!formElement) return;
+            const selected = new Set(String(audienceValue || '')
+                .split(',')
+                .map(v => v.trim())
+                .filter(Boolean));
+
+            formElement.querySelectorAll('input[name="target_audience[]"]').forEach(cb => {
+                cb.checked = selected.has(cb.value);
+                cb.disabled = false;
+            });
+
+            applyAudienceCheckboxRules(formElement);
+        }
+
+        function setupAudienceCheckboxHandlers(formId) {
+            const form = document.getElementById(formId);
+            if (!form || form.dataset.audienceBound === '1') return;
+            form.dataset.audienceBound = '1';
+
+            form.querySelectorAll('input[name="target_audience[]"]').forEach(cb => {
+                cb.addEventListener('change', function () {
+                    if (this.value === 'all' && this.checked) {
+                        applyAudienceCheckboxRules(form);
+                        return;
+                    }
+                    if (this.value !== 'all' && this.checked) {
+                        const allCheckbox = form.querySelector('input[name="target_audience[]"][value="all"]');
+                        if (allCheckbox) {
+                            allCheckbox.checked = false;
+                        }
+                    }
+
+                    const allCheckbox = form.querySelector('input[name="target_audience[]"][value="all"]');
+                    const specificCheckboxes = Array.from(form.querySelectorAll('input[name="target_audience[]"]')).filter(cb => cb.value !== 'all');
+                    const allSpecificChecked = specificCheckboxes.length > 0 && specificCheckboxes.every(cb => cb.checked);
+                    if (allSpecificChecked && allCheckbox) {
+                        allCheckbox.checked = true;
+                    }
+
+                    applyAudienceCheckboxRules(form);
+                });
+            });
+
+            applyAudienceCheckboxRules(form);
+        }
+
         async function openEditAnnouncementModal(announcementId) {
-            if(window.event) window.event.stopPropagation();
+            if (window.event) window.event.stopPropagation();
             const modal = document.getElementById('editAnnouncementModal');
             const form = document.getElementById('editAnnouncementForm');
             form.reset();
@@ -545,7 +605,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     document.getElementById('editAnnouncementTitle').value = data.title;
                     document.getElementById('editAnnouncementContent').value = data.content;
                     document.getElementById('editAnnouncementPriority').value = data.priority;
-                    document.getElementById('editAnnouncementAudience').value = data.target_audience;
+                    setAudienceCheckboxes(form, data.target_audience);
                     closeModal('announcementDetailsModal');
                     modal.classList.add('show');
                 } else {
@@ -607,6 +667,11 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                 alert('Error updating announcement');
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            setupAudienceCheckboxHandlers('addAnnouncementForm');
+            setupAudienceCheckboxHandlers('editAnnouncementForm');
+        });
     </script>
     <div class="modal-overlay" id="editAnnouncementModal">
         <div class="modal">
@@ -623,7 +688,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Content *</label>
-                        <textarea name="content" id="editAnnouncementContent" class="form-textarea" required></textarea>
+                        <textarea name="content" id="editAnnouncementContent" class="form-textarea announcement-content-box" required></textarea>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -636,12 +701,23 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
                         </div>
                         <div class="form-group">
                             <label class="form-label">Target Audience</label>
-                            <select name="target_audience" id="editAnnouncementAudience" class="form-select">
-                                <option value="all">All Users</option>
-                                <option value="faculty">Faculty Only</option>
-                                <option value="program_chair">Program Chairs Only</option>
-                                <option value="students">Students Only</option>
-                            </select>
+                            <div class="checkbox-group" id="editAudienceCheckboxes" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
+                                <label style="display:flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;background:#f9f9f9;cursor:pointer;">
+                                    <input type="checkbox" name="target_audience[]" value="faculty" style="accent-color:#007bff;"> Faculty
+                                </label>
+                                <label style="display:flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;background:#f9f9f9;cursor:pointer;">
+                                    <input type="checkbox" name="target_audience[]" value="program_chairs" style="accent-color:#007bff;"> Program Chairs
+                                </label>
+                                <label style="display:flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;background:#f9f9f9;cursor:pointer;">
+                                    <input type="checkbox" name="target_audience[]" value="class" style="accent-color:#007bff;"> Class
+                                </label>
+                                <label style="display:flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid #ccc;border-radius:5px;background:#f9f9f9;cursor:pointer;">
+                                    <input type="checkbox" name="target_audience[]" value="dean" style="accent-color:#007bff;"> Dean
+                                </label>
+                            </div>
+                            <label style="margin-top:8px;display:block;padding:4px 8px;border:1px solid #ccc;border-radius:5px;background:#f9f9f9;cursor:pointer;width:max-content;">
+                                <input type="checkbox" name="target_audience[]" value="all" style="accent-color:#007bff;"> All Users
+                            </label>
                         </div>
                     </div>
                     <div class="modal-actions">
@@ -652,6 +728,7 @@ if (!isset($_GET['action']) && !isset($_POST['action'])) {
             </div>
         </div>
     </div>
+
 </body>
 </html>
 

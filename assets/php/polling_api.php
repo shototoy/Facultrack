@@ -109,11 +109,13 @@ function getAllPrograms($pdo) {
             p.program_name,
             p.program_description,
             p.dean_id,
+            fdean.faculty_id as dean_faculty_id,
             u.full_name as dean_name,
             p.created_at,
             COUNT(c.course_id) as course_count
         FROM programs p
         LEFT JOIN users u ON p.dean_id = u.user_id
+        LEFT JOIN faculty fdean ON fdean.user_id = p.dean_id AND fdean.is_active = TRUE
         LEFT JOIN courses c ON p.program_id = c.program_id AND c.is_active = TRUE
         WHERE p.is_active = TRUE
         GROUP BY p.program_id
@@ -124,10 +126,11 @@ function getAllPrograms($pdo) {
 }
 function getDeanCandidates($pdo) {
     $query = "
-        SELECT u.user_id, u.full_name
-        FROM users u
-        WHERE u.role = 'faculty' AND u.is_active = TRUE
-        ORDER BY u.full_name
+                SELECT f.faculty_id, u.user_id, COALESCE(u.full_name, CONCAT('Faculty #', f.faculty_id)) as full_name
+        FROM faculty f
+                LEFT JOIN users u ON f.user_id = u.user_id
+                WHERE COALESCE(u.role, 'faculty') <> 'campus_director'
+                ORDER BY COALESCE(u.full_name, CONCAT('Faculty #', f.faculty_id))
     ";
     $stmt = $pdo->prepare($query);
     $stmt->execute();
@@ -737,6 +740,12 @@ switch ($action) {
                         if ($field === 'program_id' && $action === 'add_course') {
                             $program_id = $_POST[$field] ?? '';
                             $insert_data[$field] = ($program_id === '' || $program_id === 'general') ? null : (int)$program_id;
+                        } elseif ($field === 'target_audience' && $action === 'add_announcement') {
+                            if (isset($_POST['target_audience']) && is_array($_POST['target_audience'])) {
+                                $insert_data[$field] = implode(',', $_POST['target_audience']);
+                            } else {
+                                $insert_data[$field] = $_POST['target_audience'] ?? 'all';
+                            }
                         } else {
                             $insert_data[$field] = $_POST[$field] ?? null;
                         }
@@ -1300,26 +1309,54 @@ switch ($action) {
         validateUserSession('campus_director');
         try {
             $program_id = $_POST['program_id'] ?? null;
-            $dean_id = $_POST['dean_id'] ?? null;
+            $dean_faculty_id = $_POST['dean_faculty_id'] ?? $_POST['dean_id'] ?? null;
             if (!$program_id) {
                 sendJsonResponse(['success' => false, 'message' => 'Program ID is required']);
                 break;
             }
-            if ($dean_id === '' || $dean_id === 'null') {
-                $dean_id = null;
+            if ($dean_faculty_id === '' || $dean_faculty_id === 'null') {
+                $dean_faculty_id = null;
             }
-            if ($dean_id !== null) {
-                $stmt = $pdo->prepare("SELECT user_id FROM users WHERE user_id = ? AND role = 'faculty' AND is_active = TRUE");
-                $stmt->execute([$dean_id]);
-                if (!$stmt->fetchColumn()) {
+
+            $stmt = $pdo->prepare("SELECT program_id FROM programs WHERE program_id = ? AND is_active = TRUE");
+            $stmt->execute([$program_id]);
+            if (!$stmt->fetchColumn()) {
+                sendJsonResponse(['success' => false, 'message' => 'Program not found']);
+                break;
+            }
+
+            $dean_user_id = null;
+            if ($dean_faculty_id !== null) {
+                $stmt = $pdo->prepare("SELECT f.user_id FROM faculty f LEFT JOIN users u ON f.user_id = u.user_id WHERE f.faculty_id = ? AND COALESCE(u.role, 'faculty') <> 'campus_director'");
+                $stmt->execute([$dean_faculty_id]);
+                $dean_user_id = $stmt->fetchColumn();
+                if (!$dean_user_id) {
                     sendJsonResponse(['success' => false, 'message' => 'Selected dean is not available']);
                     break;
                 }
             }
+
+            $pdo->beginTransaction();
+
             $stmt = $pdo->prepare("UPDATE programs SET dean_id = ? WHERE program_id = ?");
-            $stmt->execute([$dean_id, $program_id]);
+            $stmt->execute([$dean_user_id, $program_id]);
+
+            if ($dean_faculty_id === null) {
+                $stmt = $pdo->prepare("DELETE FROM deans WHERE program_id = ?");
+                $stmt->execute([$program_id]);
+            } else {
+                $stmt = $pdo->prepare("DELETE FROM deans WHERE program_id = ?");
+                $stmt->execute([$program_id]);
+                $stmt = $pdo->prepare("INSERT INTO deans (faculty_id, program_id, assigned_at) VALUES (?, ?, CURRENT_TIMESTAMP)");
+                $stmt->execute([$dean_faculty_id, $program_id]);
+            }
+
+            $pdo->commit();
             sendJsonResponse(['success' => true, 'message' => 'Dean assignment updated']);
         } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             sendJsonResponse(['success' => false, 'message' => 'Error updating dean assignment: ' . $e->getMessage()]);
         }
         break;
@@ -1823,12 +1860,16 @@ switch ($action) {
     case 'update_announcement':
         validateUserSession('campus_director');
         try {
-            $pdo->beginTransaction();
             $announcement_id = $_POST['announcement_id'] ?? null;
             $title = trim($_POST['title'] ?? '');
             $content = trim($_POST['content'] ?? '');
             $priority = $_POST['priority'] ?? 'normal';
-            $target_audience = $_POST['target_audience'] ?? 'all';
+            if (isset($_POST['target_audience']) && is_array($_POST['target_audience'])) {
+                $audiences = array_values(array_unique(array_filter($_POST['target_audience'])));
+                $target_audience = !empty($audiences) ? implode(',', $audiences) : 'all';
+            } else {
+                $target_audience = $_POST['target_audience'] ?? 'all';
+            }
             if (!$announcement_id || !$title || !$content) {
                 throw new Exception('Missing required fields');
             }
@@ -1838,14 +1879,8 @@ switch ($action) {
                 WHERE announcement_id = ?
             ");
             $stmt->execute([$title, $content, $priority, $target_audience, $announcement_id]);
-            if ($stmt->rowCount() > 0) {
-                $pdo->commit();
-                sendJsonResponse(['success' => true, 'message' => 'Announcement updated successfully']);
-            } else {
-                throw new Exception('Announcement not found or no changes made');
-            }
+            sendJsonResponse(['success' => true, 'message' => 'Announcement updated successfully']);
         } catch (Exception $e) {
-            $pdo->rollback();
             sendJsonResponse(['success' => false, 'message' => 'Error updating announcement: ' . $e->getMessage()]);
         }
         break;
@@ -1869,22 +1904,35 @@ switch ($action) {
     case 'get_iftl_weeks_month':
         $year = isset($_GET['year']) ? intval($_GET['year']) : intval(date('Y'));
         $month = isset($_GET['month']) ? intval($_GET['month']) : intval(date('n'));
+        $faculty_id = isset($_GET['faculty_id']) ? intval($_GET['faculty_id']) : null;
         $month_start = strtotime(sprintf('%04d-%02d-01', $year, $month));
         $month_end = strtotime(date('Y-m-t', $month_start));
         $weeks = [];
-        $week_start = strtotime('monday', $month_start);
-        if (date('Y-m-d', $week_start) < date('Y-m-d', $month_start)) {
-            $week_start = strtotime('+1 week', $week_start);
+        $week_start = strtotime('monday this week', $month_start);
+
+        $compliance_map = [];
+        if ($faculty_id) {
+            $status_stmt = $pdo->prepare("SELECT week_identifier, status FROM iftl_weekly_compliance WHERE faculty_id = ?");
+            $status_stmt->execute([$faculty_id]);
+            foreach ($status_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $compliance_map[$row['week_identifier']] = $row['status'];
+            }
         }
+
         while ($week_start <= $month_end) {
             $week_end = strtotime('+6 days', $week_start);
             $week_identifier = date('Y-\WW', $week_start);
             $is_current = (date('Y-m-d') >= date('Y-m-d', $week_start) && date('Y-m-d') <= date('Y-m-d', $week_end));
+            $status = $compliance_map[$week_identifier] ?? null;
+            $normalized_status = strtolower(trim((string)$status));
             $weeks[] = [
                 'identifier' => $week_identifier,
                 'label' => ($is_current ? "[Current] " : "") . date('M d', $week_start) . " - " . date('M d', $week_end),
                 'start_date' => date('Y-m-d', $week_start),
-                'is_current' => $is_current
+                'is_current' => $is_current,
+                'has_entry' => $status !== null,
+                'status' => $status,
+                'is_submitted' => in_array($normalized_status, ['submitted', 'approved'], true)
             ];
             $week_start = strtotime('+1 week', $week_start);
         }

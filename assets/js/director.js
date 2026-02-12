@@ -74,15 +74,21 @@ async function loadIFTLFaculty() {
             data.faculty.forEach(faculty => {
                 const hasIFTL = faculty.has_iftl > 0;
                 const statusClass = hasIFTL ? '' : 'no-iftl';
-                const statusText = hasIFTL ? 'Submitted' : 'No IFTL';
-                const statusBadge = hasIFTL ? '<span class="status-badge status-available">Submitted</span>' : '<span class="status-badge status-offline">Missing</span>';
+                const statusBadge = hasIFTL
+                    ? '<span class="status-badge status-available">Submitted</span>'
+                    : '<span class="status-badge status-offline">Missing</span>';
+                const safeNameForJs = String(faculty.full_name || '')
+                    .replace(/\\/g, '\\\\')
+                    .replace(/'/g, "\\'");
+                const safeNameForHtml = escapeHtml(faculty.full_name || '');
+                const safeProgramForHtml = escapeHtml(faculty.program || 'N/A');
                 html += `
-                    <div class="iftl-card ${statusClass}" onclick="openIFTLModal(${faculty.faculty_id}, '${faculty.full_name}')">
+                    <div class="iftl-card ${statusClass}" onclick="openIFTLModal(${faculty.faculty_id}, '${safeNameForJs}')">
                         <div class="iftl-card-header">
-                            <div class="iftl-avatar">${getInitials(faculty.full_name)}</div>
+                            <div class="iftl-avatar">${getInitials(faculty.full_name || '')}</div>
                             <div class="iftl-info">
-                                <div class="iftl-name">${faculty.full_name}</div>
-                                <div class="iftl-program">${faculty.program || 'N/A'}</div>
+                                <div class="iftl-name">${safeNameForHtml}</div>
+                                <div class="iftl-program">${safeProgramForHtml}</div>
                             </div>
                         </div>
                         <div class="iftl-status">
@@ -135,7 +141,7 @@ async function loadDeanAssignments() {
             const programCount = programs.length;
             const programLabel = programCount === 1 ? 'program' : 'programs';
             const programRows = programs.map(program => {
-                const options = buildDeanOptions(deanCandidates, program.dean_id);
+                const options = buildDeanOptions(deanCandidates, program.dean_faculty_id);
                 return `
                     <div class="dean-program-item" data-program-id="${program.program_id}">
                         <div class="dean-program-meta">
@@ -181,20 +187,22 @@ function buildDeanOptions(candidates, selectedId) {
         `<option value="" ${selectedValue === '' ? 'selected' : ''}>Unassigned</option>`
     ];
     candidates.forEach(candidate => {
-        const value = String(candidate.user_id);
+        const value = String(candidate.faculty_id ?? candidate.user_id ?? '');
+        if (!value) return;
         const isSelected = value === selectedValue ? 'selected' : '';
-        options.push(`<option value="${value}" ${isSelected}>${escapeHtml(candidate.full_name)}</option>`);
+        const label = candidate.full_name || `Faculty #${value}`;
+        options.push(`<option value="${value}" ${isSelected}>${escapeHtml(label)}</option>`);
     });
     return options.join('');
 }
 async function updateProgramDean(programId) {
     const select = document.querySelector(`.dean-select[data-program-id="${programId}"]`);
     if (!select) return;
-    const deanId = select.value;
+    const deanFacultyId = select.value;
     const formData = new FormData();
     formData.append('action', 'update_program_dean');
     formData.append('program_id', programId);
-    formData.append('dean_id', deanId);
+    formData.append('dean_faculty_id', deanFacultyId);
     try {
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
@@ -511,7 +519,11 @@ window.updateSemester = async function (form) {
             const activeTab = document.querySelector('.tab-content.active');
             if (activeTab && activeTab.id === 'classes-content') {
                 setTimeout(() => {
-                    window.location.reload();
+                    if (typeof window.reloadSameTab === 'function') {
+                        window.reloadSameTab();
+                    } else {
+                        window.location.reload();
+                    }
                 }, 1500);
             }
         } else {
@@ -561,10 +573,75 @@ async function openIFTLModal(facultyId, facultyName) {
             document.body.style.overflow = 'hidden';
         }
     }
-    loadDirectorIFTLWeeks();
+    loadDirectorIFTLWeeksButtons();
     const content = document.getElementById('iftlContent');
     if (content) {
         content.innerHTML = '<div class="loading">Select a week to print IFTL.</div>';
+    }
+}
+
+// New: Render week buttons instead of dropdown
+async function loadDirectorIFTLWeeksButtons() {
+    const weekBtnContainer = document.getElementById('iftlWeekBtnContainer');
+    if (!weekBtnContainer) return;
+    weekBtnContainer.innerHTML = '<div class="loading">Loading weeks...</div>';
+    try {
+        const response = await fetch(`assets/php/polling_api.php?action=get_iftl_weeks_month&faculty_id=${encodeURIComponent(currentIFTLFacultyId)}`);
+        const result = await response.json();
+        if (result.success) {
+            weekBtnContainer.innerHTML = '';
+            result.weeks.forEach(week => {
+                const btn = document.createElement('button');
+                btn.className = 'iftl-week-btn';
+                btn.textContent = week.label;
+                btn.dataset.identifier = week.identifier;
+                if (week.is_current) btn.classList.add('current-week');
+                if (week.is_submitted) {
+                    btn.classList.add('is-submitted');
+                    btn.disabled = false;
+                    btn.onclick = () => printIFTLForWeekBtn(week.identifier);
+                } else {
+                    btn.classList.add('no-entry');
+                    btn.disabled = true;
+                }
+                weekBtnContainer.appendChild(btn);
+            });
+        } else {
+            weekBtnContainer.innerHTML = '<div class="error">Error loading weeks</div>';
+        }
+    } catch (e) {
+        weekBtnContainer.innerHTML = '<div class="error">Error loading weeks</div>';
+    }
+}
+
+async function printIFTLForWeekBtn(weekIdentifier) {
+    if (!currentIFTLFacultyId) return;
+    const formData = new URLSearchParams();
+    formData.set('action', 'get_full_faculty_schedule');
+    formData.set('faculty_id', currentIFTLFacultyId);
+    formData.set('week_identifier', weekIdentifier);
+    try {
+        const response = await fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        });
+        const result = await response.json();
+        if (result.success) {
+            window.facultySchedules[currentIFTLFacultyId] = result.schedules;
+            if (result.dean_name) {
+                window.facultyDeanNames[currentIFTLFacultyId] = result.dean_name;
+            }
+            if (typeof printFacultySchedule === 'function') {
+                printFacultySchedule(currentIFTLFacultyId);
+            }
+        } else if (typeof showNotification === 'function') {
+            showNotification(result.message || 'Failed to load schedule', 'error');
+        }
+    } catch (e) {
+        if (typeof showNotification === 'function') {
+            showNotification('Error loading schedule', 'error');
+        }
     }
 }
 
