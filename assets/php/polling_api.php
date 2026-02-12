@@ -1492,7 +1492,7 @@ switch ($action) {
             $stmt = $pdo->prepare($faculty_info_query);
             $stmt->execute([$faculty_id]);
             $faculty_info = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-            ensureIftlOverrideColumn($pdo);
+            $has_override_column = hasIftlOverrideColumn($pdo);
             $compliance_query = "SELECT * FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ? ORDER BY updated_at DESC, compliance_id DESC LIMIT 1";
             $stmt = $pdo->prepare($compliance_query);
             $stmt->execute([$faculty_id, $selected_week]);
@@ -1503,7 +1503,8 @@ switch ($action) {
                 $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM iftl_entries WHERE compliance_id = ?");
                 $count_stmt->execute([$compliance_id]);
                 $entry_count = (int)$count_stmt->fetchColumn();
-                $is_override = ((int)($compliance['is_override'] ?? 0) === 1) || $entry_count > 0;
+                $flagged_override = $has_override_column ? ((int)($compliance['is_override'] ?? 0) === 1) : true;
+                $is_override = $flagged_override || $entry_count > 0;
             }
 
             if ($compliance_id && $is_override) {
@@ -1937,7 +1938,7 @@ switch ($action) {
         sendJsonResponse(['success' => true, 'weeks' => $weeks]);
         break;
     case 'get_faculty_iftl':
-        ensureIftlOverrideColumn($pdo);
+        $has_override_column = hasIftlOverrideColumn($pdo);
         $target_faculty_id = $_POST['faculty_id'] ?? $_SESSION['faculty_id'] ?? null;
         if (!$target_faculty_id && $_SESSION['role'] === 'faculty') {
              $stmt = $pdo->prepare("SELECT faculty_id FROM faculty WHERE user_id = ?");
@@ -1952,7 +1953,8 @@ switch ($action) {
             $stmt = $pdo->prepare("SELECT * FROM iftl_entries WHERE compliance_id = ? ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), time_start");
             $stmt->execute([$compliance['compliance_id']]);
             $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $is_override = ((int)($compliance['is_override'] ?? 0) === 1) || count($entries) > 0;
+            $flagged_override = $has_override_column ? ((int)($compliance['is_override'] ?? 0) === 1) : true;
+            $is_override = $flagged_override || count($entries) > 0;
             if (!$is_override) {
                 $compliance = ['status' => 'None'];
                 $entries = generateIFTLFromStandard($pdo, $target_faculty_id);
@@ -1964,7 +1966,7 @@ switch ($action) {
         sendJsonResponse(['success' => true, 'compliance' => $compliance, 'entries' => $entries]);
         break;
     case 'save_iftl':
-        ensureIftlOverrideColumn($pdo);
+        $has_override_column = hasIftlOverrideColumn($pdo);
         $compliance_id = $_POST['compliance_id'] ?? null;
         $faculty_id = $_POST['faculty_id'] ?? $_SESSION['faculty_id'] ?? null;
         if (!$faculty_id && $_SESSION['role'] === 'faculty') {
@@ -1983,11 +1985,21 @@ switch ($action) {
 
             if ($existing_compliance_id) {
                 $compliance_id = $existing_compliance_id;
-                $stmt = $pdo->prepare("UPDATE iftl_weekly_compliance SET week_start_date = ?, status = ?, is_override = 1, updated_at = NOW() WHERE compliance_id = ?");
-                $stmt->execute([$week_start_date, $status, $compliance_id]);
+                if ($has_override_column) {
+                    $stmt = $pdo->prepare("UPDATE iftl_weekly_compliance SET week_start_date = ?, status = ?, is_override = 1, updated_at = NOW() WHERE compliance_id = ?");
+                    $stmt->execute([$week_start_date, $status, $compliance_id]);
+                } else {
+                    $stmt = $pdo->prepare("UPDATE iftl_weekly_compliance SET week_start_date = ?, status = ?, updated_at = NOW() WHERE compliance_id = ?");
+                    $stmt->execute([$week_start_date, $status, $compliance_id]);
+                }
             } else {
-                $stmt = $pdo->prepare("INSERT INTO iftl_weekly_compliance (faculty_id, week_identifier, week_start_date, status, is_override) VALUES (?, ?, ?, ?, 1)");
-                $stmt->execute([$faculty_id, $week_identifier, $week_start_date, $status]);
+                if ($has_override_column) {
+                    $stmt = $pdo->prepare("INSERT INTO iftl_weekly_compliance (faculty_id, week_identifier, week_start_date, status, is_override) VALUES (?, ?, ?, ?, 1)");
+                    $stmt->execute([$faculty_id, $week_identifier, $week_start_date, $status]);
+                } else {
+                    $stmt = $pdo->prepare("INSERT INTO iftl_weekly_compliance (faculty_id, week_identifier, week_start_date, status) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$faculty_id, $week_identifier, $week_start_date, $status]);
+                }
                 $compliance_id = $pdo->lastInsertId();
             }
 
@@ -2360,22 +2372,21 @@ function normalizeWeekIdentifier($weekIdentifier) {
     return date('Y-\\WW');
 }
 
-function ensureIftlOverrideColumn(PDO $pdo) {
+function hasIftlOverrideColumn(PDO $pdo) {
     static $checked = false;
+    static $exists = false;
     if ($checked) {
-        return;
+        return $exists;
     }
     $checked = true;
     try {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'iftl_weekly_compliance' AND COLUMN_NAME = 'is_override'");
         $stmt->execute();
         $exists = (int)$stmt->fetchColumn() > 0;
-        if (!$exists) {
-            $pdo->exec("ALTER TABLE iftl_weekly_compliance ADD COLUMN is_override TINYINT(1) NOT NULL DEFAULT 0 AFTER status");
-            $pdo->exec("UPDATE iftl_weekly_compliance iwc SET is_override = CASE WHEN EXISTS (SELECT 1 FROM iftl_entries ie WHERE ie.compliance_id = iwc.compliance_id) THEN 1 ELSE 0 END");
-        }
     } catch (Exception $e) {
+        $exists = false;
     }
+    return $exists;
 }
 ?>
 

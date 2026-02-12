@@ -170,6 +170,27 @@ try {
         );
     }
 
+    if (tableExists($pdo, 'iftl_weekly_compliance')) {
+        if (!columnExists($pdo, 'iftl_weekly_compliance', 'is_override')) {
+            runStep($pdo, $messages,
+                "ALTER TABLE iftl_weekly_compliance ADD COLUMN is_override TINYINT(1) NOT NULL DEFAULT 0 AFTER status",
+                "added iftl_weekly_compliance.is_override"
+            );
+        }
+        if (columnExists($pdo, 'iftl_weekly_compliance', 'is_override') && tableExists($pdo, 'iftl_entries')) {
+            runStep($pdo, $messages,
+                "UPDATE iftl_weekly_compliance iwc
+                 SET is_override = CASE
+                    WHEN EXISTS (SELECT 1 FROM iftl_entries ie WHERE ie.compliance_id = iwc.compliance_id) THEN 1
+                    ELSE 0
+                 END",
+                "backfilled iftl override flags"
+            );
+        }
+    } else {
+        $messages[] = "SKIP: iftl_weekly_compliance table not found";
+    }
+
     echo "Success: sqlfix completed.<br>" . implode('<br>', $messages);
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "<br>" . implode('<br>', $messages);
