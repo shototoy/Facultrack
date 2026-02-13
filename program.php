@@ -900,6 +900,37 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
             color: #666;
             line-height: 1.3;
         }
+        .class-card-action-icons {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .class-card-icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border: 1px solid rgba(46, 125, 50, 0.25);
+            background: rgba(46, 125, 50, 0.08);
+            color: var(--primary-green);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .class-card-icon-btn:hover {
+            background: rgba(46, 125, 50, 0.16);
+            border-color: rgba(46, 125, 50, 0.4);
+        }
+        .class-card-icon-btn.danger {
+            border-color: rgba(220, 53, 69, 0.25);
+            background: rgba(220, 53, 69, 0.08);
+            color: #dc3545;
+        }
+        .class-card-icon-btn.danger:hover {
+            background: rgba(220, 53, 69, 0.16);
+            border-color: rgba(220, 53, 69, 0.4);
+        }
         .course-details-toggle,
         .class-details-toggle {
             width: 100%;
@@ -1214,7 +1245,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                     });
                     function createSophisticatedClassCard(classData) {
                         return `
-                            <div class="class-card" data-name="${escapeHtml(classData.class_name)}" data-code="${escapeHtml(classData.class_code)}">
+                            <div class="class-card" data-class-id="${classData.class_id}" data-name="${escapeHtml(classData.class_name)}" data-code="${escapeHtml(classData.class_code)}" data-year-level="${classData.year_level}" data-semester="${escapeHtml(classData.semester)}" data-academic-year="${escapeHtml(classData.academic_year || '')}" data-total-students="${classData.total_students || 0}">
                                 <div class="class-card-content">
                                     <div class="class-card-default-content">
                                         <div class="class-header">
@@ -1222,8 +1253,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                                                 <div class="class-name">${escapeHtml(classData.class_name)}</div>
                                                 <div class="class-code">${escapeHtml(classData.class_code)}</div>
                                                 <div class="class-meta">
-                                                    Year ${classData.year_level} • ${escapeHtml(classData.semester)} Semester
+                                                    Year ${classData.year_level} • ${escapeHtml(classData.semester)} Semester • ${escapeHtml(classData.academic_year || '')}
                                                 </div>
+                                            </div>
+                                            <div class="class-card-action-icons">
+                                                <button class="class-card-icon-btn" type="button" title="Edit Class" onclick="event.stopPropagation(); openEditClassModal(${classData.class_id});">
+                                                    <svg class="feather feather-sm"><use href="#edit"></use></svg>
+                                                </button>
+                                                <button class="class-card-icon-btn danger" type="button" title="Delete Class" onclick="event.stopPropagation(); deleteClassFromCard(${classData.class_id});">
+                                                    <svg class="feather feather-sm"><use href="#trash-2"></use></svg>
+                                                </button>
                                             </div>
                                         </div>
                                         <div class="class-stats">

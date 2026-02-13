@@ -7,57 +7,66 @@ $role = $_SESSION['role'] ?? '';
             <h3 class="modal-title">Add New Faculty Member</h3>
             <button type="button" class="modal-close" onclick="closeModal('addFacultyModal')">&times;</button>
         </div>
-        <form id="addFacultyForm" data-action="add_faculty" data-tab="faculty" onsubmit="event.preventDefault(); submitGenericForm(this);" class="modal-form">
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Full Name *</label>
-                    <input type="text" name="full_name" class="form-input" required>
+        <form id="addFacultyForm" data-action="add_faculty" data-tab="faculty" data-paginated="true" onsubmit="event.preventDefault(); submitGenericForm(this);" class="modal-form paginated-form">
+            <div class="modal-page active" data-page="1">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Username *</label>
+                        <input type="text" name="username" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password *</label>
+                        <input type="password" name="password" class="form-input" required>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addFacultyModal')">Cancel</button>
+                    <button type="button" class="btn-primary modal-next-btn">Next</button>
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Username *</label>
-                    <input type="text" name="username" class="form-input" required>
+
+            <div class="modal-page" data-page="2" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" name="full_name" class="form-input" required>
+                    </div>
                 </div>
+                <?php if ($role === 'campus_director'): ?>
                 <div class="form-group">
-                    <label class="form-label">Password *</label>
-                    <input type="password" name="password" class="form-input" required>
+                    <label class="form-label">
+                        <input type="checkbox" name="is_program_chair" value="1" onchange="toggleProgramField(this)">
+                        Assign as Program Chair
+                    </label>
                 </div>
-            </div>
-            <?php if ($role === 'campus_director'): ?>
-            <div class="form-group">
-                <label class="form-label">
-                    <input type="checkbox" name="is_program_chair" value="1" onchange="toggleProgramField(this)">
-                    Assign as Program Chair
-                </label>
-            </div>
-            <div class="form-group" id="programField" style="display:none;">
-                <label class="form-label">Program *</label>
-                <select name="program" class="form-select">
-                    <option value="">Select Program</option>
-                    <?php if (isset($programs_data) && !empty($programs_data)): ?>
-                        <?php foreach ($programs_data as $program): ?>
-                            <option value="<?php echo htmlspecialchars($program['program_name']); ?>">
-                                <?php echo htmlspecialchars($program['program_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </select>
-            </div>
-            <?php endif; ?>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Contact Email</label>
-                    <input type="email" name="contact_email" class="form-input">
+                <div class="form-group" id="programField" style="display:none;">
+                    <label class="form-label">Program *</label>
+                    <select name="program" class="form-select">
+                        <option value="">Select Program</option>
+                        <?php if (isset($programs_data) && !empty($programs_data)): ?>
+                            <?php foreach ($programs_data as $program): ?>
+                                <option value="<?php echo htmlspecialchars($program['program_name']); ?>">
+                                    <?php echo htmlspecialchars($program['program_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Contact Phone</label>
-                    <input type="text" name="contact_phone" class="form-input">
+                <?php endif; ?>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Contact Email</label>
+                        <input type="email" name="contact_email" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contact Phone</label>
+                        <input type="text" name="contact_phone" class="form-input">
+                    </div>
                 </div>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-secondary" onclick="closeModal('addFacultyModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Add Faculty</button>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary modal-prev-btn">Back</button>
+                    <button type="submit" class="btn-primary">Add Faculty</button>
+                </div>
             </div>
         </form>
         <script>
@@ -151,68 +160,151 @@ $role = $_SESSION['role'] ?? '';
             <h3 class="modal-title">Add New Class</h3>
             <button type="button" class="modal-close" onclick="closeModal('addClassModal')">&times;</button>
         </div>
-        <form id="addClassForm" data-action="add_class" data-tab="classes" onsubmit="event.preventDefault(); submitGenericForm(this);" class="modal-form">
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Class Name *</label>
-                    <input type="text" name="class_name" class="form-input" required>
+        <form id="addClassForm" data-action="add_class" data-tab="classes" data-paginated="true" onsubmit="event.preventDefault(); submitGenericForm(this);" class="modal-form paginated-form">
+            <div class="modal-page active" data-page="1">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Class Account Username *</label>
+                        <input type="text" name="username" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Class Account Password *</label>
+                        <input type="password" name="password" class="form-input" required>
+                    </div>
                 </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addClassModal')">Cancel</button>
+                    <button type="button" class="btn-primary modal-next-btn">Next</button>
+                </div>
+            </div>
+
+            <div class="modal-page" data-page="2" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Class Name *</label>
+                        <input type="text" name="class_name" id="class_name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Year Level *</label>
+                        <select name="year_level" id="year_level" class="form-select" required>
+                            <option value="">Select Year</option>
+                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                <option value="<?= $i ?>"><?= $i ?><?= $i === 1 ? 'st' : ($i === 2 ? 'nd' : ($i === 3 ? 'rd' : 'th')) ?> Year</option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Class Code *</label>
+                        <input type="text" name="class_code" id="class_code" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Semester *</label>
+                        <select name="semester" class="form-select" required>
+                            <option value="">Select Semester</option>
+                            <option value="1st">1st Semester</option>
+                            <option value="2nd">2nd Semester</option>
+                            <option value="Summer">Summer</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Academic Year *</label>
+                        <input type="text" name="academic_year" id="academic_year" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Number of Students</label>
+                        <input type="number" name="total_students" class="form-input" min="0" value="0">
+                    </div>
+                </div>
+                <?php if ($role === 'campus_director'): ?>
                 <div class="form-group">
-                    <label class="form-label">Year Level *</label>
-                    <select name="year_level" class="form-select" required>
-                        <option value="">Select Year</option>
-                        <?php for ($i = 1; $i <= 5; $i++): ?>
-                            <option value="<?= $i ?>"><?= $i ?><?= $i === 1 ? 'st' : ($i === 2 ? 'nd' : ($i === 3 ? 'rd' : 'th')) ?> Year</option>
-                        <?php endfor; ?>
+                    <label class="form-label">Assign Program Chair</label>
+                    <select name="program_chair_id" class="form-select" id="programChairSelect">
+                        <option value="">Select Program Chair (Optional)</option>
                     </select>
                 </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Class Code *</label>
-                    <input type="text" name="class_code" class="form-input" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Semester *</label>
-                    <select name="semester" class="form-select" required>
-                        <option value="">Select Semester</option>
-                        <option value="1st">1st Semester</option>
-                        <option value="2nd">2nd Semester</option>
-                        <option value="summer">Summer</option>
-                    </select>
+                <?php endif; ?>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary modal-prev-btn">Back</button>
+                    <button type="submit" class="btn-primary">Add Class</button>
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Academic Year *</label>
-                    <input type="text" name="academic_year" class="form-input" required>
+        </form>
+    </div>
+</div>
+<div class="modal-overlay" id="editClassModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Edit Class</h3>
+            <button type="button" class="modal-close" onclick="closeModal('editClassModal')">&times;</button>
+        </div>
+        <form id="editClassForm" data-paginated="true" onsubmit="event.preventDefault(); submitClassEditForm(this);" class="modal-form paginated-form">
+            <input type="hidden" name="class_id" id="edit_class_id">
+            <div class="modal-page active" data-page="1">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Class Account Username *</label>
+                        <input type="text" name="username" id="edit_username" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Class Account Password</label>
+                        <input type="password" name="password" id="edit_password" class="form-input" placeholder="Leave blank to keep current password">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Number of Students</label>
-                    <input type="number" name="total_students" class="form-input" min="0" value="0">
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('editClassModal')">Cancel</button>
+                    <button type="button" class="btn-primary modal-next-btn">Next</button>
                 </div>
             </div>
-            <?php if ($role === 'campus_director'): ?>
-            <div class="form-group">
-                <label class="form-label">Assign Program Chair</label>
-                <select name="program_chair_id" class="form-select" id="programChairSelect">
-                    <option value="">Select Program Chair (Optional)</option>
-                </select>
-            </div>
-            <?php endif; ?>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Class Account Username *</label>
-                    <input type="text" name="username" class="form-input" required>
+
+            <div class="modal-page" data-page="2" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Class Name *</label>
+                        <input type="text" name="class_name" id="edit_class_name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Class Code *</label>
+                        <input type="text" name="class_code" id="edit_class_code" class="form-input" required>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Class Account Password *</label>
-                    <input type="password" name="password" class="form-input" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Year Level *</label>
+                        <select name="year_level" id="edit_year_level" class="form-select" required>
+                            <option value="">Select Year</option>
+                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                <option value="<?= $i ?>"><?= $i ?><?= $i === 1 ? 'st' : ($i === 2 ? 'nd' : ($i === 3 ? 'rd' : 'th')) ?> Year</option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Semester *</label>
+                        <select name="semester" id="edit_semester" class="form-select" required>
+                            <option value="">Select Semester</option>
+                            <option value="1st">1st Semester</option>
+                            <option value="2nd">2nd Semester</option>
+                            <option value="Summer">Summer</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-secondary" onclick="closeModal('addClassModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Add Class</button>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Academic Year *</label>
+                        <input type="text" name="academic_year" id="edit_academic_year" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Number of Students</label>
+                        <input type="number" name="total_students" id="edit_total_students" class="form-input" min="0" value="0">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary modal-prev-btn">Back</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
             </div>
         </form>
     </div>

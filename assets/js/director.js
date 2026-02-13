@@ -142,6 +142,11 @@ async function loadDeanAssignments() {
             const programLabel = programCount === 1 ? 'program' : 'programs';
             const programRows = programs.map(program => {
                 const options = buildDeanOptions(deanCandidates, program.dean_faculty_id);
+                const hasAssignedDean = !!program.dean_faculty_id;
+                const selectVisibilityClass = hasAssignedDean ? 'dean-select-hidden' : '';
+                const buttonMode = hasAssignedDean ? 'reveal' : 'save';
+                const buttonLabel = hasAssignedDean ? 'Assign' : 'Update';
+                const buttonTitle = hasAssignedDean ? 'Reveal dean selector' : 'Update dean assignment';
                 return `
                     <div class="dean-program-item" data-program-id="${program.program_id}">
                         <div class="dean-program-meta">
@@ -149,11 +154,11 @@ async function loadDeanAssignments() {
                             <div class="dean-program-code">${escapeHtml(program.program_code)}</div>
                         </div>
                         <div class="dean-program-actions">
-                            <select class="form-select dean-select" data-program-id="${program.program_id}">
+                            <select class="form-select dean-select ${selectVisibilityClass}" data-program-id="${program.program_id}">
                                 ${options}
                             </select>
-                            <button class="action-btn edit-btn" onclick="event.stopPropagation(); updateProgramDean(${program.program_id})" title="Assign Dean">
-                                <svg class="feather feather-sm"><use href="#edit"></use></svg> Assign
+                            <button class="action-btn edit-btn dean-assign-btn" data-mode="${buttonMode}" onclick="event.stopPropagation(); toggleProgramDeanEditor(${program.program_id}, this)" title="${buttonTitle}">
+                                <svg class="feather feather-sm"><use href="#edit"></use></svg> ${buttonLabel}
                             </button>
                         </div>
                     </div>
@@ -195,7 +200,22 @@ function buildDeanOptions(candidates, selectedId) {
     });
     return options.join('');
 }
-async function updateProgramDean(programId) {
+function toggleProgramDeanEditor(programId, button) {
+    const select = document.querySelector(`.dean-select[data-program-id="${programId}"]`);
+    if (!select || !button) return;
+    const mode = button.dataset.mode || 'save';
+
+    if (mode === 'reveal') {
+        select.classList.remove('dean-select-hidden');
+        button.dataset.mode = 'save';
+        button.title = 'Update dean assignment';
+        button.innerHTML = '<svg class="feather feather-sm"><use href="#check"></use></svg> Update';
+        return;
+    }
+
+    updateProgramDean(programId, button);
+}
+async function updateProgramDean(programId, button = null) {
     const select = document.querySelector(`.dean-select[data-program-id="${programId}"]`);
     if (!select) return;
     const deanFacultyId = select.value;
@@ -211,7 +231,22 @@ async function updateProgramDean(programId) {
         const result = await response.json();
         if (result.success) {
             showNotification(result.message || 'Dean assignment updated', 'success');
-            loadDeanAssignments();
+            const shouldHide = !!deanFacultyId;
+            if (shouldHide) {
+                select.classList.add('dean-select-hidden');
+                if (button) {
+                    button.dataset.mode = 'reveal';
+                    button.title = 'Reveal dean selector';
+                    button.innerHTML = '<svg class="feather feather-sm"><use href="#edit"></use></svg> Assign';
+                }
+            } else {
+                select.classList.remove('dean-select-hidden');
+                if (button) {
+                    button.dataset.mode = 'save';
+                    button.title = 'Update dean assignment';
+                    button.innerHTML = '<svg class="feather feather-sm"><use href="#check"></use></svg> Update';
+                }
+            }
         } else {
             showNotification(`Error: ${result.message || 'Failed to update dean'}`, 'error');
         }

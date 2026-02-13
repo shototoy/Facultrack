@@ -4,11 +4,45 @@ function openModal(modalId) {
     if (modal) {
         modal.classList.add('show');
         document.body.style.overflow = 'hidden';
+        resetPaginatedModal(modal);
     }
 }
 function closeModal() {
     document.querySelectorAll('.modal-overlay.show').forEach(modal => modal.classList.remove('show'));
     document.body.style.overflow = '';
+}
+function resetPaginatedModal(modal) {
+    if (!modal) return;
+    const forms = modal.querySelectorAll('form[data-paginated="true"]');
+    forms.forEach(form => {
+        const pages = form.querySelectorAll('.modal-page');
+        pages.forEach((page, index) => {
+            const isFirstPage = index === 0;
+            page.classList.toggle('active', isFirstPage);
+            page.style.display = isFirstPage ? '' : 'none';
+        });
+    });
+}
+function validateCurrentModalPage(form) {
+    const currentPage = form.querySelector('.modal-page.active');
+    if (!currentPage) return true;
+    const requiredFields = currentPage.querySelectorAll('input[required], select[required], textarea[required]');
+    for (const field of requiredFields) {
+        if (!field.checkValidity()) {
+            field.reportValidity();
+            return false;
+        }
+    }
+    return true;
+}
+function goToModalPage(form, pageIndex) {
+    const pages = Array.from(form.querySelectorAll('.modal-page'));
+    if (pages.length === 0 || pageIndex < 0 || pageIndex >= pages.length) return;
+    pages.forEach((page, index) => {
+        const isActive = index === pageIndex;
+        page.classList.toggle('active', isActive);
+        page.style.display = isActive ? '' : 'none';
+    });
 }
 function submitGenericForm(formElement) {
     const action = formElement.dataset.action;
@@ -86,6 +120,7 @@ function setupAcademicYear() {
 document.addEventListener('DOMContentLoaded', () => {
     setupClassCodeGeneration();
     setupAcademicYear();
+    document.querySelectorAll('.modal-overlay').forEach(modal => resetPaginatedModal(modal));
     document.querySelectorAll('button[type="submit"]').forEach(btn => {
         btn.dataset.originalText = btn.innerHTML;
     });
@@ -100,6 +135,28 @@ document.addEventListener('keydown', e => {
     }
 });
 document.addEventListener('click', function(e) {
+    const nextBtn = e.target.closest('.modal-next-btn');
+    if (nextBtn) {
+        const form = nextBtn.closest('form');
+        if (form && validateCurrentModalPage(form)) {
+            const pages = Array.from(form.querySelectorAll('.modal-page'));
+            const currentIndex = pages.findIndex(page => page.classList.contains('active'));
+            goToModalPage(form, currentIndex + 1);
+        }
+        return;
+    }
+
+    const prevBtn = e.target.closest('.modal-prev-btn');
+    if (prevBtn) {
+        const form = prevBtn.closest('form');
+        if (form) {
+            const pages = Array.from(form.querySelectorAll('.modal-page'));
+            const currentIndex = pages.findIndex(page => page.classList.contains('active'));
+            goToModalPage(form, currentIndex - 1);
+        }
+        return;
+    }
+
     const modalId =
         e.target.closest('button[data-modal]')?.dataset.modal ||
         e.target.closest('.add-card[data-modal]')?.dataset.modal;

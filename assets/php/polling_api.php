@@ -467,6 +467,7 @@ switch ($action) {
     case 'add_class':
     case 'add_announcement':
     case 'add_program':
+    case 'update_class':
     case 'delete_course':
     case 'delete_faculty':
     case 'delete_class':
@@ -511,9 +512,19 @@ switch ($action) {
                 break;
             }
             try {
+                if ($user_role !== 'campus_director' && $user_role !== 'program_chair') {
+                    sendJsonResponse(['success' => false, 'message' => 'Unauthorized']);
+                    break;
+                }
                 $pdo->beginTransaction();
-                $stmt = $pdo->prepare("SELECT user_id FROM classes WHERE class_id = ?");
-                $stmt->execute([$class_id]);
+                $class_lookup_query = "SELECT user_id FROM classes WHERE class_id = ?";
+                $class_lookup_params = [$class_id];
+                if ($user_role === 'program_chair') {
+                    $class_lookup_query .= " AND program_chair_id = ?";
+                    $class_lookup_params[] = $user_id;
+                }
+                $stmt = $pdo->prepare($class_lookup_query);
+                $stmt->execute($class_lookup_params);
                 $class_data = $stmt->fetch(PDO::FETCH_ASSOC);
                 if (!$class_data) {
                     sendJsonResponse(['success' => false, 'message' => 'Class not found']);
@@ -530,6 +541,102 @@ switch ($action) {
             } catch (Exception $e) {
                 if (isset($pdo)) {
                     $pdo->rollback();
+                }
+                sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+        } elseif ($action === 'update_class') {
+            $class_id = (int)($_POST['class_id'] ?? 0);
+            $class_name = trim($_POST['class_name'] ?? '');
+            $class_code = trim($_POST['class_code'] ?? '');
+            $year_level = (int)($_POST['year_level'] ?? 0);
+            $semester = trim($_POST['semester'] ?? '');
+            $academic_year = trim($_POST['academic_year'] ?? '');
+            $total_students = max(0, (int)($_POST['total_students'] ?? 0));
+            $username = trim($_POST['username'] ?? '');
+            $password = trim($_POST['password'] ?? '');
+
+            if ($class_id <= 0 || $class_name === '' || $class_code === '' || $year_level <= 0 || $semester === '' || $academic_year === '' || $username === '') {
+                sendJsonResponse(['success' => false, 'message' => 'Missing required class fields']);
+                break;
+            }
+
+            if (!in_array($semester, ['1st', '2nd', 'Summer'], true)) {
+                sendJsonResponse(['success' => false, 'message' => 'Invalid semester value']);
+                break;
+            }
+
+            if ($user_role !== 'campus_director' && $user_role !== 'program_chair') {
+                sendJsonResponse(['success' => false, 'message' => 'Unauthorized']);
+                break;
+            }
+
+            try {
+                $scope_query = "SELECT class_id, user_id FROM classes WHERE class_id = ?";
+                $scope_params = [$class_id];
+                if ($user_role === 'program_chair') {
+                    $scope_query .= " AND program_chair_id = ?";
+                    $scope_params[] = $user_id;
+                }
+
+                $stmt = $pdo->prepare($scope_query);
+                $stmt->execute($scope_params);
+                $class_row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if (!$class_row) {
+                    sendJsonResponse(['success' => false, 'message' => 'Class not found or out of scope']);
+                    break;
+                }
+
+                $duplicate_stmt = $pdo->prepare("SELECT 1 FROM classes WHERE class_code = ? AND class_id != ? LIMIT 1");
+                $duplicate_stmt->execute([$class_code, $class_id]);
+                if ($duplicate_stmt->fetch()) {
+                    sendJsonResponse(['success' => false, 'message' => 'Class code already exists']);
+                    break;
+                }
+
+                $class_user_id = (int)($class_row['user_id'] ?? 0);
+                if ($class_user_id <= 0) {
+                    sendJsonResponse(['success' => false, 'message' => 'Class account not found']);
+                    break;
+                }
+
+                $username_stmt = $pdo->prepare("SELECT 1 FROM users WHERE username = ? AND user_id != ? LIMIT 1");
+                $username_stmt->execute([$username, $class_user_id]);
+                if ($username_stmt->fetch()) {
+                    sendJsonResponse(['success' => false, 'message' => 'Username already exists']);
+                    break;
+                }
+
+                $pdo->beginTransaction();
+
+                $update_class_query = "UPDATE classes
+                                       SET class_name = ?, class_code = ?, year_level = ?, semester = ?, academic_year = ?, total_students = ?
+                                       WHERE class_id = ?";
+                $stmt = $pdo->prepare($update_class_query);
+                $stmt->execute([$class_name, $class_code, $year_level, $semester, $academic_year, $total_students, $class_id]);
+
+                $update_user_query = "UPDATE users SET full_name = ?, username = ?";
+                $update_user_params = [$class_name . ' Class Account', $username];
+                if ($password !== '') {
+                    $update_user_query .= ", password = ?";
+                    $update_user_params[] = $password;
+                }
+                $update_user_query .= " WHERE user_id = ?";
+                $update_user_params[] = $class_user_id;
+                $stmt = $pdo->prepare($update_user_query);
+                $stmt->execute($update_user_params);
+
+                $pdo->commit();
+
+                $updated_record = fetchAddedRecord($pdo, 'update_class', $class_id);
+                if (!empty($updated_record['success'])) {
+                    $updated_record['message'] = 'Class updated successfully';
+                    sendJsonResponse($updated_record);
+                }
+
+                sendJsonResponse(['success' => true, 'message' => 'Class updated successfully']);
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
                 }
                 sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
@@ -682,11 +789,17 @@ switch ($action) {
                     $new_user_id = null;
                     if (isset($c['user'])) {
                         $role = is_callable($c['user']['role']) ? $c['user']['role']($_POST) : $c['user']['role'];
+                        $user_full_name = $role === 'class'
+                            ? trim(($_POST['class_name'] ?? 'Class') . ' Class Account')
+                            : trim($_POST['full_name'] ?? '');
+                        if ($user_full_name === '') {
+                            throw new Exception('Full name is required');
+                        }
                         $stmt = $pdo->prepare("INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)");
                         $stmt->execute([
                             $_POST['username'],
                             $_POST['password'],
-                            $_POST['full_name'] . ($role === 'class' ? ' Class Account' : ''),
+                            $user_full_name,
                             $role
                         ]);
                         $new_user_id = $pdo->lastInsertId();
@@ -728,6 +841,15 @@ switch ($action) {
                         if (!$unique) throw new Exception("Failed to generate unique Employee ID");
                     }
                     if ($action === 'add_class') {
+                        $semester_value = trim($_POST['semester'] ?? '');
+                        if (strtolower($semester_value) === 'summer') {
+                            $semester_value = 'Summer';
+                        }
+                        if (!in_array($semester_value, ['1st', '2nd', 'Summer'], true)) {
+                            throw new Exception('Invalid semester value');
+                        }
+                        $insert_data['semester'] = $semester_value;
+                        $insert_data['total_students'] = max(0, (int)($_POST['total_students'] ?? 0));
                         if ($user_role === 'program_chair') {
                             $insert_data['program_chair_id'] = $user_id;
                         } else {
@@ -739,7 +861,7 @@ switch ($action) {
                     }
                     if ($action === 'add_course') {
                         if ($user_role === 'program_chair') {
-                            $stmt = $pdo->prepare("\n+                                SELECT p.program_id\n+                                FROM faculty f\n+                                JOIN programs p ON p.program_name = f.program AND p.is_active = TRUE\n+                                WHERE f.user_id = ? AND f.is_active = TRUE\n+                                LIMIT 1\n+                            ");
+                            $stmt = $pdo->prepare("\n                                SELECT p.program_id\n                                FROM faculty f\n                                JOIN programs p ON p.program_name = f.program AND p.is_active = TRUE\n                                WHERE f.user_id = ? AND f.is_active = TRUE\n                                LIMIT 1\n                            ");
                             $stmt->execute([$user_id]);
                             $program_id = $stmt->fetchColumn();
                             if (!$program_id) {
@@ -765,6 +887,10 @@ switch ($action) {
                                 $insert_data[$field] = $_POST['target_audience'] ?? 'all';
                             }
                         } elseif ($field === 'program' && $action === 'add_faculty' && isset($insert_data['program'])) {
+                            continue;
+                        } elseif ($action === 'add_class' && $field === 'semester' && isset($insert_data['semester'])) {
+                            continue;
+                        } elseif ($action === 'add_class' && $field === 'total_students' && isset($insert_data['total_students'])) {
                             continue;
                         } else {
                             $insert_data[$field] = $_POST[$field] ?? null;
@@ -1590,7 +1716,7 @@ switch ($action) {
             }
 
             if (!$semester || !$academic_year) {
-                $period_stmt = $pdo->prepare("\n+                    SELECT s.semester, s.academic_year\n+                    FROM schedules s\n+                    WHERE s.faculty_id = ? AND s.is_active = TRUE\n+                    ORDER BY s.updated_at DESC, s.schedule_id DESC\n+                    LIMIT 1\n+                ");
+                $period_stmt = $pdo->prepare("\n                    SELECT s.semester, s.academic_year\n                    FROM schedules s\n                    WHERE s.faculty_id = ? AND s.is_active = TRUE\n                    ORDER BY s.updated_at DESC, s.schedule_id DESC\n                    LIMIT 1\n                ");
                 $period_stmt->execute([$faculty_id]);
                 $period_row = $period_stmt->fetch(PDO::FETCH_ASSOC) ?: [];
                 $semester = $semester ?: ($period_row['semester'] ?? null);
@@ -1804,6 +1930,43 @@ switch ($action) {
             if (isset($pdo)) {
                 $pdo->rollback();
             }
+            sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+        break;
+    case 'get_class_details':
+        if (!in_array($_SESSION['role'], ['campus_director', 'program_chair'], true)) {
+            sendJsonResponse(['success' => false, 'message' => 'Unauthorized']);
+            break;
+        }
+        try {
+            $class_id = (int)($_GET['class_id'] ?? 0);
+            if ($class_id <= 0) {
+                sendJsonResponse(['success' => false, 'message' => 'Class ID required']);
+                break;
+            }
+
+            $query = "SELECT c.class_id, c.class_name, c.class_code, c.year_level, c.semester, c.academic_year,
+                             c.total_students, c.program_chair_id, c.user_id, u.username
+                      FROM classes c
+                      JOIN users u ON c.user_id = u.user_id
+                      WHERE c.class_id = ?";
+            $params = [$class_id];
+
+            if ($_SESSION['role'] === 'program_chair') {
+                $query .= " AND c.program_chair_id = ?";
+                $params[] = (int)$_SESSION['user_id'];
+            }
+
+            $stmt = $pdo->prepare($query);
+            $stmt->execute($params);
+            $class_data = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$class_data) {
+                sendJsonResponse(['success' => false, 'message' => 'Class not found']);
+                break;
+            }
+
+            sendJsonResponse(['success' => true, 'data' => $class_data]);
+        } catch (Exception $e) {
             sendJsonResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
@@ -2109,10 +2272,13 @@ function fetchAddedRecord($pdo, $action, $id) {
             ");
             break;
         case 'add_class':
+        case 'update_class':
             $stmt = $pdo->prepare("
                 SELECT c.class_id, c.class_code, c.class_name, c.year_level, c.semester, c.academic_year,
                        u.full_name as program_chair_name,
-                       COUNT(s.schedule_id) as total_subjects
+                       COUNT(DISTINCT s.course_code) as total_subjects,
+                       COUNT(DISTINCT s.faculty_id) as assigned_faculty,
+                       c.total_students
                 FROM classes c
                 LEFT JOIN faculty f ON c.program_chair_id = f.user_id
                 LEFT JOIN users u ON f.user_id = u.user_id
@@ -2154,9 +2320,9 @@ function fetchAddedRecord($pdo, $action, $id) {
     return [
         'success' => true,
         'data' => $record,
-        'message' => ucfirst(str_replace('add_', '', $action)) . ' added successfully',
-        'action' => 'add',
-        'entity_type' => str_replace('add_', '', $action),
+        'message' => $action === 'update_class' ? 'Class updated successfully' : ucfirst(str_replace('add_', '', $action)) . ' added successfully',
+        'action' => $action === 'update_class' ? 'update' : 'add',
+        'entity_type' => str_replace(['add_', 'update_'], '', $action),
         'entity_id' => $id
     ];
 }

@@ -2465,9 +2465,31 @@ function loadCourseAssignments(courseCode, overlay) {
         });
 }
 function addNewRowToTable(type, data) {
-    if (data) {
-        setTimeout(() => {
-        }, 1000);
+    if (!data) return;
+    const normalizedType = type === 'courses' || type === 'classes' || type === 'faculty' ? type : null;
+    if (!normalizedType) return;
+    if (window.livePolling && typeof window.livePolling.addToCards === 'function') {
+        window.livePolling.addToCards(normalizedType, data);
+        if (window.livePolling.previousData) {
+            const key = `${normalizedType}_data`;
+            if (!Array.isArray(window.livePolling.previousData[key])) {
+                window.livePolling.previousData[key] = [];
+            }
+            const idFieldMap = {
+                faculty: 'faculty_id',
+                classes: 'class_id',
+                courses: 'course_id'
+            };
+            const idField = idFieldMap[normalizedType];
+            const existingIndex = window.livePolling.previousData[key].findIndex(item =>
+                String(item?.[idField]) === String(data?.[idField])
+            );
+            if (existingIndex >= 0) {
+                window.livePolling.previousData[key][existingIndex] = data;
+            } else {
+                window.livePolling.previousData[key].push(data);
+            }
+        }
     }
 }
 function updateStatistics() {
@@ -2756,5 +2778,154 @@ function deleteAssignment() {
         return;
     }
     executeDelete();
+}
+
+function openEditClassModal(classId) {
+    fetch(`assets/php/polling_api.php?action=get_class_details&class_id=${encodeURIComponent(classId)}`)
+        .then(response => response.json())
+        .then(result => {
+            if (!result.success || !result.data) {
+                showNotification(result.message || 'Failed to load class details', 'error');
+                return;
+            }
+
+            const classData = result.data;
+            document.getElementById('edit_class_id').value = classData.class_id || classId;
+            document.getElementById('edit_username').value = classData.username || '';
+            document.getElementById('edit_password').value = '';
+            document.getElementById('edit_class_name').value = classData.class_name || '';
+            document.getElementById('edit_class_code').value = classData.class_code || '';
+            document.getElementById('edit_year_level').value = classData.year_level || '';
+            document.getElementById('edit_semester').value = classData.semester || '';
+            document.getElementById('edit_academic_year').value = classData.academic_year || '';
+            document.getElementById('edit_total_students').value = classData.total_students || '0';
+            openModal('editClassModal');
+        })
+        .catch(error => {
+            console.error('Error loading class details:', error);
+            showNotification('Failed to load class details', 'error');
+        });
+}
+
+function submitClassEditForm(formElement) {
+    const formData = new FormData(formElement);
+    formData.append('action', 'update_class');
+
+    fetch('assets/php/polling_api.php', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => response.json())
+        .then(result => {
+            if (!result.success) {
+                showNotification(result.message || 'Failed to update class', 'error');
+                return;
+            }
+
+            const updatedClass = result.data || null;
+            if (updatedClass) {
+                replaceClassCard(updatedClass);
+                syncClassDataState(updatedClass);
+            }
+
+            closeModal('editClassModal');
+            showNotification(result.message || 'Class updated successfully', 'success');
+        })
+        .catch(error => {
+            console.error('Update class error:', error);
+            showNotification('An error occurred while updating class', 'error');
+        });
+}
+
+function deleteClassFromCard(classId) {
+    const executeDelete = () => {
+        const formData = new FormData();
+        formData.append('action', 'delete_class');
+        formData.append('class_id', classId);
+
+        fetch('assets/php/polling_api.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (!result.success) {
+                    showNotification(result.message || 'Failed to delete class', 'error');
+                    return;
+                }
+
+                const card = document.querySelector(`.class-card[data-class-id="${classId}"]`);
+                if (card) {
+                    card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.92)';
+                    setTimeout(() => card.remove(), 300);
+                }
+
+                if (window.livePolling?.previousData?.classes_data) {
+                    window.livePolling.previousData.classes_data = window.livePolling.previousData.classes_data
+                        .filter(item => String(item.class_id) !== String(classId));
+                }
+                if (Array.isArray(window.classesData)) {
+                    window.classesData = window.classesData.filter(item => String(item.class_id) !== String(classId));
+                }
+                if (window.livePolling && typeof window.livePolling.updateCounts === 'function') {
+                    window.livePolling.updateCounts('classes', -1);
+                }
+
+                showNotification(result.message || 'Class deleted successfully', 'success');
+            })
+            .catch(error => {
+                console.error('Delete class error:', error);
+                showNotification('An error occurred while deleting class', 'error');
+            });
+    };
+
+    if (typeof confirmAction === 'function') {
+        confirmAction('Delete Class', 'Are you sure you want to delete this class?', executeDelete);
+        return;
+    }
+    executeDelete();
+}
+
+function replaceClassCard(classData) {
+    const existingCard = document.querySelector(`.class-card[data-class-id="${classData.class_id}"]`);
+    if (!existingCard) {
+        if (window.livePolling && typeof window.livePolling.addToCards === 'function') {
+            window.livePolling.addToCards('classes', classData);
+        }
+        return;
+    }
+
+    if (window.livePolling && typeof window.livePolling.createClassCard === 'function') {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = window.livePolling.createClassCard(classData).trim();
+        const newCard = wrapper.firstElementChild;
+        if (newCard) {
+            existingCard.replaceWith(newCard);
+        }
+    }
+}
+
+function syncClassDataState(classData) {
+    if (window.livePolling?.previousData?.classes_data) {
+        const index = window.livePolling.previousData.classes_data.findIndex(item =>
+            String(item.class_id) === String(classData.class_id)
+        );
+        if (index >= 0) {
+            window.livePolling.previousData.classes_data[index] = classData;
+        } else {
+            window.livePolling.previousData.classes_data.push(classData);
+        }
+    }
+
+    if (Array.isArray(window.classesData)) {
+        const index = window.classesData.findIndex(item =>
+            String(item.class_id) === String(classData.class_id)
+        );
+        if (index >= 0) {
+            window.classesData[index] = classData;
+        }
+    }
 }
 

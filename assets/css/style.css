@@ -3858,6 +3858,10 @@ body:has(.faculty-grid) .tab-content.active,
     min-width: 180px;
 }
 
+.dean-program-actions .dean-select-hidden {
+    display: none;
+}
+
 @media (max-width: 768px) {
     .dean-program-item {
         flex-direction: column;

@@ -802,15 +802,15 @@ class LivePollingManager {
             }
         } else if (this.pageType === 'program') {
             if (data.faculty_data) {
-                this.handleDeletions(this.previousData.faculty_data, data.faculty_data, 'faculty');
+                this.syncProgramCards('faculty', data.faculty_data);
                 this.previousData.faculty_data = [...data.faculty_data];
             }
             if (data.classes_data) {
-                this.handleDeletions(this.previousData.classes_data, data.classes_data, 'classes');
+                this.syncProgramCards('classes', data.classes_data);
                 this.previousData.classes_data = [...data.classes_data];
             }
             if (data.courses_data) {
-                this.handleDeletions(this.previousData.courses_data, data.courses_data, 'courses');
+                this.syncProgramCards('courses', data.courses_data);
                 this.previousData.courses_data = [...data.courses_data];
             }
         }
@@ -967,6 +967,84 @@ class LivePollingManager {
                 this.removeEntityFromUI(entityType, id);
             });
         }
+    }
+    syncProgramCards(entityType, newData) {
+        if (this.pageType !== 'program' || !Array.isArray(newData)) return;
+        const previousKey = `${entityType}_data`;
+        const oldData = Array.isArray(this.previousData?.[previousKey]) ? this.previousData[previousKey] : [];
+        const oldMap = new Map();
+        oldData.forEach(item => {
+            const key = this.getProgramEntityKey(entityType, item);
+            if (key) oldMap.set(key, item);
+        });
+        const newMap = new Map();
+        newData.forEach(item => {
+            const key = this.getProgramEntityKey(entityType, item);
+            if (key) newMap.set(key, item);
+        });
+
+        oldMap.forEach((oldItem, key) => {
+            if (!newMap.has(key)) {
+                this.removeProgramEntityFromUI(entityType, oldItem);
+            }
+        });
+
+        newMap.forEach((item, key) => {
+            const existingCard = this.findProgramCard(entityType, item);
+            if (!existingCard) {
+                this.addToCards(entityType, item);
+                return;
+            }
+            const oldItem = oldMap.get(key);
+            if (!oldItem || JSON.stringify(oldItem) !== JSON.stringify(item)) {
+                const replacementHtml = this.createCard(item, entityType);
+                if (replacementHtml) {
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = replacementHtml.trim();
+                    const replacementCard = wrapper.firstElementChild;
+                    if (replacementCard) {
+                        existingCard.replaceWith(replacementCard);
+                    }
+                }
+            }
+        });
+    }
+    getProgramEntityKey(entityType, entity) {
+        if (!entity) return null;
+        if (entityType === 'faculty') {
+            return entity.faculty_id ? `id:${entity.faculty_id}` : (entity.full_name ? `name:${entity.full_name}` : null);
+        }
+        if (entityType === 'courses') {
+            return entity.course_id ? `id:${entity.course_id}` : (entity.course_code ? `code:${entity.course_code}` : null);
+        }
+        if (entityType === 'classes') {
+            return entity.class_id ? `id:${entity.class_id}` : (entity.class_code ? `code:${entity.class_code}` : null);
+        }
+        return null;
+    }
+    findProgramCard(entityType, entity) {
+        if (this.pageType !== 'program' || !entity) return null;
+        if (entityType === 'faculty') {
+            return document.querySelector(`.faculty-card[data-faculty-id="${entity.faculty_id}"]`) ||
+                (entity.full_name ? document.querySelector(`.faculty-card[data-name="${escapeHtml(entity.full_name)}"]`) : null);
+        }
+        if (entityType === 'courses') {
+            return document.querySelector(`.course-card[data-course-id="${entity.course_id}"]`) ||
+                (entity.course_code ? document.querySelector(`.course-card[data-course="${escapeHtml(entity.course_code)}"]`) : null);
+        }
+        if (entityType === 'classes') {
+            return document.querySelector(`.class-card[data-class-id="${entity.class_id}"]`) ||
+                (entity.class_code ? document.querySelector(`.class-card[data-code="${escapeHtml(entity.class_code)}"]`) : null);
+        }
+        return null;
+    }
+    removeProgramEntityFromUI(entityType, entity) {
+        const card = this.findProgramCard(entityType, entity);
+        if (!card) return;
+        card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        setTimeout(() => card.remove(), 300);
     }
     getIdField(entityType) {
         const mapping = {
@@ -1233,8 +1311,14 @@ class LivePollingManager {
                 break;
         }
         if (newCard) {
-            cardContainer.insertAdjacentHTML('afterbegin', newCard);
-            const insertedCard = cardContainer.firstElementChild;
+            const addCard = cardContainer.querySelector('.add-card');
+            if (addCard) {
+                addCard.insertAdjacentHTML('afterend', newCard);
+            } else {
+                cardContainer.insertAdjacentHTML('beforeend', newCard);
+            }
+            const insertedCard = addCard ? addCard.nextElementSibling : cardContainer.lastElementChild;
+            if (!insertedCard) return;
             insertedCard.style.opacity = '0';
             insertedCard.style.transform = 'scale(0.9)';
             insertedCard.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
@@ -1273,7 +1357,7 @@ class LivePollingManager {
         const nameParts = (faculty.full_name || '').split(' ');
         const initials = nameParts.map(part => part.charAt(0)).join('').substring(0, 2);
         return `
-            <div class="faculty-card" data-name="${escapeHtml(faculty.full_name)}" ${!isProgram ? `data-faculty-id="${faculty.faculty_id}"` : ''}>
+            <div class="faculty-card" data-name="${escapeHtml(faculty.full_name)}" data-faculty-id="${faculty.faculty_id}">
                 <div class="faculty-avatar">${initials}</div>
                 <div class="faculty-name">${escapeHtml(faculty.full_name)}</div>
                 <div class="location-info">
@@ -1303,7 +1387,7 @@ class LivePollingManager {
     }
     createClassCard(classData) {
         return `
-            <div class="class-card" data-name="${escapeHtml(classData.class_name)}" data-code="${escapeHtml(classData.class_code)}">
+            <div class="class-card" data-class-id="${classData.class_id}" data-name="${escapeHtml(classData.class_name)}" data-code="${escapeHtml(classData.class_code)}" data-year-level="${classData.year_level}" data-semester="${escapeHtml(classData.semester)}" data-academic-year="${escapeHtml(classData.academic_year || '')}" data-total-students="${classData.total_students || 0}">
                 <div class="class-card-content">
                     <div class="class-card-default-content">
                         <div class="class-header">
@@ -1314,6 +1398,14 @@ class LivePollingManager {
                                     Year ${classData.year_level} • ${escapeHtml(classData.semester)} Semester • ${escapeHtml(classData.academic_year)}
                                 </div>
                             </div>
+                            <div class="class-card-action-icons">
+                                <button class="class-card-icon-btn" type="button" title="Edit Class" onclick="event.stopPropagation(); openEditClassModal(${classData.class_id});">
+                                    <svg class="feather feather-sm"><use href="#edit"></use></svg>
+                                </button>
+                                <button class="class-card-icon-btn danger" type="button" title="Delete Class" onclick="event.stopPropagation(); deleteClassFromCard(${classData.class_id});">
+                                    <svg class="feather feather-sm"><use href="#trash-2"></use></svg>
+                                </button>
+                            </div>
                         </div>
                         <div class="class-stats">
                             <div class="class-stat">
@@ -1323,6 +1415,10 @@ class LivePollingManager {
                             <div class="class-stat">
                                 <div class="class-stat-number">${classData.assigned_faculty || 0}</div>
                                 <div class="class-stat-label">Faculty</div>
+                            </div>
+                            <div class="class-stat">
+                                <div class="class-stat-number">${classData.total_students || 0}</div>
+                                <div class="class-stat-label">Students</div>
                             </div>
                         </div>
                     </div>
