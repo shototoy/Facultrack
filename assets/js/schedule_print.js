@@ -2,11 +2,14 @@ function printFacultySchedule(facultyId) {
     const facultyName = facultyNames[facultyId] || 'Unknown Faculty';
     const deanName = (window.facultyDeanNames && window.facultyDeanNames[facultyId]) || 'Dean';
     const directorName = window.campusDirectorName || 'Campus Director';
+    const period = (window.facultyPrintPeriods && window.facultyPrintPeriods[facultyId]) || {};
+    const semester = period.semester || '1st';
+    const academicYear = period.academic_year || '2025-2026';
     const schedules = facultySchedules[facultyId] || [];
     const { mwfSchedules, tthSchedules } = separateSchedulesByType(schedules);
     const summary = calculateSummaryData(schedules);
     const printWindow = window.open('', '_blank', 'width=1200,height=800');
-    printWindow.document.write(generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, deanName, directorName));
+    printWindow.document.write(generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, deanName, directorName, semester, academicYear));
     printWindow.document.close();
     printWindow.onload = () => {
         setTimeout(() => printWindow.print(), 500);
@@ -217,9 +220,18 @@ function calculateRowspan(startTime, endTime, scheduleType) {
     const slotDuration = scheduleType === 'MWF' ? 1 : 1.5;
     return Math.ceil(durationHours / slotDuration);
 }
-function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, deanName, directorName) {
+function formatSemesterLabel(semester) {
+    const value = String(semester || '').trim().toLowerCase();
+    if (value === '1st' || value === 'first') return 'First Semester';
+    if (value === '2nd' || value === 'second') return 'Second Semester';
+    if (value === 'summer') return 'Summer';
+    return semester || 'Semester';
+}
+function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, deanName, directorName, semester, academicYear) {
     const safeDeanName = deanName || 'Dean';
     const safeDirectorName = directorName || 'Campus Director';
+    const semesterLabel = formatSemesterLabel(semester);
+    const ayLabel = academicYear || '2025-2026';
     return `
 <!DOCTYPE html>
 <html>
@@ -401,7 +413,7 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, dea
                 <h2>SULTAN KUDARAT STATE UNIVERSITY</h2>
                 <h3>ACCESS Campus, EJC Montilla, Tacurong City</h3>
                 <h3>INDIVIDUAL FACULTY TIME AND LOCATION</h3>
-                <p>First Semester, AY 2022-2023</p>
+                <p>${semesterLabel}, AY ${ayLabel}</p>
             </div>
             <img src="assets/images/logo2.png" alt="ACCESS Logo" class="logo" onerror="this.style.display='none'">
         </div>

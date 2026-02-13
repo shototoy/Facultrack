@@ -556,6 +556,7 @@ document.addEventListener('DOMContentLoaded', function () {
 window.facultyNames = {};
 window.facultySchedules = {};
 window.facultyDeanNames = {};
+window.facultyPrintPeriods = {};
 let currentIFTLFacultyId = null;
 async function openIFTLModal(facultyId, facultyName) {
     window.facultyNames[facultyId] = facultyName;
@@ -632,6 +633,10 @@ async function printIFTLForWeekBtn(weekIdentifier) {
             if (result.dean_name) {
                 window.facultyDeanNames[currentIFTLFacultyId] = result.dean_name;
             }
+            window.facultyPrintPeriods[currentIFTLFacultyId] = {
+                semester: result.semester || null,
+                academic_year: result.academic_year || null
+            };
             if (typeof printFacultySchedule === 'function') {
                 printFacultySchedule(currentIFTLFacultyId);
             }
@@ -690,6 +695,10 @@ async function printIFTLForWeek() {
             if (result.dean_name) {
                 window.facultyDeanNames[currentIFTLFacultyId] = result.dean_name;
             }
+            window.facultyPrintPeriods[currentIFTLFacultyId] = {
+                semester: result.semester || null,
+                academic_year: result.academic_year || null
+            };
             if (typeof printFacultySchedule === 'function') {
                 printFacultySchedule(currentIFTLFacultyId);
             }

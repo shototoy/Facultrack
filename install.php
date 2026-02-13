@@ -97,105 +97,142 @@ function splitSqlStatements(string $sql): array {
     return $statements;
 }
 
-echo "<h1>Database Population Tool (mysqli)</h1>";
+function executeSqlFile(mysqli $mysqli, string $filePath, string $label): array {
+    if (!file_exists($filePath)) {
+        return [
+            'executed' => 0,
+            'failed' => [[
+                'code' => 0,
+                'error' => "$label file not found: $filePath",
+                'sql' => ''
+            ]]
+        ];
+    }
+
+    $sql = file_get_contents($filePath);
+    if ($sql === false || trim($sql) === '') {
+        return [
+            'executed' => 0,
+            'failed' => [[
+                'code' => 0,
+                'error' => "$label file is empty or unreadable: $filePath",
+                'sql' => ''
+            ]]
+        ];
+    }
+
+    $sql = preg_replace('/^\xEF\xBB\xBF/', '', $sql);
+    $statements = splitSqlStatements($sql);
+
+    $executed = 0;
+    $failed = [];
+
+    foreach ($statements as $statement) {
+        $normalized = strtoupper(trim($statement));
+        if (
+            $normalized === '' ||
+            str_starts_with($normalized, 'START TRANSACTION') ||
+            str_starts_with($normalized, 'COMMIT') ||
+            str_starts_with($normalized, 'ROLLBACK')
+        ) {
+            continue;
+        }
+
+        if ($mysqli->query($statement)) {
+            $executed++;
+        } else {
+            $failed[] = [
+                'code' => $mysqli->errno,
+                'error' => $mysqli->error,
+                'sql' => substr($statement, 0, 300)
+            ];
+        }
+    }
+
+    return ['executed' => $executed, 'failed' => $failed];
+}
+
+echo "<h1>Database Installer (Schema + Seed)</h1>";
+
 $db_host = $servername;
 $db_user = $username;
 $db_pass = $password;
 $db_name = $dbname;
 $db_port = $port;
-echo "Connecting to $db_host...<br>";
-$mysqli = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
+
+$schemaFile = __DIR__ . '/facultrack_schema.sql';
+$seedFile = __DIR__ . '/facultrack_seed.sql';
+$monolithFile = __DIR__ . '/facultrack.sql';
+
+echo "Connecting to MySQL server...<br>";
+$mysqli = new mysqli($db_host, $db_user, $db_pass, '', $db_port);
 if ($mysqli->connect_error) {
     die("Connection failed: " . $mysqli->connect_error);
 }
 $mysqli->set_charset("utf8mb4");
-echo "Current directory: " . __DIR__ . "<br>";
-$sql_file = __DIR__ . '/facultrack.sql';
-if (!file_exists($sql_file)) {
-    die("Error: facultrack.sql not found at $sql_file");
-}
-echo "Reading SQL file...<br>";
-$sql = file_get_contents($sql_file);
-if (empty($sql)) {
-    die("Error: SQL file is empty");
-}
-$sql = preg_replace('/^\xEF\xBB\xBF/', '', $sql);
-$mysqli->query("SET FOREIGN_KEY_CHECKS = 0");
-if ($result = $mysqli->query("SHOW TABLES")) {
-    while ($row = $result->fetch_row()) {
-        $table = $row[0];
-        $mysqli->query("DROP TABLE IF EXISTS `$table`");
-    }
-    $result->free();
-}
-$content = file_get_contents($sql_file);
-echo "<h3>File Integrity Check</h3>";
-echo "File size: " . strlen($content) . " bytes<br>";
-$pos = strpos($content, "DIR-1");
-if ($pos !== false) {
-    echo "Found 'DIR-1' at position $pos. Context:<br>";
-    echo "<pre>" . htmlspecialchars(substr($content, $pos - 100, 200)) . "</pre>";
-} else {
-    echo "DID NOT FIND 'DIR-1' in SQL file!<br>";
-}
-$pos_dean = strpos($content, "dean_id");
-if ($pos_dean !== false) {
-    echo "Found 'dean_id' at position $pos_dean. Context:<br>";
-    echo "<pre>" . htmlspecialchars(substr($content, $pos_dean - 100, 200)) . "</pre>";
-} else {
-    echo "DID NOT FIND 'dean_id' in SQL file!<br>";
-}
-$pos2 = strpos($content, "\n(41,");
-if ($pos2 !== false) {
-    echo "Found line starting with (41, at position $pos2. Context:<br>";
-    echo "<pre>" . htmlspecialchars(substr($content, $pos2 - 50, 100)) . "</pre>";
-}
-echo "Executing SQL...<br>";
-$statements = splitSqlStatements($sql);
-echo "Total parsed SQL statements: " . count($statements) . "<br>";
 
-$executed = 0;
-$failed = [];
+echo "Recreating database <strong>" . htmlspecialchars($db_name) . "</strong>...<br>";
+if (!$mysqli->query("DROP DATABASE IF EXISTS `{$db_name}`")) {
+    die("Failed to drop database: " . htmlspecialchars($mysqli->error));
+}
+if (!$mysqli->query("CREATE DATABASE `{$db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci")) {
+    die("Failed to create database: " . htmlspecialchars($mysqli->error));
+}
+if (!$mysqli->select_db($db_name)) {
+    die("Failed to select database: " . htmlspecialchars($mysqli->error));
+}
 
-foreach ($statements as $statement) {
-    $normalized = strtoupper(trim($statement));
-    if (
-        $normalized === '' ||
-        str_starts_with($normalized, 'START TRANSACTION') ||
-        str_starts_with($normalized, 'COMMIT') ||
-        str_starts_with($normalized, 'ROLLBACK') ||
-        str_starts_with($normalized, 'SET FOREIGN_KEY_CHECKS')
-    ) {
-        continue;
+if (file_exists($schemaFile) && file_exists($seedFile)) {
+    echo "Importing schema file...<br>";
+    $schemaResult = executeSqlFile($mysqli, $schemaFile, 'Schema');
+
+    if (!empty($schemaResult['failed'])) {
+        echo "<h2 style='color:red'>Schema import failed.</h2>";
+        echo "<pre>Code: " . htmlspecialchars((string)$schemaResult['failed'][0]['code']) . "\n"
+            . "Message: " . htmlspecialchars($schemaResult['failed'][0]['error']) . "\n"
+            . "SQL: " . htmlspecialchars($schemaResult['failed'][0]['sql']) . "</pre>";
+        $mysqli->close();
+        exit;
     }
 
-    $ok = $mysqli->query($statement);
-    if ($ok) {
-        $executed++;
-    } else {
-        $failed[] = [
-            'code' => $mysqli->errno,
-            'error' => $mysqli->error,
-            'sql' => substr($statement, 0, 300)
-        ];
+    echo "Importing seed file...<br>";
+    $seedResult = executeSqlFile($mysqli, $seedFile, 'Seed');
+
+    if (!empty($seedResult['failed'])) {
+        echo "<h2 style='color:red'>Seed import failed.</h2>";
+        echo "<pre>Code: " . htmlspecialchars((string)$seedResult['failed'][0]['code']) . "\n"
+            . "Message: " . htmlspecialchars($seedResult['failed'][0]['error']) . "\n"
+            . "SQL: " . htmlspecialchars($seedResult['failed'][0]['sql']) . "</pre>";
+        $mysqli->close();
+        exit;
     }
-}
 
-$mysqli->query("SET FOREIGN_KEY_CHECKS = 1");
-
-if (empty($failed)) {
-    echo "<h2 style='color:green'>Success! Database populated.</h2>";
-    echo "<p>Executed statements: {$executed}</p>";
-    echo "<p>You can now delete this file and <a href='index.php'>Login</a>.</p>";
+    $totalExecuted = $schemaResult['executed'] + $seedResult['executed'];
+    echo "<h2 style='color:green'>Success! Database installed.</h2>";
+    echo "<p>Import mode: schema + seed</p>";
+    echo "<p>Schema statements executed: {$schemaResult['executed']}</p>";
+    echo "<p>Seed statements executed: {$seedResult['executed']}</p>";
+    echo "<p>Total executed: {$totalExecuted}</p>";
 } else {
-    echo "<h2 style='color:red'>Import completed with errors.</h2>";
-    echo "<p>Executed statements: {$executed}</p>";
-    echo "<p>Failed statements: " . count($failed) . "</p>";
-    echo "<h3>First error</h3>";
-    echo "<pre>Code: " . htmlspecialchars((string)$failed[0]['code']) . "\n"
-        . "Message: " . htmlspecialchars($failed[0]['error']) . "\n"
-        . "SQL: " . htmlspecialchars($failed[0]['sql']) . "</pre>";
+    echo "Split files not found. Falling back to monolithic dump...<br>";
+    $monoResult = executeSqlFile($mysqli, $monolithFile, 'Monolithic SQL');
+
+    if (!empty($monoResult['failed'])) {
+        echo "<h2 style='color:red'>Monolithic import failed.</h2>";
+        echo "<pre>Code: " . htmlspecialchars((string)$monoResult['failed'][0]['code']) . "\n"
+            . "Message: " . htmlspecialchars($monoResult['failed'][0]['error']) . "\n"
+            . "SQL: " . htmlspecialchars($monoResult['failed'][0]['sql']) . "</pre>";
+        $mysqli->close();
+        exit;
+    }
+
+    echo "<h2 style='color:green'>Success! Database installed.</h2>";
+    echo "<p>Import mode: monolithic</p>";
+    echo "<p>Total executed: {$monoResult['executed']}</p>";
 }
+
+echo "<p>You can now delete this file and <a href='index.php'>Login</a>.</p>";
+
 $mysqli->close();
 ?>
 

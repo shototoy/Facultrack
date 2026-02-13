@@ -1576,11 +1576,34 @@ switch ($action) {
                 $stmt->execute([$faculty_id]);
                 $schedule_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
+
+            $semester = null;
+            $academic_year = null;
+            if (!empty($schedule_data)) {
+                $first_schedule = $schedule_data[0];
+                if (!empty($first_schedule['semester'])) {
+                    $semester = $first_schedule['semester'];
+                }
+                if (!empty($first_schedule['academic_year'])) {
+                    $academic_year = $first_schedule['academic_year'];
+                }
+            }
+
+            if (!$semester || !$academic_year) {
+                $period_stmt = $pdo->prepare("\n+                    SELECT s.semester, s.academic_year\n+                    FROM schedules s\n+                    WHERE s.faculty_id = ? AND s.is_active = TRUE\n+                    ORDER BY s.updated_at DESC, s.schedule_id DESC\n+                    LIMIT 1\n+                ");
+                $period_stmt->execute([$faculty_id]);
+                $period_row = $period_stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+                $semester = $semester ?: ($period_row['semester'] ?? null);
+                $academic_year = $academic_year ?: ($period_row['academic_year'] ?? null);
+            }
+
             sendJsonResponse([
                 'success' => true,
                 'schedules' => $schedule_data,
                 'is_iftl' => !!($compliance_id && $is_override),
                 'week' => $current_week,
+                'semester' => $semester,
+                'academic_year' => $academic_year,
                 'faculty_program' => $faculty_info['program'] ?? null,
                 'dean_name' => $faculty_info['dean_name'] ?? null,
                 'timestamp' => date('Y-m-d H:i:s')
