@@ -5,18 +5,18 @@ INSERT INTO `announcements` (`announcement_id`, `title`, `content`, `priority`, 
 (2, 'Academic Year 2024-2025 Guidelines', 'Please review the updated academic guidelines for the current academic year. All policies are now available in the system.', 'high', 'all', 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
 
 INSERT INTO `classes` (`class_id`, `user_id`, `class_code`, `class_name`, `year_level`, `semester`, `academic_year`, `program_chair_id`, `created_at`, `updated_at`, `is_active`, `total_students`) VALUES
-(1, 36, 'IT-1A', 'Information Technology 2023-2024', 1, '1st', '2025-26', 2, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
-(2, 37, 'IT-2A', 'Information Technology 2022-2023', 2, '1st', '2025-26', 2, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
-(3, 40, 'IS-1A', 'Information Systems 2023-2024', 1, '1st', '2025-26', 3, '2025-11-27 10:06:45', '2025-12-24 17:02:30', 1, 5),
-(4, 41, 'IS-2A', 'Information Systems 2022-2023', 2, '1st', '2025-26', 3, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
-(5, 45, 'CPE-1A', 'Computer Engineering 2025-2026', 1, '1st', '2025-2026', 52, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
-(6, 46, 'CPE-2A', 'Computer Engineering 2025-2026', 2, '1st', '2025-2026', 52, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
-(7, 47, 'CE-1A', 'Civil Engineering 2025-2026', 1, '1st', '2025-2026', 53, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
-(8, 48, 'CE-2A', 'Civil Engineering 2025-2026', 2, '1st', '2025-2026', 53, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
-(9, 49, 'ECE-1A', 'Electronics and Communications Engineering 2025-2026', 1, '1st', '2025-2026', 54, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
-(10, 50, 'ECE-2A', 'Electronics and Communications Engineering 2025-2026', 2, '1st', '2025-2026', 54, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
-(11, 55, 'CS-1A', 'Computer Science 2025-2026', 1, '1st', '2025-2026', 51, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
-(12, 56, 'CS-2A', 'Computer Science 2025-2026', 2, '1st', '2025-2026', 51, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0);
+(1, 36, 'IT-1A', 'Information Technology 2023-2024', 1, '1st', '2025-26', 2, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 38),
+(2, 37, 'IT-2A', 'Information Technology 2022-2023', 2, '1st', '2025-26', 2, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 34),
+(3, 40, 'IS-1A', 'Information Systems 2023-2024', 1, '1st', '2025-26', 3, '2025-11-27 10:06:45', '2025-12-24 17:02:30', 1, 29),
+(4, 41, 'IS-2A', 'Information Systems 2022-2023', 2, '1st', '2025-26', 3, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 31),
+(5, 45, 'CPE-1A', 'Computer Engineering 2025-2026', 1, '1st', '2025-2026', 52, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 27),
+(6, 46, 'CPE-2A', 'Computer Engineering 2025-2026', 2, '1st', '2025-2026', 52, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 25),
+(7, 47, 'CE-1A', 'Civil Engineering 2025-2026', 1, '1st', '2025-2026', 53, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 42),
+(8, 48, 'CE-2A', 'Civil Engineering 2025-2026', 2, '1st', '2025-2026', 53, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 36),
+(9, 49, 'ECE-1A', 'Electronics and Communications Engineering 2025-2026', 1, '1st', '2025-2026', 54, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 33),
+(10, 50, 'ECE-2A', 'Electronics and Communications Engineering 2025-2026', 2, '1st', '2025-2026', 54, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 28),
+(11, 55, 'CS-1A', 'Computer Science 2025-2026', 1, '1st', '2025-2026', 51, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 40),
+(12, 56, 'CS-2A', 'Computer Science 2025-2026', 2, '1st', '2025-2026', 51, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 37);
 
 INSERT INTO `courses` (`course_id`, `course_code`, `course_description`, `units`, `program_id`, `created_at`, `updated_at`, `is_active`) VALUES
 (1, 'CC111', 'Introduction to Computing', 3.00, 2, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
@@ -187,12 +187,11 @@ INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `curre
 (32, 33, 'EMP-0031', 'Information Systems', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'maryjoy.carnazo@sksu.edu.ph', '09123456731', 'Available', '2025-11-27 10:06:45', '2025-12-24 12:53:15', 0),
 (33, 34, 'EMP-0032', 'Information Technology', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'may.gallano@sksu.edu.ph', '09123456732', 'Available', '2025-11-27 10:06:45', '2025-12-24 12:53:15', 0),
 (34, 35, 'EMP-0033', 'Information Systems', NULL, '2025-11-27 10:34:29', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'nora.moya@sksu.edu.ph', '09123456733', 'Available', '2025-11-27 10:06:45', '2025-12-24 12:53:15', 0),
-(35, 1, 'DIR-1', 'Administration', NULL, '2026-02-03 03:35:01', '2025-11-27 10:06:48', NULL, NULL, NULL, 'Available', '2025-11-27 10:06:48', '2026-02-03 03:35:01', 1),
 (36, 51, 'CHAIR-003', 'Computer Science', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.cs@sksu.edu.ph', '09123456790', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (37, 52, 'CHAIR-004', 'Computer Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.cpe@sksu.edu.ph', '09123456791', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (38, 53, 'CHAIR-005', 'Civil Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.ce@sksu.edu.ph', '09123456792', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (39, 54, 'CHAIR-006', 'Electronics and Communications Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.ece@sksu.edu.ph', '09123456793', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(40, 44, 'EMP-0034', 'Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'lenmar.catajay@sksu.edu.ph', '09123456734', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
+(40, 44, 'EMP-0034', 'Computer Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'lenmar.catajay@sksu.edu.ph', '09123456734', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
 
 INSERT INTO `programs` (`program_id`, `program_code`, `program_name`, `program_description`, `dean_id`, `is_active`, `created_at`, `updated_at`) VALUES
 (1, 'CS', 'Computer Science', 'Bachelor of Science in Computer Science', 8, 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45'),
@@ -206,7 +205,6 @@ INSERT INTO `schedules` (`schedule_id`, `course_code`, `class_id`, `faculty_id`,
 (1, 'CC112', 1, 3, NULL, 'TTH', '07:30:00', '10:00:00', 'Room 101', '1st', '', '2025-12-22 17:50:41', '2025-12-22 17:50:41', 1);
 
 INSERT INTO `users` (`user_id`, `username`, `password`, `full_name`, `role`, `created_at`, `updated_at`, `is_active`) VALUES
-(1, 'admin', 'admin123', 'Rommel M. Lagumen', 'campus_director', '2025-11-27 10:06:45', '2026-02-03 03:35:01', 1),
 (2, 'chair_it', 'chair123', 'Dr. Information Technology Chair', 'program_chair', '2025-11-27 10:06:45', '2026-02-02 15:10:39', 1),
 (3, 'chair_is', 'chair123', 'Dr. Information Systems Chair', 'program_chair', '2025-11-27 10:06:45', '2026-01-26 05:04:07', 1),
 (4, 'alexis.apresto', 'prof123', 'Alexis Apresto', 'faculty', '2025-11-27 10:06:45', '2026-02-02 06:34:47', 1),

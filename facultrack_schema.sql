@@ -324,4 +324,10 @@ ALTER TABLE `schedules`
   ADD CONSTRAINT `schedules_ibfk_2` FOREIGN KEY (`class_id`) REFERENCES `classes` (`class_id`),
   ADD CONSTRAINT `schedules_ibfk_3` FOREIGN KEY (`faculty_id`) REFERENCES `faculty` (`faculty_id`);
 
+INSERT INTO `users` (`user_id`, `username`, `password`, `full_name`, `role`, `created_at`, `updated_at`, `is_active`) VALUES
+(1, 'admin', 'admin123', 'Rommel M. Lagumen', 'campus_director', '2025-11-27 10:06:45', '2026-02-03 03:35:01', 1);
+
+INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `current_location`, `last_location_update`, `last_activity`, `office_hours`, `contact_email`, `contact_phone`, `status`, `created_at`, `updated_at`, `is_active`) VALUES
+(35, 1, 'DIR-1', 'Administration', NULL, '2026-02-03 03:35:01', '2025-11-27 10:06:48', NULL, NULL, NULL, 'Available', '2025-11-27 10:06:48', '2026-02-03 03:35:01', 1);
+
 SET FOREIGN_KEY_CHECKS = 1;

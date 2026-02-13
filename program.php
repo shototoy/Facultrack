@@ -13,71 +13,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
     switch ($_POST['action']) {
         case 'assign_course_load':
-            try {
-                $faculty_id = $_POST['faculty_id'];
-                $course_code = $_POST['course_code'];
-                $class_id = $_POST['class_id'];
-                $days = $_POST['days'];
-                $time_start = $_POST['time_start'];
-                $time_end = $_POST['time_end'];
-                $room = $_POST['room'] ?? null;
-                $is_edit_mode = $_POST['is_edit_mode'] === 'true';
-                if ($is_edit_mode) {
-                    $original_course = $_POST['original_course_code'];
-                    $original_time = $_POST['original_time_start'];
-                    $original_days = $_POST['original_days'];
-                    $delete_stmt = $pdo->prepare("DELETE FROM schedules WHERE faculty_id = ? AND course_code = ? AND time_start = ? AND days = ? AND is_active = TRUE");
-                    $delete_stmt->execute([$faculty_id, $original_course, $original_time, $original_days]);
-                }
-                $insert_stmt = $pdo->prepare("INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)");
-                $insert_stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room]);
-                echo json_encode(['success' => true, 'message' => $is_edit_mode ? 'Course updated successfully' : 'Course assigned successfully']);
-            } catch (Exception $e) {
-                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
-            }
-            exit;
+            break;
         case 'delete_schedule':
             try {
                 $faculty_id = $_POST['faculty_id'];
                 $course_code = $_POST['course_code'];
                 $time_start = $_POST['time_start'];
                 $days = $_POST['days'];
-                $stmt = $pdo->prepare("DELETE FROM schedules WHERE faculty_id = ? AND course_code = ? AND time_start = ? AND days = ? AND is_active = TRUE");
-                $stmt->execute([$faculty_id, $course_code, $time_start, $days]);
+                $delete_query = "DELETE s
+                                FROM schedules s
+                                JOIN classes cl ON s.class_id = cl.class_id
+                                WHERE s.faculty_id = ? AND s.course_code = ? AND s.time_start = ? AND s.days = ?
+                                  AND s.is_active = TRUE AND cl.program_chair_id = ?";
+                $stmt = $pdo->prepare($delete_query);
+                $stmt->execute([$faculty_id, $course_code, $time_start, $days, $user_id]);
                 echo json_encode(['success' => true, 'message' => 'Schedule deleted successfully']);
             } catch (Exception $e) {
                 echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
             exit;
         case 'get_courses_and_classes':
-            try {
-                $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
-                $stmt->execute([$user_id]);
-                $program = $stmt->fetchColumn();
-                $courses_query = "SELECT c.course_code, c.course_description FROM courses c LEFT JOIN programs p ON c.program_id = p.program_id WHERE c.is_active = TRUE AND p.program_name = ? ORDER BY c.course_code";
-                $stmt = $pdo->prepare($courses_query);
-                $stmt->execute([$program]);
-                $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                echo json_encode(['success' => true, 'courses' => $courses]);
-            } catch (Exception $e) {
-                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
-            }
-            exit;
+            break;
         case 'get_classes_for_course':
-            try {
-                $course_code = $_POST['course_code'];
-                $stmt = $pdo->prepare("SELECT DISTINCT c.class_id, c.class_code, c.class_name, c.year_level FROM classes c JOIN curriculum curr ON c.year_level = curr.year_level AND c.semester = curr.semester WHERE curr.course_code = ? AND c.is_active = TRUE AND curr.is_active = TRUE ORDER BY c.class_code");
-                $stmt->execute([$course_code]);
-                $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                echo json_encode(['success' => true, 'classes' => $classes]);
-            } catch (Exception $e) {
-                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
-            }
-            exit;
+            break;
         case 'get_room_options':
-            $rooms = ['Room 101', 'Room 102', 'Room 103', 'Room 201', 'Room 202', 'Room 203', 'Computer Lab 1', 'Computer Lab 2', 'TBA'];
-            echo json_encode(['success' => true, 'rooms' => $rooms]);
-            exit;
+            break;
     }
 }
 $chair_info = getProgramChairInfo($pdo, $user_id);
@@ -225,8 +185,9 @@ function getProgramCourses($pdo, $class_ids) {
     $course_query = "
         SELECT DISTINCT c.course_id, c.course_code, c.course_description, c.units
         FROM courses c
-        LEFT JOIN schedules s ON c.course_code = s.course_code AND s.class_id IN ({$in_clause['placeholders']})
-        WHERE c.is_active = TRUE
+        JOIN curriculum cur ON c.course_code = cur.course_code
+        JOIN classes cl ON cl.year_level = cur.year_level AND cl.semester = cur.semester
+        WHERE c.is_active = TRUE AND cur.is_active = TRUE AND cl.class_id IN ({$in_clause['placeholders']})
         ORDER BY c.course_code";
     $stmt = $pdo->prepare($course_query);
     $stmt->execute($in_clause['values']);
@@ -282,10 +243,45 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
         $original_course = $is_edit ? ($_POST['original_course_code'] ?? '') : '';
         $original_time_start = $is_edit ? ($_POST['original_time_start'] ?? '') : '';
         $original_days = $is_edit ? ($_POST['original_days'] ?? '') : '';
+
+        $class_ownership_check = "SELECT COUNT(*) FROM classes WHERE class_id = ? AND program_chair_id = ? AND is_active = TRUE";
+        $class_ownership_stmt = $pdo->prepare($class_ownership_check);
+        $class_ownership_stmt->execute([$class_id, $user_id]);
+        if ((int)$class_ownership_stmt->fetchColumn() === 0) {
+            echo json_encode(['success' => false, 'message' => 'You can only assign schedules to your own classes']);
+            exit;
+        }
+
+        $faculty_exists_check = "SELECT COUNT(*) FROM faculty WHERE faculty_id = ? AND is_active = TRUE";
+        $faculty_exists_stmt = $pdo->prepare($faculty_exists_check);
+        $faculty_exists_stmt->execute([$faculty_id]);
+        if ((int)$faculty_exists_stmt->fetchColumn() === 0) {
+            echo json_encode(['success' => false, 'message' => 'Selected faculty member is not available']);
+            exit;
+        }
+
         if (strtotime($time_end) <= strtotime($time_start)) {
             echo json_encode(['success' => false, 'message' => 'End time must be after start time']);
             exit;
         }
+
+        $target_schedule_id = null;
+        if ($is_edit) {
+            $target_schedule_query = "SELECT s.schedule_id
+                                     FROM schedules s
+                                     JOIN classes cl ON s.class_id = cl.class_id
+                                     WHERE s.course_code = ? AND s.time_start = ? AND s.days = ?
+                                       AND s.is_active = TRUE AND cl.program_chair_id = ?
+                                     LIMIT 1";
+            $target_schedule_stmt = $pdo->prepare($target_schedule_query);
+            $target_schedule_stmt->execute([$original_course, $original_time_start, $original_days, $user_id]);
+            $target_schedule_id = $target_schedule_stmt->fetchColumn();
+            if (!$target_schedule_id) {
+                echo json_encode(['success' => false, 'message' => 'Original schedule not found or not within your managed classes']);
+                exit;
+            }
+        }
+
         $curriculum_check = "SELECT COUNT(*) as valid FROM curriculum cur
                            JOIN classes cl ON cur.year_level = cl.year_level AND cur.semester = cl.semester
                            WHERE cur.course_code = ? AND cl.class_id = ? AND cur.is_active = TRUE";
@@ -338,10 +334,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
             $update_query = "UPDATE schedules
                             SET faculty_id = ?, course_code = ?, class_id = ?, days = ?,
                                 time_start = ?, time_end = ?, room = ?
-                            WHERE course_code = ? AND time_start = ? AND days = ? AND is_active = TRUE";
+                            WHERE schedule_id = ? AND is_active = TRUE";
             $stmt = $pdo->prepare($update_query);
-            if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room,
-                               $original_course, $original_time_start, $original_days])) {
+            if ($stmt->execute([$faculty_id, $course_code, $class_id, $days, $time_start, $time_end, $room, $target_schedule_id])) {
                 echo json_encode(['success' => true, 'message' => 'Course assignment updated successfully']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to update course assignment']);
@@ -518,6 +513,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'validate_schedule') {
         $original_course = $is_edit ? $_POST['original_course'] : '';
         $original_time_start = $is_edit ? $_POST['original_time_start'] : '';
         $original_days = $is_edit ? $_POST['original_days'] : '';
+
+        $class_scope_check = "SELECT COUNT(*) FROM classes WHERE class_id = ? AND program_chair_id = ? AND is_active = TRUE";
+        $class_scope_stmt = $pdo->prepare($class_scope_check);
+        $class_scope_stmt->execute([$class_id, $user_id]);
+        if ((int)$class_scope_stmt->fetchColumn() === 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Validation failed: class is outside your managed scope'
+            ]);
+            exit;
+        }
+
         $conflicts = [];
         $faculty_check = "SELECT s.course_code, s.time_start, s.time_end, s.days, s.room
                          FROM schedules s
@@ -708,11 +715,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
             'rooms' => []
         ];
         $courses_query = "SELECT DISTINCT c.course_code, c.course_description, c.units
-                         FROM courses c
-                         WHERE c.is_active = TRUE
-                         ORDER BY c.course_code";
+                 FROM courses c
+                 JOIN curriculum cur ON c.course_code = cur.course_code AND cur.is_active = TRUE
+                 JOIN classes cl ON cl.year_level = cur.year_level
+                        AND cl.semester = cur.semester
+                        AND cl.program_chair_id = ?
+                        AND cl.is_active = TRUE
+                 WHERE c.is_active = TRUE
+                 ORDER BY c.course_code";
         $courses_stmt = $pdo->prepare($courses_query);
-        $courses_stmt->execute();
+        $courses_stmt->execute([$user_id]);
         $response['courses'] = $courses_stmt->fetchAll(PDO::FETCH_ASSOC);
         if ($selected_course) {
             $classes_query = "SELECT DISTINCT cl.class_id, cl.class_code, cl.class_name, cl.year_level

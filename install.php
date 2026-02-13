@@ -152,7 +152,7 @@ function executeSqlFile(mysqli $mysqli, string $filePath, string $label): array 
     return ['executed' => $executed, 'failed' => $failed];
 }
 
-echo "<h1>Database Installer (Schema + Seed)</h1>";
+echo "<h1>Database Installer</h1>";
 
 $db_host = $servername;
 $db_user = $username;
@@ -163,6 +163,28 @@ $db_port = $port;
 $schemaFile = __DIR__ . '/facultrack_schema.sql';
 $seedFile = __DIR__ . '/facultrack_seed.sql';
 $monolithFile = __DIR__ . '/facultrack.sql';
+
+$selectedMode = $_POST['install_mode'] ?? 'schema_seed';
+
+echo "<form method='post' style='margin: 12px 0 20px;'>";
+echo "<fieldset style='max-width: 420px; padding: 12px;'>";
+echo "<legend><strong>Install Mode</strong></legend>";
+echo "<label style='display:block; margin-bottom:8px;'>";
+echo "<input type='radio' name='install_mode' value='schema_seed' " . ($selectedMode === 'schema_seed' ? 'checked' : '') . "> Schema + Seed";
+echo "</label>";
+echo "<label style='display:block; margin-bottom:12px;'>";
+echo "<input type='radio' name='install_mode' value='schema_only' " . ($selectedMode === 'schema_only' ? 'checked' : '') . "> Schema Only";
+echo "</label>";
+echo "<button type='submit' name='run_install' value='1'>Install Database</button>";
+echo "</fieldset>";
+echo "</form>";
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['run_install'])) {
+    echo "<p>Select install mode and click <strong>Install Database</strong>.</p>";
+    exit;
+}
+
+$includeSeed = $selectedMode === 'schema_seed';
 
 echo "Connecting to MySQL server...<br>";
 $mysqli = new mysqli($db_host, $db_user, $db_pass, '', $db_port);
@@ -195,23 +217,29 @@ if (file_exists($schemaFile) && file_exists($seedFile)) {
         exit;
     }
 
-    echo "Importing seed file...<br>";
-    $seedResult = executeSqlFile($mysqli, $seedFile, 'Seed');
+    $seedExecuted = 0;
+    if ($includeSeed) {
+        echo "Importing seed file...<br>";
+        $seedResult = executeSqlFile($mysqli, $seedFile, 'Seed');
 
-    if (!empty($seedResult['failed'])) {
-        echo "<h2 style='color:red'>Seed import failed.</h2>";
-        echo "<pre>Code: " . htmlspecialchars((string)$seedResult['failed'][0]['code']) . "\n"
-            . "Message: " . htmlspecialchars($seedResult['failed'][0]['error']) . "\n"
-            . "SQL: " . htmlspecialchars($seedResult['failed'][0]['sql']) . "</pre>";
-        $mysqli->close();
-        exit;
+        if (!empty($seedResult['failed'])) {
+            echo "<h2 style='color:red'>Seed import failed.</h2>";
+            echo "<pre>Code: " . htmlspecialchars((string)$seedResult['failed'][0]['code']) . "\n"
+                . "Message: " . htmlspecialchars($seedResult['failed'][0]['error']) . "\n"
+                . "SQL: " . htmlspecialchars($seedResult['failed'][0]['sql']) . "</pre>";
+            $mysqli->close();
+            exit;
+        }
+        $seedExecuted = $seedResult['executed'];
     }
 
-    $totalExecuted = $schemaResult['executed'] + $seedResult['executed'];
+    $totalExecuted = $schemaResult['executed'] + $seedExecuted;
     echo "<h2 style='color:green'>Success! Database installed.</h2>";
-    echo "<p>Import mode: schema + seed</p>";
+    echo "<p>Import mode: " . ($includeSeed ? 'schema + seed' : 'schema only') . "</p>";
     echo "<p>Schema statements executed: {$schemaResult['executed']}</p>";
-    echo "<p>Seed statements executed: {$seedResult['executed']}</p>";
+    if ($includeSeed) {
+        echo "<p>Seed statements executed: {$seedExecuted}</p>";
+    }
     echo "<p>Total executed: {$totalExecuted}</p>";
 } else {
     echo "Split files not found. Falling back to monolithic dump...<br>";
@@ -227,7 +255,7 @@ if (file_exists($schemaFile) && file_exists($seedFile)) {
     }
 
     echo "<h2 style='color:green'>Success! Database installed.</h2>";
-    echo "<p>Import mode: monolithic</p>";
+    echo "<p>Import mode: monolithic (seed toggle ignored)</p>";
     echo "<p>Total executed: {$monoResult['executed']}</p>";
 }
 

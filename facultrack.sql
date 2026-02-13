@@ -346,7 +346,7 @@ INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `curre
 (37, 52, 'CHAIR-004', 'Computer Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.cpe@sksu.edu.ph', '09123456791', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (38, 53, 'CHAIR-005', 'Civil Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.ce@sksu.edu.ph', '09123456792', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (39, 54, 'CHAIR-006', 'Electronics and Communications Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.ece@sksu.edu.ph', '09123456793', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(40, 44, 'EMP-0034', 'Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'lenmar.catajay@sksu.edu.ph', '09123456734', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
+(40, 44, 'EMP-0034', 'Computer Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'lenmar.catajay@sksu.edu.ph', '09123456734', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
 -- --------------------------------------------------------
 
 --
