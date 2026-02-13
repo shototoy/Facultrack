@@ -15,6 +15,7 @@ $mysql_timezone_map = [
 ];
 $mysql_timezone = '+08:00';
 $pdo->exec("SET time_zone = '$mysql_timezone'");
+define('IFTL_ACADEMIC_YEAR', '2025-2026');
 $action = $_GET['action'] ?? $_POST['action'] ?? $_POST['admin_action'] ?? '';
 if (basename($_SERVER['PHP_SELF']) === 'polling_api.php') {
     header('Content-Type: application/json');
@@ -693,16 +694,19 @@ switch ($action) {
                     $insert_data = [];
                     if ($action === 'add_faculty') {
                         $role = is_callable($c['user']['role']) ? $c['user']['role']($_POST) : 'faculty';
-                        if ($role === 'program_chair') {
+                        if ($user_role === 'program_chair') {
+                            $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
+                            $stmt->execute([$user_id]);
+                            $insert_data['program'] = $stmt->fetchColumn();
+                            if (!$insert_data['program']) {
+                                throw new Exception('Program assignment not found for this Program Chair');
+                            }
+                        } elseif ($role === 'program_chair') {
                             if ($user_role === 'campus_director') {
                                 $insert_data['program'] = $_POST['program'] ?? null;
                                 if (!$insert_data['program']) {
                                     throw new Exception('Program is required for Program Chair');
                                 }
-                            } else {
-                                $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
-                                $stmt->execute([$user_id]);
-                                $insert_data['program'] = $stmt->fetchColumn();
                             }
                         }
                         $prefix = $c['generate_id']['prefix']($_POST);
@@ -735,9 +739,13 @@ switch ($action) {
                     }
                     if ($action === 'add_course') {
                         if ($user_role === 'program_chair') {
-                            $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
+                            $stmt = $pdo->prepare("\n+                                SELECT p.program_id\n+                                FROM faculty f\n+                                JOIN programs p ON p.program_name = f.program AND p.is_active = TRUE\n+                                WHERE f.user_id = ? AND f.is_active = TRUE\n+                                LIMIT 1\n+                            ");
                             $stmt->execute([$user_id]);
-                            $insert_data['program'] = $stmt->fetchColumn();
+                            $program_id = $stmt->fetchColumn();
+                            if (!$program_id) {
+                                throw new Exception('Program assignment not found for this Program Chair');
+                            }
+                            $insert_data['program_id'] = (int)$program_id;
                         }
                     }
                     if ($action === 'add_announcement') {
@@ -745,6 +753,9 @@ switch ($action) {
                     }
                     foreach ($c['fields'] as $field) {
                         if ($field === 'program_id' && $action === 'add_course') {
+                            if ($user_role === 'program_chair' && isset($insert_data['program_id'])) {
+                                continue;
+                            }
                             $program_id = $_POST[$field] ?? '';
                             $insert_data[$field] = ($program_id === '' || $program_id === 'general') ? null : (int)$program_id;
                         } elseif ($field === 'target_audience' && $action === 'add_announcement') {
@@ -753,6 +764,8 @@ switch ($action) {
                             } else {
                                 $insert_data[$field] = $_POST['target_audience'] ?? 'all';
                             }
+                        } elseif ($field === 'program' && $action === 'add_faculty' && isset($insert_data['program'])) {
+                            continue;
                         } else {
                             $insert_data[$field] = $_POST[$field] ?? null;
                         }
@@ -1528,24 +1541,26 @@ switch ($action) {
                 $stmt->execute([$compliance_id]);
                 $overlay_entries = [];
                 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    $day_code = mapDayOfWeekToCode($row['day_of_week']);
-                    if (!$day_code) {
+                    $day_codes = mapDayOfWeekToCodes($row['day_of_week']);
+                    if (empty($day_codes)) {
                         continue;
                     }
-                    $overlay_entries[] = [
-                        'schedule_id' => $row['entry_id'],
-                        'time_start' => $row['time_start'],
-                        'time_end' => $row['time_end'],
-                        'days' => $day_code,
-                        'course_code' => mapIFTLDisplayCourse($row),
-                        'room' => $row['room'],
-                        'class_name' => $row['class_name'],
-                        'status' => $row['status'],
-                        'course_description' => $row['course_description'],
-                        'units' => $row['units'],
-                        'total_students' => $row['total_students'],
-                        'source' => 'iftl'
-                    ];
+                    foreach ($day_codes as $day_code) {
+                        $overlay_entries[] = [
+                            'schedule_id' => $row['entry_id'],
+                            'time_start' => $row['time_start'],
+                            'time_end' => $row['time_end'],
+                            'days' => $day_code,
+                            'course_code' => mapIFTLDisplayCourse($row),
+                            'room' => $row['room'],
+                            'class_name' => $row['class_name'],
+                            'status' => $row['status'],
+                            'course_description' => $row['course_description'],
+                            'units' => $row['units'],
+                            'total_students' => $row['total_students'],
+                            'source' => 'iftl'
+                        ];
+                    }
                 }
                 $schedule_data = $overlay_entries;
             } else {
@@ -2187,9 +2202,9 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
         SELECT s.*, c.class_name
         FROM schedules s
         LEFT JOIN classes c ON s.class_id = c.class_id
-        WHERE s.faculty_id = ? AND s.is_active = 1
+        WHERE s.faculty_id = ? AND s.is_active = 1 AND s.academic_year = ?
     ");
-    $stmt->execute([$faculty_id]);
+    $stmt->execute([$faculty_id, IFTL_ACADEMIC_YEAR]);
     $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $entries = [];
     $day_map = [
@@ -2246,6 +2261,37 @@ function mapDayOfWeekToCode($day_of_week) {
         case 'Sunday': return 'SUN';
         default: return '';
     }
+}
+function mapDayOfWeekToCodes($day_of_week) {
+    $normalized = strtoupper(trim((string)$day_of_week));
+    $lookup = [
+        'MONDAY' => ['M'],
+        'M' => ['M'],
+        'TUESDAY' => ['T'],
+        'T' => ['T'],
+        'WEDNESDAY' => ['W'],
+        'W' => ['W'],
+        'THURSDAY' => ['TH'],
+        'TH' => ['TH'],
+        'FRIDAY' => ['F'],
+        'F' => ['F'],
+        'SATURDAY' => ['S'],
+        'SAT' => ['S'],
+        'S' => ['S'],
+        'SUNDAY' => ['SUN'],
+        'SUN' => ['SUN'],
+        'MW' => ['M', 'W'],
+        'WF' => ['W', 'F'],
+        'MF' => ['M', 'F'],
+        'MWF' => ['M', 'W', 'F'],
+        'TTH' => ['T', 'TH'],
+        'MTWTHF' => ['M', 'T', 'W', 'TH', 'F']
+    ];
+    if (isset($lookup[$normalized])) {
+        return $lookup[$normalized];
+    }
+    $single = mapDayOfWeekToCode($day_of_week);
+    return $single ? [$single] : [];
 }
 function mapIFTLDisplayCourse($row) {
     if (($row['status'] ?? '') === 'Leave') return 'LEAVE';

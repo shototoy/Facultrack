@@ -16,11 +16,38 @@ function separateSchedulesByType(schedules) {
     const mwfSchedules = [];
     const tthSchedules = [];
     schedules.forEach(schedule => {
-        const days = schedule.days.toUpperCase();
-        if (/[MWF]/.test(days)) mwfSchedules.push(schedule);
-        if (/T|TH|S/.test(days)) tthSchedules.push(schedule);
+        const dayCodes = parseDayCodes(schedule.days || '');
+        if (dayCodes.some(code => ['M', 'W', 'F'].includes(code))) mwfSchedules.push(schedule);
+        if (dayCodes.some(code => ['T', 'TH', 'S'].includes(code))) tthSchedules.push(schedule);
     });
     return { mwfSchedules, tthSchedules };
+}
+function parseDayCodes(days) {
+    const dayString = String(days || '').toUpperCase().replace(/\s+/g, '');
+    const parsed = [];
+    for (let i = 0; i < dayString.length;) {
+        if (dayString.substr(i, 3) === 'SUN') {
+            parsed.push('SUN');
+            i += 3;
+            continue;
+        }
+        if (dayString.substr(i, 3) === 'SAT') {
+            parsed.push('S');
+            i += 3;
+            continue;
+        }
+        if (dayString.substr(i, 2) === 'TH') {
+            parsed.push('TH');
+            i += 2;
+            continue;
+        }
+        const ch = dayString[i];
+        if (['M', 'T', 'W', 'F', 'S'].includes(ch)) {
+            parsed.push(ch);
+        }
+        i += 1;
+    }
+    return parsed;
 }
 function calculateSummaryData(schedules) {
     const preparations = new Set();
@@ -108,7 +135,7 @@ function findScheduleForSlot(schedules, day, timeSlot) {
         'SATURDAY': 'S'
     };
     return schedules.find(schedule => {
-        const scheduleDays = schedule.days.toUpperCase();
+        const scheduleDays = parseDayCodes(schedule.days || '');
         const hasDayMatch = scheduleDays.includes(dayMap[day]);
         const scheduleStart = normalizeTime(schedule.time_start);
         const hasTimeMatch = scheduleStart === slotStartTime;
