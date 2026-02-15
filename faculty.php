@@ -395,11 +395,142 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             }
             .actions-grid {
                 display: grid !important;
-                grid-template-columns: 1fr 1fr 1fr !important;
+                grid-template-columns: 1fr 1fr !important;
                 gap: 8px !important;
                 width: 100% !important;
                 max-width: none !important;
                 flex: 0 !important;
+                height: auto !important;
+            }
+
+            #iftlModal .modal.large-modal {
+                width: 100% !important;
+                max-width: none !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            #iftlModal .modal-header {
+                padding: 12px 14px !important;
+            }
+
+            #iftlModal .modal-title {
+                font-size: 1rem !important;
+                line-height: 1.3 !important;
+            }
+
+            #iftlModal .modal-body {
+                padding: 10px !important;
+                gap: 8px !important;
+            }
+
+            #iftlModal .iftl-controls {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+
+            #iftlModal .iftl-controls .form-group {
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            #iftlModal .iftl-actions {
+                width: 100% !important;
+                display: grid !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                gap: 8px !important;
+            }
+
+            #iftlModal .iftl-btn {
+                width: 100% !important;
+                min-width: 0 !important;
+                padding: 10px 8px !important;
+                font-size: 0.8rem !important;
+                line-height: 1.2 !important;
+            }
+
+            #facultyIFTLContent {
+                overflow-x: hidden !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #facultyIFTLContent .iftl-table {
+                width: 100% !important;
+                border-collapse: separate !important;
+                border-spacing: 0 8px !important;
+            }
+
+            #facultyIFTLContent .iftl-table thead {
+                display: none !important;
+            }
+
+            #facultyIFTLContent .iftl-table tbody,
+            #facultyIFTLContent .iftl-table tr,
+            #facultyIFTLContent .iftl-table td {
+                display: block !important;
+                width: 100% !important;
+            }
+
+            #facultyIFTLContent .iftl-table tr {
+                background: #fff !important;
+                border: 1px solid #e6e6e6 !important;
+                border-radius: 8px !important;
+                padding: 8px !important;
+            }
+
+            #facultyIFTLContent .iftl-table th,
+            #facultyIFTLContent .iftl-table td {
+                white-space: normal !important;
+                word-break: break-word;
+                font-size: 0.78rem !important;
+                padding: 2px 0 !important;
+            }
+
+            #facultyIFTLContent .iftl-table td {
+                display: flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+                text-align: left !important;
+            }
+
+            #facultyIFTLContent .iftl-table td::before {
+                content: attr(data-label);
+                flex: 0 0 64px;
+                font-weight: 700;
+                font-size: 0.78rem;
+                color: #555;
+            }
+
+            #facultyIFTLContent .iftl-table .form-select,
+            #facultyIFTLContent .iftl-table .form-input {
+                min-width: 0 !important;
+                width: 100% !important;
+                font-size: 0.9rem !important;
+                padding: 6px !important;
+            }
+
+            #facultyIFTLContent .iftl-table td:nth-child(2) > div {
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+                gap: 2px !important;
+            }
+
+            #facultyIFTLContent .iftl-table td:nth-child(2) > div > span {
+                display: none !important;
+            }
+
+            #facultyIFTLContent .iftl-table td:last-child {
+                justify-content: flex-end !important;
+            }
+
+            #facultyIFTLContent .iftl-table td:last-child::before {
+                display: none !important;
             }
         }
         .schedule-header {
@@ -640,6 +771,27 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
         .btn-primary .action-title {
             color: white;
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        .btn-primary .action-icon,
+        .btn-primary .action-icon svg,
+        .btn-primary .action-icon .feather,
+        .action-card.btn-primary .action-icon,
+        .action-card.btn-primary .action-icon svg,
+        .action-card.btn-primary .action-icon svg use,
+        .action-card.btn-primary .action-icon svg * {
+            color: white !important;
+            stroke: white !important;
+            fill: none;
+        }
+        .action-card.status-action .action-icon,
+        .action-card.status-action .action-icon svg,
+        .action-card.status-action .action-icon svg use,
+        .action-card.status-action .action-icon svg * {
+            color: #fff !important;
+            stroke: #fff !important;
+            fill: none !important;
+            opacity: 1 !important;
+            filter: none !important;
         }
         .action-subtitle {
             font-size: 0.75rem;
@@ -910,9 +1062,9 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                     <div class="quick-actions">
                         <h3>Quick Actions</h3>
                         <div class="actions-grid">
-                            <button class="action-card btn-primary" onclick="openStatusModal()">
+                            <button class="action-card btn-primary status-action" onclick="openStatusModal()">
                                 <div class="action-icon">
-                                    <svg class="feather"><use href="#user-check"></use></svg>
+                                    <svg class="feather" style="color: #fff !important; stroke: #fff !important;"><use href="#check"></use></svg>
                                 </div>
                                 <div class="action-title">Update Status</div>
                             </button>

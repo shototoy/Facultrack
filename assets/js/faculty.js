@@ -460,23 +460,23 @@ function renderEditableIFTL(entries, compliance) {
         const timeEndOptions = generateTimeOptions(entry.day_of_week, entry.time_end, 'end', entry.time_start);
         html += `
             <tr data-index="${index}" class="${entry.is_modified == 1 ? 'modified-row' : ''}" style="padding: 2px;">
-                <td style="padding: 4px; vertical-align: middle;">
+                <td data-label="Day" style="padding: 4px; vertical-align: middle;">
                     <select class="form-select" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'day_of_week', this.value)" style="width: 100%; padding: 4px; font-size: 0.9rem;">
                         ${dayOptions}
                     </select>
                 </td>
-                <td style="padding: 4px; vertical-align: middle;">
+                <td data-label="Time" style="padding: 4px; vertical-align: middle;">
                     <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
                        <select class="form-select" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'time_start', this.value)" style="flex: 1; padding: 4px; min-width: 0; font-size: 0.9rem;">${timeStartOptions}</select>
                        <span style="font-size: 0.8rem; line-height: 1;">-</span>
                        <select class="form-select" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'time_end', this.value)" style="flex: 1; padding: 4px; min-width: 0; font-size: 0.9rem;">${timeEndOptions}</select>
                     </div>
                 </td>
-                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-course" value="${entry.course_code || entry.activity_type || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'course_code', this.value)" oninput="updateIFTLEntry(${index}, 'course_code', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Activity/Course"></td>
-                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-class" value="${entry.activity_type !== 'Class' ? entry.activity_type : ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'activity_type', this.value)" oninput="updateIFTLEntry(${index}, 'activity_type', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Class/Sec"></td>
-                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-room" value="${entry.room || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'room', this.value)" oninput="updateIFTLEntry(${index}, 'room', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Location"></td>
-                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-remarks" value="${entry.remarks || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'remarks', this.value)" oninput="updateIFTLEntry(${index}, 'remarks', this.value)" placeholder="Remarks" style="width:100%; padding: 4px; font-size: 0.9rem;"></td>
-                <td style="padding: 4px; text-align: center; vertical-align: middle;">
+                <td data-label="Course" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-course" value="${entry.course_code || entry.activity_type || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'course_code', this.value)" oninput="updateIFTLEntry(${index}, 'course_code', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Activity/Course"></td>
+                <td data-label="Class" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-class" value="${entry.activity_type !== 'Class' ? entry.activity_type : ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'activity_type', this.value)" oninput="updateIFTLEntry(${index}, 'activity_type', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Class/Sec"></td>
+                <td data-label="Location" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-room" value="${entry.room || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'room', this.value)" oninput="updateIFTLEntry(${index}, 'room', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Location"></td>
+                <td data-label="Remarks" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-remarks" value="${entry.remarks || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'remarks', this.value)" oninput="updateIFTLEntry(${index}, 'remarks', this.value)" placeholder="Remarks" style="width:100%; padding: 4px; font-size: 0.9rem;"></td>
+                <td data-label="" style="padding: 4px; text-align: center; vertical-align: middle;">
                     ${!isDisabled ? `<button class="btn-delete" style="background: #e53935; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" onclick="deleteIFTLEntry(${index})" title="Remove">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                     </button>` : ''}

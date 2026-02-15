@@ -153,7 +153,7 @@ INSERT INTO `curriculum` (`curriculum_id`, `course_code`, `year_level`, `semeste
 (72, 'ECE202', 2, '1st', 54, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
 
 INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `current_location`, `last_location_update`, `last_activity`, `office_hours`, `contact_email`, `contact_phone`, `status`, `created_at`, `updated_at`, `is_active`) VALUES
-(1, 2, 'CHAIR-001', 'Information Technology', NULL, '2026-02-02 15:10:39', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.it@sksu.edu.ph', '09123456789', 'Available', '2025-11-27 10:06:45', '2026-02-02 15:10:39', 1),
+(1, 2, 'CHAIR-001', 'Information Technology', NULL, '2026-02-02 15:10:39', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.it@sksu.edu.ph', '09123456789', 'Available', '2025-11-27 10:06:45', '2026-02-02 15:10:39', 0),
 (2, 3, 'CHAIR-002', 'Information Systems', NULL, '2026-01-26 05:04:07', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.is@sksu.edu.ph', '09123456788', 'Available', '2025-11-27 10:06:45', '2026-01-26 05:04:08', 0),
 (3, 4, 'EMP-0001', 'Information Technology', 'NR109', '2026-02-02 06:34:47', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'alexis.apresto@sksu.edu.ph', '09123456701', 'Available', '2025-11-27 10:06:45', '2026-02-02 06:35:23', 0),
 (4, 5, 'EMP-0002', 'Information Technology', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'benedict.rabut@sksu.edu.ph', '091234567024', 'Available', '2025-11-27 10:06:45', '2026-01-29 17:37:56', 0),
@@ -187,11 +187,11 @@ INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `curre
 (32, 33, 'EMP-0031', 'Information Systems', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'maryjoy.carnazo@sksu.edu.ph', '09123456731', 'Available', '2025-11-27 10:06:45', '2025-12-24 12:53:15', 0),
 (33, 34, 'EMP-0032', 'Information Technology', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'may.gallano@sksu.edu.ph', '09123456732', 'Available', '2025-11-27 10:06:45', '2025-12-24 12:53:15', 0),
 (34, 35, 'EMP-0033', 'Information Systems', NULL, '2025-11-27 10:34:29', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'nora.moya@sksu.edu.ph', '09123456733', 'Available', '2025-11-27 10:06:45', '2025-12-24 12:53:15', 0),
-(36, 51, 'CHAIR-003', 'Computer Science', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.cs@sksu.edu.ph', '09123456790', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(37, 52, 'CHAIR-004', 'Computer Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.cpe@sksu.edu.ph', '09123456791', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(38, 53, 'CHAIR-005', 'Civil Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.ce@sksu.edu.ph', '09123456792', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(39, 54, 'CHAIR-006', 'Electronics and Communications Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.ece@sksu.edu.ph', '09123456793', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
-(40, 44, 'EMP-0034', 'Computer Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'lenmar.catajay@sksu.edu.ph', '09123456734', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
+(36, 51, 'CHAIR-003', 'Computer Science', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.cs@sksu.edu.ph', '09123456790', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 0),
+(37, 52, 'CHAIR-004', 'Computer Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.cpe@sksu.edu.ph', '09123456791', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 0),
+(38, 53, 'CHAIR-005', 'Civil Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.ce@sksu.edu.ph', '09123456792', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 0),
+(39, 54, 'CHAIR-006', 'Electronics and Communications Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.ece@sksu.edu.ph', '09123456793', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 0),
+(40, 44, 'EMP-0034', 'Computer Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'lenmar.catajay@sksu.edu.ph', '09123456734', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 0);
 
 INSERT INTO `programs` (`program_id`, `program_code`, `program_name`, `program_description`, `dean_id`, `is_active`, `created_at`, `updated_at`) VALUES
 (1, 'CS', 'Computer Science', 'Bachelor of Science in Computer Science', 8, 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45'),
