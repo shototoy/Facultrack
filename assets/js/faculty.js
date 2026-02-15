@@ -456,8 +456,8 @@ function renderEditableIFTL(entries, compliance) {
         const dayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
             .map(day => `<option value="${day}" ${entry.day_of_week === day ? 'selected' : ''}>${day}</option>`)
             .join('');
-        const timeStartOptions = generateTimeOptions(entry.time_start);
-        const timeEndOptions = generateTimeOptions(entry.time_end);
+        const timeStartOptions = generateTimeOptions(entry.day_of_week, entry.time_start, 'start');
+        const timeEndOptions = generateTimeOptions(entry.day_of_week, entry.time_end, 'end', entry.time_start);
         html += `
             <tr data-index="${index}" class="${entry.is_modified == 1 ? 'modified-row' : ''}" style="padding: 2px;">
                 <td style="padding: 4px; vertical-align: middle;">
@@ -472,10 +472,10 @@ function renderEditableIFTL(entries, compliance) {
                        <select class="form-select" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'time_end', this.value)" style="flex: 1; padding: 4px; min-width: 0; font-size: 0.9rem;">${timeEndOptions}</select>
                     </div>
                 </td>
-                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-course" value="${entry.course_code || entry.activity_type || ''}" ${isDisabled ? 'disabled' : ''} style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Activity/Course"></td>
-                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-class" value="${entry.activity_type !== 'Class' ? entry.activity_type : ''}" ${isDisabled ? 'disabled' : ''} style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Class/Sec"></td>
-                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-room" value="${entry.room || ''}" ${isDisabled ? 'disabled' : ''} style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Location"></td>
-                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-remarks" value="${entry.remarks || ''}" ${isDisabled ? 'disabled' : ''} placeholder="Remarks" style="width:100%; padding: 4px; font-size: 0.9rem;"></td>
+                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-course" value="${entry.course_code || entry.activity_type || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'course_code', this.value)" oninput="updateIFTLEntry(${index}, 'course_code', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Activity/Course"></td>
+                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-class" value="${entry.activity_type !== 'Class' ? entry.activity_type : ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'activity_type', this.value)" oninput="updateIFTLEntry(${index}, 'activity_type', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Class/Sec"></td>
+                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-room" value="${entry.room || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'room', this.value)" oninput="updateIFTLEntry(${index}, 'room', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Location"></td>
+                <td style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-remarks" value="${entry.remarks || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'remarks', this.value)" oninput="updateIFTLEntry(${index}, 'remarks', this.value)" placeholder="Remarks" style="width:100%; padding: 4px; font-size: 0.9rem;"></td>
                 <td style="padding: 4px; text-align: center; vertical-align: middle;">
                     ${!isDisabled ? `<button class="btn-delete" style="background: #e53935; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" onclick="deleteIFTLEntry(${index})" title="Remove">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -495,6 +495,7 @@ function renderEditableIFTL(entries, compliance) {
     content.innerHTML = html;
 }
 function addIFTLEntry() {
+    syncIFTLRowsToMemory();
     if (!window.currentIFTLData) window.currentIFTLData = [];
     window.currentIFTLData.push({
         day_of_week: 'Monday',
@@ -510,18 +511,61 @@ function addIFTLEntry() {
     sortIFTLData();
     renderEditableIFTL(window.currentIFTLData, { status: window.currentIFTLStatus });
 }
-function generateTimeOptions(selectedTime) {
+function syncIFTLRowsToMemory() {
+    const rows = document.querySelectorAll('.editable-grid tbody tr[data-index]');
+    rows.forEach(row => {
+        const index = row.dataset.index;
+        const entry = window.currentIFTLData && window.currentIFTLData[index];
+        if (!entry) return;
+        const courseInput = row.querySelector('.entry-course');
+        if (courseInput) entry.course_code = courseInput.value;
+        const classInput = row.querySelector('.entry-class');
+        if (classInput) entry.activity_type = classInput.value;
+        const roomInput = row.querySelector('.entry-room');
+        if (roomInput) entry.room = roomInput.value;
+        const remarksInput = row.querySelector('.entry-remarks');
+        if (remarksInput) entry.remarks = remarksInput.value;
+        entry.status = 'Regular';
+        entry.is_modified = 1;
+    });
+}
+function normalizeTimeValue(timeValue) {
+    if (!timeValue) return '';
+    const value = String(timeValue).trim();
+    if (/^\d{2}:\d{2}:\d{2}$/.test(value)) return value;
+    if (/^\d{1,2}:\d{2}$/.test(value)) {
+        const [h, m] = value.split(':');
+        return `${h.padStart(2, '0')}:${m}:00`;
+    }
+    return value;
+}
+function getIFTLTimeOptionValues(dayOfWeek, mode = 'start', startTime = null) {
+    const normalizedDay = String(dayOfWeek || '').trim().toLowerCase();
+    const isTTHS = normalizedDay === 'tuesday' || normalizedDay === 'thursday' || normalizedDay === 'saturday';
+    const startOptions = isTTHS
+        ? ['07:30:00', '09:00:00', '10:30:00', '13:00:00', '14:30:00', '16:00:00']
+        : ['08:00:00', '09:00:00', '10:00:00', '11:00:00', '13:00:00', '14:00:00', '15:00:00', '16:00:00'];
+    const endOptions = isTTHS
+        ? ['09:00:00', '10:30:00', '12:00:00', '14:30:00', '16:00:00', '17:30:00']
+        : ['09:00:00', '10:00:00', '11:00:00', '12:00:00', '14:00:00', '15:00:00', '16:00:00', '17:00:00'];
+    if (mode === 'end') {
+        const normalizedStart = normalizeTimeValue(startTime);
+        if (!normalizedStart) return endOptions;
+        return endOptions.filter(time => time > normalizedStart);
+    }
+    return startOptions;
+}
+function generateTimeOptions(dayOfWeek, selectedTime, mode = 'start', startTime = null) {
     let options = '';
-    const startHour = 7;
-    const endHour = 21;
-    for (let h = startHour; h <= endHour; h++) {
-        for (let m = 0; m < 60; m += 30) {
-            const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`;
-            const displayTime = formatTimeClient(timeStr);
-            const safeSelected = selectedTime || '';
-            const isSelected = safeSelected.startsWith(timeStr.substring(0, 5)) ? 'selected' : '';
-            options += `<option value="${timeStr}" ${isSelected}>${displayTime}</option>`;
-        }
+    const safeSelected = normalizeTimeValue(selectedTime || '');
+    const values = getIFTLTimeOptionValues(dayOfWeek, mode, startTime);
+    values.forEach(timeStr => {
+        const displayTime = formatTimeClient(timeStr);
+        const isSelected = safeSelected.startsWith(timeStr.substring(0, 5)) ? 'selected' : '';
+        options += `<option value="${timeStr}" ${isSelected}>${displayTime}</option>`;
+    });
+    if (safeSelected && !values.includes(safeSelected)) {
+        options += `<option value="${safeSelected}" selected>${formatTimeClient(safeSelected)}</option>`;
     }
     return options;
 }
@@ -539,6 +583,17 @@ function updateIFTLEntry(index, field, value) {
     if (window.currentIFTLData[index]) {
         window.currentIFTLData[index][field] = value;
         window.currentIFTLData[index].is_modified = 1;
+        if (field === 'day_of_week' || field === 'time_start') {
+            const entry = window.currentIFTLData[index];
+            const validStartTimes = getIFTLTimeOptionValues(entry.day_of_week, 'start');
+            if (!validStartTimes.includes(normalizeTimeValue(entry.time_start))) {
+                entry.time_start = validStartTimes[0] || entry.time_start;
+            }
+            const validEndTimes = getIFTLTimeOptionValues(entry.day_of_week, 'end', entry.time_start);
+            if (!validEndTimes.includes(normalizeTimeValue(entry.time_end))) {
+                entry.time_end = validEndTimes[0] || entry.time_end;
+            }
+        }
         if (field === 'day_of_week' || field === 'time_start' || field === 'time_end') {
             sortIFTLData();
             renderEditableIFTL(window.currentIFTLData, { status: window.currentIFTLStatus });
@@ -547,6 +602,7 @@ function updateIFTLEntry(index, field, value) {
 }
 function deleteIFTLEntry(index) {
     const proceed = () => {
+        syncIFTLRowsToMemory();
         window.currentIFTLData.splice(index, 1);
         renderEditableIFTL(window.currentIFTLData, { status: window.currentIFTLStatus });
     };
@@ -570,23 +626,7 @@ async function saveIFTLData(status, skipConfirm = false) {
         );
         return;
     }
-    const rows = document.querySelectorAll('.editable-grid tbody tr[data-index]');
-    rows.forEach(row => {
-        const index = row.dataset.index;
-        const entry = window.currentIFTLData[index];
-        if (entry) {
-            const courseInput = row.querySelector('.entry-course');
-            if (courseInput) entry.course_code = courseInput.value;
-            const classInput = row.querySelector('.entry-class');
-            if (classInput) entry.activity_type = classInput.value;
-            const roomInput = row.querySelector('.entry-room');
-            if (roomInput) entry.room = roomInput.value;
-            entry.status = 'Regular';
-            const remarksInput = row.querySelector('.entry-remarks');
-            if (remarksInput) entry.remarks = remarksInput.value;
-            entry.is_modified = 1;
-        }
-    });
+    syncIFTLRowsToMemory();
     const weekSelect = document.getElementById('facultyIFTLWeekSelect');
     const weekIdentifier = weekSelect.value;
     const weekStartDate = weekSelect.options[weekSelect.selectedIndex].dataset.startDate;

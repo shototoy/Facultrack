@@ -15,7 +15,6 @@ $mysql_timezone_map = [
 ];
 $mysql_timezone = '+08:00';
 $pdo->exec("SET time_zone = '$mysql_timezone'");
-define('IFTL_ACADEMIC_YEAR', '2025-2026');
 $action = $_GET['action'] ?? $_POST['action'] ?? $_POST['admin_action'] ?? '';
 if (basename($_SERVER['PHP_SELF']) === 'polling_api.php') {
     header('Content-Type: application/json');
@@ -2387,13 +2386,36 @@ function getAllCurrentEntities($pdo, $role, $tab = null) {
 }
 function generateIFTLFromStandard($pdo, $faculty_id) {
     if (!$faculty_id) return [];
-    $stmt = $pdo->prepare("
-        SELECT s.*, c.class_name
+
+    $year_stmt = $pdo->prepare("
+        SELECT s.academic_year
         FROM schedules s
-        LEFT JOIN classes c ON s.class_id = c.class_id
-        WHERE s.faculty_id = ? AND s.is_active = 1 AND s.academic_year = ?
+        WHERE s.faculty_id = ? AND s.is_active = 1
+          AND s.academic_year IS NOT NULL AND s.academic_year <> ''
+        ORDER BY s.updated_at DESC, s.schedule_id DESC
+        LIMIT 1
     ");
-    $stmt->execute([$faculty_id, IFTL_ACADEMIC_YEAR]);
+    $year_stmt->execute([$faculty_id]);
+    $target_academic_year = $year_stmt->fetchColumn() ?: null;
+
+    if ($target_academic_year) {
+        $stmt = $pdo->prepare("
+            SELECT s.*, c.class_name
+            FROM schedules s
+            LEFT JOIN classes c ON s.class_id = c.class_id
+            WHERE s.faculty_id = ? AND s.is_active = 1
+              AND (s.academic_year = ? OR s.academic_year IS NULL OR s.academic_year = '')
+        ");
+        $stmt->execute([$faculty_id, $target_academic_year]);
+    } else {
+        $stmt = $pdo->prepare("
+            SELECT s.*, c.class_name
+            FROM schedules s
+            LEFT JOIN classes c ON s.class_id = c.class_id
+            WHERE s.faculty_id = ? AND s.is_active = 1
+        ");
+        $stmt->execute([$faculty_id]);
+    }
     $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $entries = [];
     $day_map = [

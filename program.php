@@ -252,7 +252,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_load') {
             exit;
         }
 
-        $faculty_exists_check = "SELECT COUNT(*) FROM faculty WHERE faculty_id = ? AND is_active = TRUE";
+        $faculty_exists_check = "SELECT COUNT(*)
+                                FROM faculty f
+                                JOIN users u ON f.user_id = u.user_id
+                                WHERE f.faculty_id = ? AND u.is_active = TRUE";
         $faculty_exists_stmt = $pdo->prepare($faculty_exists_check);
         $faculty_exists_stmt->execute([$faculty_id]);
         if ((int)$faculty_exists_stmt->fetchColumn() === 0) {

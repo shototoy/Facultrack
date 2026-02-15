@@ -141,7 +141,8 @@ function findScheduleForSlot(schedules, day, timeSlot) {
         const scheduleDays = parseDayCodes(schedule.days || '');
         const hasDayMatch = scheduleDays.includes(dayMap[day]);
         const scheduleStart = normalizeTime(schedule.time_start);
-        const hasTimeMatch = scheduleStart === slotStartTime;
+        const scheduleEnd = normalizeTime(schedule.time_end);
+        const hasTimeMatch = slotStartTime >= scheduleStart && slotStartTime < scheduleEnd;
         return hasDayMatch && hasTimeMatch;
     });
 }
@@ -155,13 +156,11 @@ function generateScheduleGrid(type, schedules) {
         <table class="schedule-grid">
             <thead>
                 <tr>
-                    <th rowspan="2" class="time-col">TIME</th>
-                    ${days.map(day => `<th colspan="3">${day}</th>`).join('')}
-                </tr>
-                <tr>
-                    ${days.map(() => `
-                        <th>Yr/Cn/Sec</th>
-                        <th>ROOM</th>
+                    <th class="time-col">TIME</th>
+                    ${days.map(day => `
+                        <th>${day}</th>
+                        <th>Yr/Crs/Sec</th>
+                        <th>Room</th>
                         <th>No. of Students</th>
                     `).join('')}
                 </tr>
@@ -177,18 +176,19 @@ function generateScheduleGrid(type, schedules) {
             }
             const schedule = findScheduleForSlot(schedules, day, slot);
             if (schedule) {
-                const rowspan = calculateRowspan(schedule.time_start, schedule.time_end, type);
+                const rowspan = calculateRowspan(schedule.time_start, schedule.time_end, type, slot);
                 for (let i = 1; i < rowspan; i++) {
                     occupiedCells[`${slotIndex + i}-${dayIndex}`] = true;
                 }
                 const rowspanAttr = rowspan > 1 ? ` rowspan="${rowspan}"` : '';
                 html += `
                     <td${rowspanAttr}>${schedule.course_code || ''}</td>
+                    <td${rowspanAttr}>${schedule.class_name || ''}</td>
                     <td${rowspanAttr}>${schedule.room || ''}</td>
                     <td${rowspanAttr}>${schedule.total_students !== undefined && schedule.total_students !== null ? schedule.total_students : ''}</td>
                 `;
             } else {
-                html += `<td></td><td></td><td></td>`;
+                html += `<td></td><td></td><td></td><td></td>`;
             }
         });
         html += '</tr>';
@@ -198,27 +198,28 @@ function generateScheduleGrid(type, schedules) {
             <tfoot>
                 <tr>
                     <td>Class Hours</td>
-                    ${days.map(() => '<td colspan="3">2</td>').join('')}
+                    ${days.map(() => '<td></td><td></td><td></td><td>2</td>').join('')}
                 </tr>
                 <tr>
                     <td>Office Hours</td>
-                    ${days.map(() => '<td colspan="3">8</td>').join('')}
+                    ${days.map(() => '<td></td><td></td><td></td><td>8</td>').join('')}
                 </tr>
                 <tr>
                     <td>Total</td>
-                    ${days.map(() => '<td colspan="3">8</td>').join('')}
+                    ${days.map(() => '<td></td><td></td><td></td><td>8</td>').join('')}
                 </tr>
             </tfoot>
         </table>
     `;
     return html;
 }
-function calculateRowspan(startTime, endTime, scheduleType) {
-    const start = new Date(`2000-01-01 ${startTime}`);
+function calculateRowspan(startTime, endTime, scheduleType, renderedSlot = null) {
+    const renderedStart = renderedSlot ? `${renderedSlot.split('-')[0]}:00` : startTime;
+    const start = new Date(`2000-01-01 ${renderedStart}`);
     const end = new Date(`2000-01-01 ${endTime}`);
     const durationHours = (end - start) / (1000 * 60 * 60);
     const slotDuration = scheduleType === 'MWF' ? 1 : 1.5;
-    return Math.ceil(durationHours / slotDuration);
+    return Math.max(1, Math.ceil(durationHours / slotDuration));
 }
 function formatSemesterLabel(semester) {
     const value = String(semester || '').trim().toLowerCase();
@@ -275,7 +276,7 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, dea
             padding: 5px;
             font-size: 6.5pt;
             height: fit-content;
-            margin-top: 90px;
+            margin-top: 0;
         }
         .header {
             display: flex;
