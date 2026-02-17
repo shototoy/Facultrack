@@ -70,7 +70,9 @@ function getAllClasses($pdo) {
             c.semester,
             c.academic_year,
             u.full_name as program_chair_name,
-            COUNT(s.schedule_id) as total_subjects
+            COUNT(DISTINCT s.course_code) as total_subjects,
+            COUNT(DISTINCT s.faculty_id) as assigned_faculty,
+            c.total_students
         FROM classes c
         LEFT JOIN faculty f ON c.program_chair_id = f.user_id
         LEFT JOIN users u ON f.user_id = u.user_id
@@ -1290,7 +1292,9 @@ switch ($action) {
                         c.academic_year,
                         c.program_chair_id,
                         u.full_name as program_chair_name,
-                        COUNT(s.schedule_id) as total_subjects
+                        COUNT(DISTINCT s.course_code) as total_subjects,
+                        COUNT(DISTINCT s.faculty_id) as assigned_faculty,
+                        c.total_students
                     FROM classes c
                     LEFT JOIN faculty f ON c.program_chair_id = f.user_id
                     LEFT JOIN users u ON f.user_id = u.user_id
