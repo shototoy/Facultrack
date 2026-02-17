@@ -176,11 +176,52 @@ echo "<label style='display:block; margin-bottom:12px;'>";
 echo "<input type='radio' name='install_mode' value='schema_only' " . ($selectedMode === 'schema_only' ? 'checked' : '') . "> Schema Only";
 echo "</label>";
 echo "<button type='submit' name='run_install' value='1'>Install Database</button>";
+echo "<button type='submit' name='clear_iftl_schedules' value='1' style='margin-left: 8px;' onclick=\"return confirm('This will permanently clear IFTL and schedules data. Continue?');\">Clear IFTL + Schedules</button>";
 echo "</fieldset>";
 echo "</form>";
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['run_install'])) {
-    echo "<p>Select install mode and click <strong>Install Database</strong>.</p>";
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || (!isset($_POST['run_install']) && !isset($_POST['clear_iftl_schedules']))) {
+    echo "<p>Select an action: <strong>Install Database</strong> or <strong>Clear IFTL + Schedules</strong>.</p>";
+    exit;
+}
+
+$isClearOnlyAction = isset($_POST['clear_iftl_schedules']);
+
+if ($isClearOnlyAction) {
+    echo "Connecting to MySQL server...<br>";
+    $mysqli = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
+    if ($mysqli->connect_error) {
+        die("Connection failed: " . $mysqli->connect_error);
+    }
+    $mysqli->set_charset("utf8mb4");
+
+    $tablesToClear = ['iftl_entries', 'iftl_weekly_compliance', 'schedules'];
+    $clearedTables = 0;
+    $errors = [];
+
+    $mysqli->query("SET FOREIGN_KEY_CHECKS = 0");
+    foreach ($tablesToClear as $tableName) {
+        $escapedTable = str_replace('`', '``', $tableName);
+        if ($mysqli->query("TRUNCATE TABLE `{$escapedTable}`")) {
+            $clearedTables++;
+        } else {
+            $errors[] = "{$tableName}: " . $mysqli->error;
+        }
+    }
+    $mysqli->query("SET FOREIGN_KEY_CHECKS = 1");
+
+    if (!empty($errors)) {
+        echo "<h2 style='color:red'>Clear operation completed with errors.</h2>";
+        echo "<p>Tables successfully cleared: {$clearedTables}/" . count($tablesToClear) . "</p>";
+        echo "<pre>" . htmlspecialchars(implode("\n", $errors)) . "</pre>";
+        $mysqli->close();
+        exit;
+    }
+
+    echo "<h2 style='color:green'>Success! Tables cleared.</h2>";
+    echo "<p>Cleared tables: iftl_entries, iftl_weekly_compliance, schedules</p>";
+    echo "<p>You can now return to <a href='index.php'>Login</a>.</p>";
+    $mysqli->close();
     exit;
 }
 
