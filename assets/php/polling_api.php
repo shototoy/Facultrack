@@ -40,27 +40,27 @@ function getAllFaculty($pdo) {
                 ELSE 'Offline'
             END as status,
             f.is_active as connection_status,
-            f.status as activity_status,
-            COALESCE(
-                (SELECT CASE
-                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
-                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
-                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
-                    ELSE 'Over a week ago'
-                END
-                FROM location_history lh
-                WHERE lh.faculty_id = f.faculty_id
-                ORDER BY lh.time_set DESC
-                LIMIT 1),
-                'No location history'
-            ) as last_updated
+            f.status as activity_status
         FROM faculty f
         JOIN users u ON f.user_id = u.user_id
         ORDER BY u.full_name
     ";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $faculty = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Attach PHP-side last_updated using getTimeAgo
+    foreach ($faculty as &$f) {
+        $lh_stmt = $pdo->prepare("SELECT time_set FROM location_history WHERE faculty_id = ? ORDER BY time_set DESC LIMIT 1");
+        $lh_stmt->execute([$f['faculty_id']]);
+        $row = $lh_stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row && $row['time_set']) {
+            $f['last_updated'] = getTimeAgo($row['time_set']);
+        } else {
+            $f['last_updated'] = 'No location history';
+        }
+    }
+    unset($f);
+    return $faculty;
 }
 function getAllClasses($pdo) {
     $classes_query = "
@@ -1044,19 +1044,7 @@ switch ($action) {
                             WHEN f.is_active = 1 THEN f.status
                             ELSE 'Offline'
                         END as status,
-                        COALESCE(
-                            (SELECT CASE
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
-                                ELSE 'Over a week ago'
-                            END
-                            FROM location_history lh
-                            WHERE lh.faculty_id = f.faculty_id
-                            ORDER BY lh.time_set DESC
-                            LIMIT 1),
-                            'No location history'
-                        ) as last_updated
+                        f.last_location_update
                     FROM faculty f
                     JOIN users u ON f.user_id = u.user_id
                     JOIN schedules s ON f.faculty_id = s.faculty_id
@@ -1066,6 +1054,18 @@ switch ($action) {
                 $stmt = $pdo->prepare($faculty_query);
                 $stmt->execute([$class_id]);
                 $faculty_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                // Attach PHP-side last_updated using getTimeAgo
+                foreach ($faculty_data as &$f) {
+                    $lh_stmt = $pdo->prepare("SELECT time_set FROM location_history WHERE faculty_id = ? ORDER BY time_set DESC LIMIT 1");
+                    $lh_stmt->execute([$f['faculty_id']]);
+                    $row = $lh_stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($row && $row['time_set']) {
+                        $f['last_updated'] = getTimeAgo($row['time_set']);
+                    } else {
+                        $f['last_updated'] = 'No location history';
+                    }
+                }
+                unset($f);
                 sendJsonResponse([
                     'success' => true,
                     'faculty' => $faculty_data,
@@ -1084,21 +1084,7 @@ switch ($action) {
                         CASE
                             WHEN f.is_active = 1 THEN f.status
                             ELSE 'Offline'
-                        END as status,
-                        COALESCE(
-                            (SELECT CASE
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 1 MINUTE) THEN 'Just now'
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 60 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
-                                ELSE 'Over a week ago'
-                            END
-                            FROM location_history lh
-                            WHERE lh.faculty_id = f.faculty_id
-                            ORDER BY lh.time_set DESC
-                            LIMIT 1),
-                            'No location history'
-                        ) as last_updated
+                        END as status
                     FROM faculty f
                     JOIN users u ON f.user_id = u.user_id
                     WHERE f.user_id = ?
@@ -1107,6 +1093,14 @@ switch ($action) {
                 $stmt->execute([$user_id]);
                 $faculty_data = $stmt->fetch(PDO::FETCH_ASSOC);
                 if ($faculty_data) {
+                    $lh_stmt = $pdo->prepare("SELECT time_set FROM location_history WHERE faculty_id = ? ORDER BY time_set DESC LIMIT 1");
+                    $lh_stmt->execute([$faculty_data['faculty_id']]);
+                    $row = $lh_stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($row && $row['time_set']) {
+                        $faculty_data['last_updated'] = getTimeAgo($row['time_set']);
+                    } else {
+                        $faculty_data['last_updated'] = 'No location history';
+                    }
                     sendJsonResponse([
                         'success' => true,
                         'current_location' => $faculty_data['current_location'],
@@ -1118,7 +1112,7 @@ switch ($action) {
                 } else {
                     sendJsonResponse(['success' => false, 'message' => 'Faculty not found'], 404);
                 }
-            } elseif ($user_role === 'program_chair') {
+            } elseif ($user_role === 'program_chair' || $user_role === 'campus_director') {
                 $faculty_query = "
                     SELECT DISTINCT
                         f.faculty_id,
@@ -1128,61 +1122,24 @@ switch ($action) {
                             WHEN f.is_active = 1 THEN f.status
                             ELSE 'Offline'
                         END as status,
-                        COALESCE(
-                            (SELECT CASE
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 1 MINUTE) THEN 'Just now'
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 60 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
-                                ELSE 'Over a week ago'
-                            END
-                            FROM location_history lh
-                            WHERE lh.faculty_id = f.faculty_id
-                            ORDER BY lh.time_set DESC
-                            LIMIT 1),
-                            'No location history'
-                        ) as last_updated
+                        f.last_location_update
                     FROM faculty f
                     JOIN users u ON f.user_id = u.user_id
                 ";
                 $stmt = $pdo->prepare($faculty_query);
                 $stmt->execute();
                 $faculty_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                sendJsonResponse([
-                    'success' => true,
-                    'faculty' => $faculty_data,
-                    'timestamp' => date('Y-m-d H:i:s')
-                ]);
-            } elseif ($user_role === 'campus_director') {
-                $faculty_query = "
-                    SELECT DISTINCT
-                        f.faculty_id,
-                        u.full_name as faculty_name,
-                        f.current_location,
-                        CASE
-                            WHEN f.is_active = 1 THEN f.status
-                            ELSE 'Offline'
-                        END as status,
-                        COALESCE(
-                            (SELECT CASE
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 1 MINUTE) THEN 'Just now'
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 60 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
-                                WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
-                                ELSE 'Over a week ago'
-                            END
-                            FROM location_history lh
-                            WHERE lh.faculty_id = f.faculty_id
-                            ORDER BY lh.time_set DESC
-                            LIMIT 1),
-                            'No location history'
-                        ) as last_updated
-                    FROM faculty f
-                    JOIN users u ON f.user_id = u.user_id
-                ";
-                $stmt = $pdo->prepare($faculty_query);
-                $stmt->execute();
-                $faculty_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($faculty_data as &$f) {
+                    $lh_stmt = $pdo->prepare("SELECT time_set FROM location_history WHERE faculty_id = ? ORDER BY time_set DESC LIMIT 1");
+                    $lh_stmt->execute([$f['faculty_id']]);
+                    $row = $lh_stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($row && $row['time_set']) {
+                        $f['last_updated'] = getTimeAgo($row['time_set']);
+                    } else {
+                        $f['last_updated'] = 'No location history';
+                    }
+                }
+                unset($f);
                 sendJsonResponse([
                     'success' => true,
                     'faculty' => $faculty_data,

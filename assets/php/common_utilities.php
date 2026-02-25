@@ -77,12 +77,17 @@ function getTimeAgoSQL() {
 function getTimeAgo($timestamp) {
     if (!$timestamp) return 'Never';
     $time_diff = time() - strtotime($timestamp);
-    if ($time_diff < 3600) {
-        return floor($time_diff / 60) . ' minutes ago';
+    if ($time_diff < 60) {
+        return 'Just now';
+    } elseif ($time_diff < 3600) {
+        $minutes = max(1, floor($time_diff / 60));
+        return $minutes . ' minute' . ($minutes === 1 ? '' : 's') . ' ago';
     } elseif ($time_diff < 86400) {
-        return floor($time_diff / 3600) . ' hours ago';
+        $hours = max(1, floor($time_diff / 3600));
+        return $hours . ' hour' . ($hours === 1 ? '' : 's') . ' ago';
     } else {
-        return floor($time_diff / 86400) . ' days ago';
+        $days = max(1, floor($time_diff / 86400));
+        return $days . ' day' . ($days === 1 ? '' : 's') . ' ago';
     }
 }
 function sendJsonResponse($data, $http_code = 200) {

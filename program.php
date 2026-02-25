@@ -193,19 +193,13 @@ function getAllFacultyProgram($pdo) {
                 WHEN f.is_active = 1 THEN 'Available'
                 ELSE 'Offline'
             END as status,
-            COALESCE(
-                (SELECT CASE
-                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN CONCAT(TIMESTAMPDIFF(MINUTE, lh.time_set, NOW()), ' minutes ago')
-                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN CONCAT(TIMESTAMPDIFF(HOUR, lh.time_set, NOW()), ' hours ago')
-                    WHEN lh.time_set > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN CONCAT(TIMESTAMPDIFF(DAY, lh.time_set, NOW()), ' days ago')
-                    ELSE 'Over a week ago'
-                END
+            (
+                SELECT lh.time_set
                 FROM location_history lh
                 WHERE lh.faculty_id = f.faculty_id
                 ORDER BY lh.time_set DESC
-                LIMIT 1),
-                'No location history'
-            ) as last_updated
+                LIMIT 1
+            ) as last_location_time
         FROM faculty f
         JOIN users u ON f.user_id = u.user_id
         LEFT JOIN programs p ON f.program = p.program_name
@@ -213,7 +207,13 @@ function getAllFacultyProgram($pdo) {
         ORDER BY u.full_name";
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $faculty_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Use improved getTimeAgo for each faculty
+    require_once 'assets/php/common_utilities.php';
+    foreach ($faculty_list as &$faculty) {
+        $faculty['last_updated'] = getTimeAgo($faculty['last_location_time']);
+    }
+    return $faculty_list;
 }
 function getFacultySchedulesProgram($pdo, $faculty_id) {
     $schedule_query = "
