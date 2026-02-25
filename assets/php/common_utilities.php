@@ -1,4 +1,6 @@
 <?php
+c// Always use Manila timezone for all PHP date/time functions
+date_default_timezone_set('Asia/Manila');
 $servername = getenv('DB_HOST') ?: getenv('MYSQLHOST') ?: 'localhost';
 $username = getenv('DB_USER') ?: getenv('MYSQLUSER') ?: 'root';
 $password = getenv('DB_PASSWORD') ?: getenv('MYSQLPASSWORD') ?: '';

@@ -187,7 +187,7 @@ function generateScheduleHTML(schedules) {
                         <div class="course-name">${escapeHtml(schedule.course_description)}</div>
                     </div>
                     <div class="schedule-info">
-                        <span class="class-info">${escapeHtml(schedule.class_name)}</span>
+                        <span class="class-info">${escapeHtml(schedule.class_code)}</span>
                         <span class="room-info">Room: ${escapeHtml(schedule.room || 'TBA')}</span>
                     </div>
                 </div>

@@ -74,8 +74,21 @@ function calculateSummaryData(schedules) {
     });
     const actualTeachingLoad = lectureUnits + labUnits;
     const normalLoad = 18;
-    const loadDisplacement = Math.max(0, normalLoad - actualTeachingLoad);
-    const overload = Math.max(0, actualTeachingLoad - normalLoad);
+    // Load Displacement is total units
+    const loadDisplacement = actualTeachingLoad;
+    // Overload/Underload is normalLoad - total units
+    let overloadUnderloadValue = 0;
+    let overloadUnderloadLabel = '';
+    if (normalLoad > loadDisplacement) {
+        overloadUnderloadValue = normalLoad - loadDisplacement;
+        overloadUnderloadLabel = 'Underload';
+    } else if (normalLoad < loadDisplacement) {
+        overloadUnderloadValue = loadDisplacement - normalLoad;
+        overloadUnderloadLabel = 'Overload';
+    } else {
+        overloadUnderloadValue = 0;
+        overloadUnderloadLabel = 'Normal';
+    }
     const maxDailyHours = 8;
     const officeHours = Math.max(0, maxDailyHours - Math.round(totalClassHours));
     const consultationHours = 4;
@@ -88,9 +101,10 @@ function calculateSummaryData(schedules) {
         labUnits,
         actualTeachingLoad,
         creditStudentFactor: 0,
-        actualTotalLoad: actualTeachingLoad + loadDisplacement,
+        actualTotalLoad: actualTeachingLoad, // keep as total units
         normalLoad: normalLoad,
-        overload: overload,
+        overloadUnderloadValue: overloadUnderloadValue,
+        overloadUnderloadLabel: overloadUnderloadLabel,
         classHours: Math.round(totalClassHours),
         officeHours,
         consultationHours,
@@ -492,7 +506,7 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, dea
                 <tr><td>7. Credit for Student Factor</td><td>${summary.creditStudentFactor}</td></tr>
                 <tr><td>8. Actual Total Load (6 + 7)</td><td>${summary.actualTotalLoad}</td></tr>
                 <tr><td>9. Normal Load</td><td>${summary.normalLoad}</td></tr>
-                <tr><td>10. Overload/Underload</td><td>${summary.overload}</td></tr>
+                <tr><td>10. Overload/Underload</td><td>${summary.overloadUnderloadLabel}: ${summary.overloadUnderloadValue}</td></tr>
                 <tr><td>11. Class Hours</td><td>${summary.classHours}</td></tr>
                 <tr><td>12. Office Hours</td><td>${summary.officeHours}</td></tr>
                 <tr><td>13. Consultation Hours</td><td>${summary.consultationHours}</td></tr>

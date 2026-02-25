@@ -1,4 +1,6 @@
 <?php
+// Always use Manila timezone for all PHP date/time functions
+date_default_timezone_set('Asia/Manila');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
@@ -288,8 +290,16 @@ function getFacultyInfo($pdo, $user_id) {
 function getScheduleForDays($pdo, $faculty_id, $days) {
     $current_day = date('w');
     $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
+    $day_order = ['M', 'T', 'W', 'TH', 'F', 'S'];
     $today_code = $day_mapping[$current_day];
     $viewing_day = $days;
+    // Helper to get index in week
+    $get_day_index = function($d) use ($day_order) {
+        $idx = array_search($d, $day_order);
+        return $idx === false ? -1 : $idx;
+    };
+    $today_idx = $get_day_index($today_code);
+    $viewing_idx = $get_day_index($viewing_day);
     $schedule_query = "
         SELECT s.*, c.course_description, cl.class_name, cl.class_code,
             CASE
@@ -300,22 +310,8 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
                         WHEN TIME(NOW()) < s.time_start THEN 'upcoming'
                         ELSE 'finished'
                     END
-                WHEN (
-                    ('$viewing_day' = 'M' AND '$today_code' IN ('T', 'W', 'TH', 'F', 'S')) OR
-                    ('$viewing_day' = 'T' AND '$today_code' IN ('W', 'TH', 'F', 'S')) OR
-                    ('$viewing_day' = 'W' AND '$today_code' IN ('TH', 'F', 'S')) OR
-                    ('$viewing_day' = 'TH' AND '$today_code' IN ('F', 'S')) OR
-                    ('$viewing_day' = 'F' AND '$today_code' = 'S') OR
-                    ('$viewing_day' = 'S' AND '$today_code' = 'M')
-                ) THEN 'finished'
-                WHEN (
-                    ('$viewing_day' = 'T' AND '$today_code' = 'M') OR
-                    ('$viewing_day' = 'W' AND '$today_code' IN ('M', 'T')) OR
-                    ('$viewing_day' = 'TH' AND '$today_code' IN ('M', 'T', 'W')) OR
-                    ('$viewing_day' = 'F' AND '$today_code' IN ('M', 'T', 'W', 'TH')) OR
-                    ('$viewing_day' = 'S' AND '$today_code' IN ('M', 'T', 'W', 'TH', 'F')) OR
-                    ('$viewing_day' = 'M' AND '$today_code' = 'S')
-                ) THEN 'not-today'
+                WHEN $viewing_idx < $today_idx THEN 'finished'
+                WHEN $viewing_idx > $today_idx THEN 'upcoming'
                 ELSE 'not-today'
             END as status
         FROM schedules s
@@ -340,12 +336,17 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
                         WHEN TIME(NOW()) < s.time_start THEN 3
                         ELSE 4
                     END
-                ELSE 5
+                WHEN $viewing_idx < $today_idx THEN 1
+                WHEN $viewing_idx > $today_idx THEN 2
+                ELSE 3
             END,
             s.time_start";
     $stmt = $pdo->prepare($schedule_query);
     $stmt->execute([$faculty_id]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Debug info for diagnosis
+    // Debug output removed, restore normal operation
+    return $result;
 }
 function generateScheduleHTML($schedule_data) {
     $html = '';
@@ -360,7 +361,7 @@ function generateScheduleHTML($schedule_data) {
         $html .= '<h4>' . htmlspecialchars($schedule['course_code']) . '</h4>';
         $html .= '<p>' . htmlspecialchars($schedule['course_description']) . '</p>';
         $html .= '<div class="schedule-info">';
-        $html .= '<span>Class: ' . htmlspecialchars($schedule['class_name']) . '</span>';
+        $html .= '<span>Class Code: ' . htmlspecialchars($schedule['class_code']) . '</span>';
         $html .= '<span>Room: ' . htmlspecialchars($schedule['room'] ?? 'TBA') . '</span>';
         $html .= '</div>';
         $html .= '</div>';
