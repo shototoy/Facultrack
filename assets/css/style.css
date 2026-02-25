@@ -983,7 +983,49 @@ body::before {
     padding: 12px 20px;
     filter: none;
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-tabs .semester-filter,
+.dashboard-tabs .yearlevel-filter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dashboard-tabs .semester-segment {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.dashboard-tabs .semester-segment-btn {
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: var(--transition-normal);
+    white-space: nowrap;
+}
+
+.dashboard-tabs .semester-segment-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.dashboard-tabs .semester-segment-btn.active {
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--text-green-secondary);
 }
 
 .dashboard-tabs .search-container {
@@ -2106,12 +2148,40 @@ body:has(.table-container) .tab-content.active {
         margin-left: 0 !important;
         order: 10;
         display: flex !important;
-        justify-content: center !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        gap: 8px;
+        padding: 8px 10px;
+    }
+
+    .dashboard-tabs .semester-filter,
+    .dashboard-tabs .yearlevel-filter {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .dashboard-tabs .semester-filter .semester-segment {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .dashboard-tabs .yearlevel-filter .semester-segment {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .dashboard-tabs .semester-segment-btn {
+        text-align: center;
+        padding: 7px 4px;
     }
 
     .dashboard-tabs .search-container {
         width: 100% !important;
-        max-width: 400px;
+        max-width: none;
     }
 }
 

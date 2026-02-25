@@ -442,7 +442,8 @@ function renderEditableIFTL(entries, compliance) {
                 <tr>
                     <th style="width: 12%; padding: 12px 4px;">Day</th>
                     <th style="width: 20%; padding: 12px 4px;">Time</th>
-                    <th style="width: 20%; padding: 12px 4px;">Activity/Course</th>
+                    <th style="width: 18%; padding: 12px 4px;">Activity/Course</th>
+                    <th style="width: 10%; padding: 12px 4px;"># Students</th>
                     <th style="width: 15%; padding: 12px 4px;">Class</th>
                     <th style="width: 15%; padding: 12px 4px;">Location</th>
                     <th style="width: 13%; padding: 12px 4px;">Remarks</th>
@@ -473,6 +474,9 @@ function renderEditableIFTL(entries, compliance) {
                     </div>
                 </td>
                 <td data-label="Course" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-course" value="${entry.course_code || entry.activity_type || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'course_code', this.value)" oninput="updateIFTLEntry(${index}, 'course_code', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Activity/Course"></td>
+                <td data-label="# Students" style="padding: 4px; vertical-align: middle;">
+                    <input type="number" min="0" class="form-input entry-students" value="${typeof entry.total_students !== 'undefined' ? entry.total_students : ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'total_students', this.value)" oninput="updateIFTLEntry(${index}, 'total_students', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="# Students">
+                </td>
                 <td data-label="Class" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-class" value="${entry.activity_type !== 'Class' ? entry.activity_type : ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'activity_type', this.value)" oninput="updateIFTLEntry(${index}, 'activity_type', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Class/Sec"></td>
                 <td data-label="Location" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-room" value="${entry.room || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'room', this.value)" oninput="updateIFTLEntry(${index}, 'room', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Location"></td>
                 <td data-label="Remarks" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-remarks" value="${entry.remarks || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'remarks', this.value)" oninput="updateIFTLEntry(${index}, 'remarks', this.value)" placeholder="Remarks" style="width:100%; padding: 4px; font-size: 0.9rem;"></td>
@@ -502,6 +506,7 @@ function addIFTLEntry() {
         time_start: '08:00:00',
         time_end: '09:00:00',
         course_code: '',
+        total_students: '',
         room: '',
         activity_type: '',
         status: 'Regular',
@@ -519,6 +524,8 @@ function syncIFTLRowsToMemory() {
         if (!entry) return;
         const courseInput = row.querySelector('.entry-course');
         if (courseInput) entry.course_code = courseInput.value;
+        const studentsInput = row.querySelector('.entry-students');
+        if (studentsInput) entry.total_students = studentsInput.value;
         const classInput = row.querySelector('.entry-class');
         if (classInput) entry.activity_type = classInput.value;
         const roomInput = row.querySelector('.entry-room');

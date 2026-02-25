@@ -103,6 +103,82 @@ function getAllCourses($pdo) {
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+function getProgramChairCourses($pdo, $user_id) {
+    $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
+    $stmt->execute([$user_id]);
+    $program_name = $stmt->fetchColumn();
+    if (!$program_name) {
+        return [];
+    }
+
+    $courses_query = "
+        SELECT
+            c.course_id,
+            c.course_code,
+            c.course_description,
+            c.units,
+            COALESCE(p.program_name, 'General Education') as program_name,
+            COUNT(DISTINCT s.schedule_id) as times_scheduled,
+            CONCAT_WS(',',
+                                (
+                                        SELECT GROUP_CONCAT(DISTINCT cur.semester ORDER BY FIELD(cur.semester, '1st', '2nd', 'Summer') SEPARATOR ',')
+                                        FROM curriculum cur
+                                        JOIN classes cl_scope
+                                            ON cl_scope.year_level = cur.year_level
+                                           AND cl_scope.semester = cur.semester
+                                           AND cl_scope.program_chair_id = ?
+                                           AND cl_scope.is_active = TRUE
+                                        WHERE cur.course_code = c.course_code
+                                            AND cur.is_active = TRUE
+                                            AND cur.program_chair_id = ?
+                                ),
+                                (
+                                        SELECT GROUP_CONCAT(DISTINCT cl2.semester ORDER BY FIELD(cl2.semester, '1st', '2nd', 'Summer') SEPARATOR ',')
+                                        FROM schedules sc
+                                        JOIN classes cl2
+                                            ON sc.class_id = cl2.class_id
+                                         AND cl2.program_chair_id = ?
+                                         AND cl2.is_active = TRUE
+                                        WHERE sc.course_code = c.course_code
+                                            AND sc.is_active = TRUE
+                                )
+            ) AS curriculum_semesters,
+            CONCAT_WS(',',
+                                (
+                                        SELECT GROUP_CONCAT(DISTINCT cur.year_level ORDER BY cur.year_level SEPARATOR ',')
+                                        FROM curriculum cur
+                                        JOIN classes cl_scope
+                                            ON cl_scope.year_level = cur.year_level
+                                           AND cl_scope.semester = cur.semester
+                                           AND cl_scope.program_chair_id = ?
+                                           AND cl_scope.is_active = TRUE
+                                        WHERE cur.course_code = c.course_code
+                                            AND cur.is_active = TRUE
+                                            AND cur.program_chair_id = ?
+                                ),
+                                (
+                                        SELECT GROUP_CONCAT(DISTINCT cl2.year_level ORDER BY cl2.year_level SEPARATOR ',')
+                                        FROM schedules sc
+                                        JOIN classes cl2
+                                            ON sc.class_id = cl2.class_id
+                                         AND cl2.program_chair_id = ?
+                                         AND cl2.is_active = TRUE
+                                        WHERE sc.course_code = c.course_code
+                                            AND sc.is_active = TRUE
+                                )
+            ) AS curriculum_year_levels,
+            CASE WHEN c.program_id IS NULL THEN 1 ELSE 0 END as is_general_education
+        FROM courses c
+        LEFT JOIN programs p ON c.program_id = p.program_id
+        LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
+        WHERE c.is_active = TRUE
+          AND (p.program_name = ? OR c.program_id IS NULL)
+        GROUP BY c.course_id
+        ORDER BY c.course_code";
+    $stmt = $pdo->prepare($courses_query);
+    $stmt->execute([$user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $program_name]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 function getAllPrograms($pdo) {
     $programs_query = "
         SELECT
@@ -1213,7 +1289,13 @@ switch ($action) {
                     (SELECT COUNT(*)
                      FROM iftl_weekly_compliance iwc
                      WHERE iwc.faculty_id = f.faculty_id
-                     AND iwc.week_identifier = ?) as has_iftl
+                     AND iwc.week_identifier = ?) as has_iftl,
+                    (
+                        SELECT SUM(cl.total_students)
+                        FROM schedules s
+                        JOIN classes cl ON s.class_id = cl.class_id
+                        WHERE s.faculty_id = f.faculty_id AND s.is_active = TRUE
+                    ) as total_students
                 FROM faculty f
                 JOIN users u ON f.user_id = u.user_id
                 WHERE u.role NOT IN ('program_chair', 'campus_director')
@@ -1309,28 +1391,7 @@ switch ($action) {
                 $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
                 $stmt->execute([$user_id]);
                 $program_chair_program = $stmt->fetchColumn();
-                $stmt = $pdo->prepare("SELECT program_id FROM programs WHERE program_name = ? AND is_active = TRUE");
-                $stmt->execute([$program_chair_program]);
-                $program_id = $stmt->fetchColumn();
-                $courses_query = "
-                    SELECT
-                        c.course_id,
-                        c.course_code,
-                        c.course_description,
-                        c.units,
-                        COALESCE(p.program_name, 'General Education') as program_name,
-                        COUNT(s.schedule_id) as times_scheduled,
-                        CASE WHEN c.program_id IS NULL THEN 1 ELSE 0 END as is_general_education
-                    FROM courses c
-                    LEFT JOIN programs p ON c.program_id = p.program_id
-                    LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
-                    WHERE c.is_active = TRUE
-                    AND (c.program_id = ? OR c.program_id IS NULL)
-                    GROUP BY c.course_id
-                    ORDER BY c.course_code";
-                $stmt = $pdo->prepare($courses_query);
-                $stmt->execute([$program_id]);
-                $response_data['courses_data'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $response_data['courses_data'] = getProgramChairCourses($pdo, $user_id);
             } else if ($role === 'class') {
                 $user_id = $_SESSION['user_id'];
                 $class_query = "SELECT class_id FROM classes WHERE user_id = ? AND is_active = TRUE";
@@ -1657,15 +1718,15 @@ switch ($action) {
             }
 
             if ($compliance_id && $is_override) {
-                $overlay_query = "
-                    SELECT e.entry_id, e.day_of_week, e.time_start, e.time_end, e.course_code, e.room,
-                           e.class_name, e.status, e.activity_type,
-                           c.course_description, c.units, cl.total_students
-                    FROM iftl_entries e
-                    LEFT JOIN courses c ON e.course_code = c.course_code
-                    LEFT JOIN classes cl ON e.class_name = cl.class_name
-                    WHERE e.compliance_id = ?
-                    ORDER BY e.time_start";
+                  $overlay_query = "
+                      SELECT e.entry_id, e.day_of_week, e.time_start, e.time_end, e.course_code, e.room,
+                          e.class_name, e.status,
+                          c.course_description, c.units, cl.total_students
+                      FROM iftl_entries e
+                      LEFT JOIN courses c ON e.course_code = c.course_code
+                      LEFT JOIN classes cl ON e.class_name = cl.class_name
+                      WHERE e.compliance_id = ?
+                      ORDER BY e.time_start";
                 $stmt = $pdo->prepare($overlay_query);
                 $stmt->execute([$compliance_id]);
                 $overlay_entries = [];
@@ -2221,7 +2282,7 @@ switch ($action) {
             $stmt->execute([$compliance_id]);
             $entries = json_decode($_POST['entries'], true);
             if ($entries) {
-                $insert_stmt = $pdo->prepare("INSERT INTO iftl_entries (compliance_id, day_of_week, time_start, time_end, course_code, room, activity_type, status, remarks, is_modified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $insert_stmt = $pdo->prepare("INSERT INTO iftl_entries (compliance_id, day_of_week, time_start, time_end, course_code, total_students, room, class_name, activity_type, status, remarks, is_modified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 foreach ($entries as $e) {
                     $insert_stmt->execute([
                         $compliance_id,
@@ -2229,8 +2290,10 @@ switch ($action) {
                         $e['time_start'],
                         $e['time_end'],
                         $e['course_code'] ?? null,
+                        isset($e['total_students']) && $e['total_students'] !== '' ? (int)$e['total_students'] : null,
                         $e['room'] ?? null,
-                        $e['activity_type'] ?? 'Class',
+                        $e['activity_type'] ?? null, // CRS/YR/SEC now goes to class_name
+                        null, // activity_type is not used for CRS/YR/SEC
                         $e['status'] ?? 'Regular',
                         $e['remarks'] ?? null,
                         $e['is_modified'] ?? 0
@@ -2377,7 +2440,11 @@ function getAllCurrentEntities($pdo, $role, $tab = null) {
                 $entities['classes'] = getAllClasses($pdo);
             }
             if (!$tab || $tab === 'courses') {
-                $entities['courses'] = getAllCourses($pdo);
+                if ($role === 'program_chair') {
+                    $entities['courses'] = getProgramChairCourses($pdo, $_SESSION['user_id']);
+                } else {
+                    $entities['courses'] = getAllCourses($pdo);
+                }
             }
             if (!$tab || $tab === 'announcements') {
                 $entities['announcements'] = getAllAnnouncements($pdo);
@@ -2404,7 +2471,7 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
 
     if ($target_academic_year) {
         $stmt = $pdo->prepare("
-            SELECT s.*, c.class_name
+            SELECT s.*, c.class_name, c.total_students
             FROM schedules s
             LEFT JOIN classes c ON s.class_id = c.class_id
             WHERE s.faculty_id = ? AND s.is_active = 1
@@ -2413,7 +2480,7 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
         $stmt->execute([$faculty_id, $target_academic_year]);
     } else {
         $stmt = $pdo->prepare("
-            SELECT s.*, c.class_name
+            SELECT s.*, c.class_name, c.total_students
             FROM schedules s
             LEFT JOIN classes c ON s.class_id = c.class_id
             WHERE s.faculty_id = ? AND s.is_active = 1
@@ -2449,6 +2516,7 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
                     'course_code' => $sched['course_code'],
                     'room' => $sched['room'],
                     'activity_type' => $sched['class_name'] ?? 'Class',
+                    'total_students' => isset($sched['total_students']) ? (int)$sched['total_students'] : null,
                     'status' => 'Regular',
                     'remarks' => '',
                     'is_modified' => 0

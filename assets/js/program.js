@@ -96,6 +96,8 @@ function contactFaculty(email) {
 function callFaculty(phone) {
     window.location.href = 'tel:' + phone;
 }
+let currentCourseSemesterFilter = 'all';
+let currentCourseYearLevelFilter = 'all';
 function switchTab(tabName) {
     const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(content => content.classList.remove('active'));
@@ -105,6 +107,8 @@ function switchTab(tabName) {
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
     document.getElementById('searchInput').value = '';
     resetAllTabsVisibility();
+    updateSemesterFilterVisibility();
+    searchContent();
 }
 function resetAllTabsVisibility() {
     const facultyCards = document.querySelectorAll('.faculty-card');
@@ -142,12 +146,17 @@ function searchFaculty(searchTerm) {
     updateEmptyState('#facultyGrid', visibleCount, searchTerm, 'No faculty found', 'Try adjusting your search criteria');
 }
 function searchCourses(searchTerm) {
+    const selectedSemester = getSelectedCourseSemester();
+    const selectedYearLevel = getSelectedCourseYearLevel();
     const courseCards = document.querySelectorAll('.course-card');
     let visibleCount = 0;
     courseCards.forEach(card => {
+        const isMatchSemester = shouldShowCourseCardForSemester(card, selectedSemester);
+        const isMatchYearLevel = shouldShowCourseCardForYearLevel(card, selectedYearLevel);
         const courseCode = card.querySelector('.course-code').textContent.toLowerCase();
         const courseDescription = card.querySelector('.course-description').textContent.toLowerCase();
-        if (courseCode.includes(searchTerm) || courseDescription.includes(searchTerm)) {
+        const isMatchText = courseCode.includes(searchTerm) || courseDescription.includes(searchTerm);
+        if (isMatchText && isMatchSemester && isMatchYearLevel) {
             card.style.display = 'block';
             visibleCount++;
         } else {
@@ -156,6 +165,126 @@ function searchCourses(searchTerm) {
     });
     updateEmptyState('#courses-content .courses-grid', visibleCount, searchTerm, 'No courses found', 'Try adjusting your search criteria');
 }
+function getSelectedCourseSemester() {
+    const activeFilterButton = document.querySelector('#semesterSegment .semester-segment-btn.active');
+    if (!activeFilterButton) {
+        return currentCourseSemesterFilter;
+    }
+    currentCourseSemesterFilter = activeFilterButton.getAttribute('data-semester-filter') || 'all';
+    return currentCourseSemesterFilter;
+}
+function getSelectedCourseYearLevel() {
+    const activeFilterButton = document.querySelector('#yearLevelSegment .semester-segment-btn.active');
+    if (!activeFilterButton) {
+        return currentCourseYearLevelFilter;
+    }
+    currentCourseYearLevelFilter = activeFilterButton.getAttribute('data-year-filter') || 'all';
+    return currentCourseYearLevelFilter;
+}
+function shouldShowCourseCardForSemester(card, selectedSemester) {
+    if (selectedSemester === 'all') {
+        return true;
+    }
+    const rawSemesters = (card.getAttribute('data-semesters') || '').trim();
+    if (!rawSemesters) {
+        return false;
+    }
+    const semesterList = rawSemesters.split(',').map(semester => semester.trim()).filter(Boolean);
+    if (semesterList.length === 0) {
+        return false;
+    }
+    return semesterList.includes(selectedSemester);
+}
+function shouldShowCourseCardForYearLevel(card, selectedYearLevel) {
+    if (selectedYearLevel === 'all') {
+        return true;
+    }
+    const rawYearLevels = (card.getAttribute('data-year-levels') || '').trim();
+    if (!rawYearLevels) {
+        return false;
+    }
+    const yearLevelList = rawYearLevels.split(',').map(level => level.trim()).filter(Boolean);
+    if (yearLevelList.length === 0) {
+        return false;
+    }
+    return yearLevelList.includes(selectedYearLevel);
+}
+function updateSemesterFilterVisibility() {
+    const semesterFilter = document.getElementById('coursesSemesterFilter');
+    const yearLevelFilter = document.getElementById('coursesYearLevelFilter');
+    const activeTab = document.querySelector('.tab-content.active');
+    if (!activeTab) {
+        return;
+    }
+    const isCoursesTab = activeTab.id === 'courses-content';
+    if (semesterFilter) {
+        semesterFilter.style.display = isCoursesTab ? 'flex' : 'none';
+    }
+    if (yearLevelFilter) {
+        yearLevelFilter.style.display = isCoursesTab ? 'flex' : 'none';
+    }
+}
+window.updateCoursesSemesterFilterVisibility = updateSemesterFilterVisibility;
+function initializeSemesterToggle() {
+    const semesterSegment = document.getElementById('semesterSegment');
+    const yearLevelSegment = document.getElementById('yearLevelSegment');
+    if ((!semesterSegment || semesterSegment.dataset.initialized === 'true') && (!yearLevelSegment || yearLevelSegment.dataset.initialized === 'true')) {
+        updateSemesterFilterVisibility();
+        return;
+    }
+    if (semesterSegment && semesterSegment.dataset.initialized !== 'true') {
+        semesterSegment.dataset.initialized = 'true';
+        const semesterButtons = semesterSegment.querySelectorAll('.semester-segment-btn');
+        semesterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                semesterButtons.forEach(item => item.classList.remove('active'));
+                this.classList.add('active');
+                currentCourseSemesterFilter = this.getAttribute('data-semester-filter') || 'all';
+                if (document.querySelector('.tab-content.active')?.id === 'courses-content') {
+                    searchContent();
+                }
+            });
+        });
+    }
+    if (yearLevelSegment && yearLevelSegment.dataset.initialized !== 'true') {
+        yearLevelSegment.dataset.initialized = 'true';
+        const yearLevelButtons = yearLevelSegment.querySelectorAll('.semester-segment-btn');
+        yearLevelButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                yearLevelButtons.forEach(item => item.classList.remove('active'));
+                this.classList.add('active');
+                currentCourseYearLevelFilter = this.getAttribute('data-year-filter') || 'all';
+                if (document.querySelector('.tab-content.active')?.id === 'courses-content') {
+                    searchContent();
+                }
+            });
+        });
+    }
+    const initialSemesterButton = semesterSegment ? semesterSegment.querySelector('.semester-segment-btn.active') : null;
+    currentCourseSemesterFilter = initialSemesterButton ? (initialSemesterButton.getAttribute('data-semester-filter') || 'all') : 'all';
+    const initialYearLevelButton = yearLevelSegment ? yearLevelSegment.querySelector('.semester-segment-btn.active') : null;
+    currentCourseYearLevelFilter = initialYearLevelButton ? (initialYearLevelButton.getAttribute('data-year-filter') || 'all') : 'all';
+    updateSemesterFilterVisibility();
+}
+function initializeCourseFilterObserver() {
+    const coursesGrid = document.querySelector('#courses-content .courses-grid');
+    if (!coursesGrid || coursesGrid.dataset.filterObserverInitialized === 'true') {
+        return;
+    }
+    coursesGrid.dataset.filterObserverInitialized = 'true';
+    let debounceTimer = null;
+    const observer = new MutationObserver(() => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            if (document.querySelector('.tab-content.active')?.id === 'courses-content') {
+                searchContent();
+            }
+        }, 80);
+    });
+    observer.observe(coursesGrid, { childList: true, subtree: true });
+}
+document.addEventListener('DOMContentLoaded', initializeSemesterToggle);
+document.addEventListener('DOMContentLoaded', initializeCourseFilterObserver);
 function searchClasses(searchTerm) {
     const classCards = document.querySelectorAll('.class-card:not(.add-card)');
     let visibleCount = 0;
@@ -1350,6 +1479,17 @@ function submitCurriculumAssignment(form, courseCode) {
             if (data.success) {
                 showNotification('Course assigned to curriculum successfully!', 'success');
                 closeModal('curriculumAssignModal');
+                // Always re-open and refresh the overlay for this course
+                setTimeout(() => {
+                    const courseCard = document.querySelector(`[data-course="${courseCode}"]`);
+                    if (courseCard) {
+                        const overlay = courseCard.querySelector('.course-details-overlay');
+                        if (overlay) {
+                            overlay.classList.add('overlay-visible');
+                            loadCourseAssignments(courseCode, overlay);
+                        }
+                    }
+                }, 400);
             } else {
                 showNotification(data.message || 'Failed to assign course to curriculum', 'error');
             }
@@ -1359,9 +1499,15 @@ function submitCurriculumAssignment(form, courseCode) {
         });
 }
 function removeCurriculumAssignment(courseCode, curriculumId) {
+    let normalizedCourseCode = courseCode;
+    let normalizedCurriculumId = curriculumId;
+    if (typeof courseCode === 'number') {
+        normalizedCurriculumId = courseCode;
+        normalizedCourseCode = curriculumId;
+    }
     const formData = new FormData();
     formData.append('action', 'remove_curriculum_assignment');
-    formData.append('curriculum_id', curriculumId);
+    formData.append('curriculum_id', normalizedCurriculumId);
     fetch('program.php', {
         method: 'POST',
         body: formData
@@ -1370,7 +1516,14 @@ function removeCurriculumAssignment(courseCode, curriculumId) {
         .then(data => {
             if (data.success) {
                 showNotification('Course removed from curriculum successfully!', 'success');
-                loadCurriculumAssignmentForm(courseCode);
+                if (typeof normalizedCourseCode === 'string' && normalizedCourseCode.length > 0) {
+                    loadCurriculumAssignmentForm(normalizedCourseCode);
+                    loadEditCourseAssignmentsModal(normalizedCourseCode);
+                    const visibleCourseOverlay = document.querySelector('.course-details-overlay.overlay-visible');
+                    if (visibleCourseOverlay) {
+                        loadCourseAssignments(normalizedCourseCode, visibleCourseOverlay);
+                    }
+                }
             } else {
                 showNotification(data.message || 'Failed to remove course from curriculum', 'error');
             }
@@ -2426,6 +2579,7 @@ function showMobilePage(pageNumber) {
 }
 function loadCourseAssignments(courseCode, overlay) {
     const assignmentsDiv = overlay.querySelector('.assignments-preview');
+    assignmentsDiv.innerHTML = '<div class="loading-assignments">Loading assignments...</div>';
     fetch('program.php', {
         method: 'POST',
         headers: {
@@ -2437,22 +2591,7 @@ function loadCourseAssignments(courseCode, overlay) {
         .then(data => {
             if (data.success) {
                 if (data.existingAssignments.length > 0) {
-                    let html = '';
-                    data.existingAssignments.forEach(assignment => {
-                        html += `
-                        <div class="assignment-item">
-                            <div class="assignment-info">
-                                <strong>Year ${assignment.year_level} - ${assignment.semester} Semester</strong><br>
-                                <span style="color: #666;">Year Level: ${assignment.year_level} • Semester: ${assignment.semester}</span>
-                                ${assignment.class_names ? `<br><span style="color: #2e7d32;">Classes: ${assignment.class_names}</span>` : ''}
-                            </div>
-                            <button class="remove-assignment-btn" onclick="removeCurriculumAssignment(${assignment.curriculum_id}, '${courseCode}')">
-                                Remove
-                            </button>
-                        </div>
-                    `;
-                    });
-                    assignmentsDiv.innerHTML = html;
+                    assignmentsDiv.innerHTML = renderSemesterAssignmentCards(data.existingAssignments, courseCode);
                 } else {
                     assignmentsDiv.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No curriculum assignments found</div>';
                 }
@@ -2463,6 +2602,261 @@ function loadCourseAssignments(courseCode, overlay) {
         .catch(error => {
             assignmentsDiv.innerHTML = '<div style="text-align: center; color: #d32f2f; padding: 20px;">Error loading assignments</div>';
         });
+}
+function renderSemesterAssignmentCards(assignments, courseCode) {
+    const semesterOrder = ['1st', '2nd'];
+    const grouped = {
+        '1st': [],
+        '2nd': []
+    };
+
+    const parseClassNames = (value) => {
+        if (!value || typeof value !== 'string') return [];
+        return value
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean);
+    };
+
+    assignments.forEach(assignment => {
+        if (grouped[assignment.semester]) {
+            grouped[assignment.semester].push(assignment);
+        }
+    });
+
+    let html = '';
+    semesterOrder.forEach(semesterKey => {
+        const semesterRows = grouped[semesterKey];
+        if (!semesterRows || semesterRows.length === 0) {
+            return;
+        }
+
+        // Show the assignment card even if there are no classes yet
+        const yearLevels = [...new Set(semesterRows.map(row => parseInt(row.year_level, 10)).filter(Number.isFinite))].sort((a, b) => a - b);
+        const classSet = new Set();
+        semesterRows.forEach(row => {
+            parseClassNames(row.class_names).forEach(item => classSet.add(item));
+        });
+        const editableIds = semesterRows
+            .map(row => parseInt(row.curriculum_id, 10))
+            .filter(Number.isFinite);
+        const hasEditable = editableIds.length > 0;
+
+        html += `
+            <div class="assignment-item" style="padding: 12px; margin-bottom: 10px; border-radius: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 700; color: var(--text-green-secondary); margin-bottom: 4px;">
+                            ${semesterKey} Semester Assignments
+                        </div>
+                        <div style="font-size: 0.82rem; color: #666; margin-bottom: 4px;">
+                            Year Levels: ${yearLevels.length > 0 ? yearLevels.map(level => `Year ${level}`).join(', ') : 'None'}
+                        </div>
+                        <div style="font-size: 0.8rem; color: #2e7d32; white-space: normal; word-break: break-word;">
+                            Classes: ${classSet.size > 0 ? Array.from(classSet).join(', ') : '<span style=\"color:#888\">No classes yet</span>'}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button type="button" class="class-card-icon-btn" title="Edit ${semesterKey} semester assignments" onclick="openEditCourseAssignmentsModal('${courseCode}', '${semesterKey}')" ${hasEditable ? '' : 'disabled style=\"opacity:.5;cursor:not-allowed;\"'}>
+                            <svg class="feather feather-sm"><use href="#edit"></use></svg>
+                        </button>
+                        <button type="button" class="class-card-icon-btn danger" title="Delete ${semesterKey} semester assignments" onclick="removeSemesterAssignments('${courseCode}', '${semesterKey}')" ${hasEditable ? '' : 'disabled style=\"opacity:.5;cursor:not-allowed;\"'}>
+                            <svg class="feather feather-sm"><use href="#trash-2"></use></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    return html || '<div style="text-align: center; color: #666; padding: 20px;">No semester assignments yet</div>';
+}
+function openEditCourseAssignmentsModal(courseCode, semester = '1st') {
+    openModal('editCourseAssignmentsModal');
+    loadEditCourseAssignmentsModal(courseCode, semester);
+}
+function loadEditCourseAssignmentsModal(courseCode, semester = '1st') {
+    const titleEl = document.getElementById('editCourseAssignmentsTitle');
+    const contentEl = document.getElementById('editCourseAssignmentsContent');
+    if (!contentEl || !titleEl) {
+        return;
+    }
+    titleEl.textContent = `Edit ${semester} Semester - ${courseCode}`;
+    contentEl.innerHTML = '<div class="loading" style="text-align: center; padding: 20px;">Loading assignments...</div>';
+    fetch('program.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `action=get_curriculum_assignment_data_with_classes&course_code=${encodeURIComponent(courseCode)}`
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                contentEl.innerHTML = '<div style="text-align: center; color: #d32f2f; padding: 20px;">Failed to load assignments</div>';
+                return;
+            }
+            if (!data.existingAssignments || data.existingAssignments.length === 0) {
+                contentEl.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No assignments found for this course</div>';
+                return;
+            }
+
+            const semesterAssignments = data.existingAssignments.filter(assignment => assignment.semester === semester);
+            if (semesterAssignments.length === 0) {
+                contentEl.innerHTML = `<div style="text-align: center; color: #666; padding: 20px;">No ${semester} semester assignments found for this course</div>`;
+                return;
+            }
+
+            const semesterAssignmentsWithClasses = semesterAssignments.filter(assignment => {
+                return assignment.class_names && assignment.class_names.split(',').map(item => item.trim()).filter(Boolean).length > 0;
+            });
+
+            if (semesterAssignmentsWithClasses.length === 0) {
+                contentEl.innerHTML = `<div style="text-align: center; color: #666; padding: 20px;">No assigned classes found for ${semester} semester</div>`;
+                return;
+            }
+
+            const groupedByYear = {};
+            semesterAssignmentsWithClasses.forEach(assignment => {
+                const groupKey = String(assignment.year_level);
+                if (!groupedByYear[groupKey]) {
+                    groupedByYear[groupKey] = {
+                        year_level: assignment.year_level,
+                        classSet: new Set(),
+                        editableIds: []
+                    };
+                }
+                if (assignment.class_names) {
+                    assignment.class_names.split(',').map(item => item.trim()).filter(Boolean).forEach(item => groupedByYear[groupKey].classSet.add(item));
+                }
+                const id = parseInt(assignment.curriculum_id, 10);
+                if (Number.isFinite(id)) groupedByYear[groupKey].editableIds.push(id);
+            });
+
+            const rows = Object.values(groupedByYear)
+                .sort((a, b) => parseInt(a.year_level, 10) - parseInt(b.year_level, 10))
+                .map(group => {
+                const actionCell = `<button class="class-card-icon-btn danger" title="Remove Year ${group.year_level} assignment" onclick="removeYearLevelAssignments('${courseCode}', '${semester}', ${group.year_level}, '${group.editableIds.join(',')}')"><svg class="feather feather-sm"><use href="#trash-2"></use></svg></button>`;
+                return `
+                    <tr>
+                        <td>Year ${group.year_level}</td>
+                        <td>${Array.from(group.classSet).join(', ')}</td>
+                        <td>${actionCell}</td>
+                    </tr>
+                `;
+            }).join('');
+            contentEl.innerHTML = `
+                <div class="table-container" style="margin: 0;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Year Level</th>
+                                <th>Classes</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="font-size: 0.85rem; color: #666; margin-top: 12px;">
+                    Removing a year level removes that year-level assignment for this semester.
+                </div>
+            `;
+        })
+        .catch(() => {
+            contentEl.innerHTML = '<div style="text-align: center; color: #d32f2f; padding: 20px;">Error loading assignments</div>';
+        });
+}
+function removeSemesterAssignments(courseCode, semester) {
+    fetch('program.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `action=get_curriculum_assignment_data_with_classes&course_code=${encodeURIComponent(courseCode)}`
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                showNotification('Failed to load assignments for deletion', 'error');
+                return;
+            }
+            const editableIds = data.existingAssignments
+                .filter(assignment => assignment.semester === semester && parseInt(assignment.is_editable, 10) === 1)
+                .map(assignment => parseInt(assignment.curriculum_id, 10))
+                .filter(Number.isFinite);
+            if (editableIds.length === 0) {
+                showNotification('No editable assignments found for this semester', 'info');
+                return;
+            }
+            const executeDelete = () => {
+                Promise.all(editableIds.map(curriculumId => {
+                    const formData = new FormData();
+                    formData.append('action', 'remove_curriculum_assignment');
+                    formData.append('curriculum_id', curriculumId);
+                    return fetch('program.php', { method: 'POST', body: formData }).then(resp => resp.json());
+                }))
+                    .then(results => {
+                        const hasError = results.some(result => !result.success);
+                        if (hasError) {
+                            showNotification('Some assignments could not be removed', 'error');
+                        } else {
+                            showNotification(`${semester} semester assignments removed`, 'success');
+                        }
+                        const visibleCourseOverlay = document.querySelector('.course-details-overlay.overlay-visible');
+                        if (visibleCourseOverlay) {
+                            loadCourseAssignments(courseCode, visibleCourseOverlay);
+                        }
+                        loadEditCourseAssignmentsModal(courseCode, semester);
+                    })
+                    .catch(() => showNotification('Error removing semester assignments', 'error'));
+            };
+            if (typeof confirmAction === 'function') {
+                confirmAction('Delete Semester Assignments', `Remove all your ${semester} semester assignments for ${courseCode}?`, executeDelete);
+            } else {
+                executeDelete();
+            }
+        })
+        .catch(() => showNotification('Error loading semester assignments', 'error'));
+}
+function removeYearLevelAssignments(courseCode, semester, yearLevel, idListCsv) {
+    const idList = (idListCsv || '')
+        .split(',')
+        .map(item => parseInt(item.trim(), 10))
+        .filter(Number.isFinite);
+    if (idList.length === 0) {
+        showNotification('No editable assignment found for this year level', 'info');
+        return;
+    }
+    const executeDelete = () => {
+        Promise.all(idList.map(curriculumId => {
+            const formData = new FormData();
+            formData.append('action', 'remove_curriculum_assignment');
+            formData.append('curriculum_id', curriculumId);
+            return fetch('program.php', { method: 'POST', body: formData }).then(resp => resp.json());
+        }))
+            .then(results => {
+                const hasError = results.some(result => !result.success);
+                if (hasError) {
+                    showNotification('Some year-level assignments could not be removed', 'error');
+                } else {
+                    showNotification(`Year ${yearLevel} assignment removed`, 'success');
+                }
+                const visibleCourseOverlay = document.querySelector('.course-details-overlay.overlay-visible');
+                if (visibleCourseOverlay) {
+                    loadCourseAssignments(courseCode, visibleCourseOverlay);
+                }
+                loadEditCourseAssignmentsModal(courseCode, semester);
+            })
+            .catch(() => showNotification('Error removing year-level assignment', 'error'));
+    };
+    if (typeof confirmAction === 'function') {
+        confirmAction('Remove Year Level Assignment', `Remove Year ${yearLevel} from ${semester} semester for ${courseCode}?`, executeDelete);
+    } else {
+        executeDelete();
+    }
 }
 function addNewRowToTable(type, data) {
     if (!data) return;

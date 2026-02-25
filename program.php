@@ -53,21 +53,69 @@ if (!empty($class_ids)) {
     foreach ($faculty_data as $faculty) {
         $faculty_schedules[$faculty['faculty_id']] = getFacultySchedulesProgram($pdo, $faculty['faculty_id']);
     }
-    $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
-    $stmt->execute([$user_id]);
-    $program = $stmt->fetchColumn();
-    $courses_query = "
-        SELECT DISTINCT c.course_id, c.course_code, c.course_description, c.units,
-               COUNT(s.schedule_id) as times_scheduled
-        FROM courses c
-        LEFT JOIN programs p ON c.program_id = p.program_id
-        LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
-        WHERE c.is_active = TRUE AND p.program_name = ?
-        GROUP BY c.course_id
-        ORDER BY c.course_code";
-    $stmt = $pdo->prepare($courses_query);
-    $stmt->execute([$program]);
-    $courses_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $pdo->prepare("SELECT program FROM faculty WHERE user_id = ? AND is_active = TRUE");
+        $stmt->execute([$user_id]);
+        $program = $stmt->fetchColumn();
+        $courses_query = "
+                SELECT DISTINCT c.course_id, c.course_code, c.course_description, c.units,
+                             COUNT(DISTINCT s.schedule_id) as times_scheduled,
+                             CONCAT_WS(',',
+                                     (
+                                             SELECT GROUP_CONCAT(DISTINCT cur.semester ORDER BY FIELD(cur.semester, '1st', '2nd', 'Summer') SEPARATOR ',')
+                                             FROM curriculum cur
+                                                        JOIN classes cl_scope
+                                                            ON cl_scope.year_level = cur.year_level
+                                                         AND cl_scope.semester = cur.semester
+                                                         AND cl_scope.program_chair_id = ?
+                                                         AND cl_scope.is_active = TRUE
+                                             WHERE cur.course_code = c.course_code
+                                                 AND cur.is_active = TRUE
+                                                 AND cur.program_chair_id = ?
+                                     ),
+                                     (
+                                             SELECT GROUP_CONCAT(DISTINCT cl2.semester ORDER BY FIELD(cl2.semester, '1st', '2nd', 'Summer') SEPARATOR ',')
+                                             FROM schedules sc
+                                             JOIN classes cl2
+                                                 ON sc.class_id = cl2.class_id
+                                                AND cl2.program_chair_id = ?
+                                                AND cl2.is_active = TRUE
+                                             WHERE sc.course_code = c.course_code
+                                                 AND sc.is_active = TRUE
+                                     )
+                             ) AS curriculum_semesters,
+                             CONCAT_WS(',',
+                                     (
+                                             SELECT GROUP_CONCAT(DISTINCT cur.year_level ORDER BY cur.year_level SEPARATOR ',')
+                                             FROM curriculum cur
+                                                        JOIN classes cl_scope
+                                                            ON cl_scope.year_level = cur.year_level
+                                                         AND cl_scope.semester = cur.semester
+                                                         AND cl_scope.program_chair_id = ?
+                                                         AND cl_scope.is_active = TRUE
+                                             WHERE cur.course_code = c.course_code
+                                                 AND cur.is_active = TRUE
+                                                 AND cur.program_chair_id = ?
+                                     ),
+                                     (
+                                             SELECT GROUP_CONCAT(DISTINCT cl2.year_level ORDER BY cl2.year_level SEPARATOR ',')
+                                             FROM schedules sc
+                                             JOIN classes cl2
+                                                 ON sc.class_id = cl2.class_id
+                                                AND cl2.program_chair_id = ?
+                                                AND cl2.is_active = TRUE
+                                             WHERE sc.course_code = c.course_code
+                                                 AND sc.is_active = TRUE
+                                     )
+                             ) AS curriculum_year_levels
+                FROM courses c
+                LEFT JOIN programs p ON c.program_id = p.program_id
+                LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
+                WHERE c.is_active = TRUE AND (p.program_name = ? OR c.program_id IS NULL)
+                GROUP BY c.course_id
+                ORDER BY c.course_code";
+        $stmt = $pdo->prepare($courses_query);
+        $stmt->execute([$user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $program]);
+        $courses_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($classes_data as $class) {
         $class_schedules[$class['class_id']] = getClassSchedules($pdo, $class['class_id']);
     }
@@ -209,9 +257,10 @@ function getClassSchedules($pdo, $class_id) {
 }
 if (isset($_POST['action']) && $_POST['action'] === 'get_courses_and_classes') {
     try {
-        $courses_query = "SELECT course_code, course_description, units FROM courses WHERE is_active = TRUE ORDER BY course_code";
+        $program = $chair_info ? $chair_info['program'] : '';
+        $courses_query = "SELECT course_code, course_description, units FROM courses WHERE is_active = TRUE AND (program_id = (SELECT program_id FROM programs WHERE program_name = ?) OR program_id IS NULL) ORDER BY course_code";
         $courses_stmt = $pdo->prepare($courses_query);
-        $courses_stmt->execute();
+        $courses_stmt->execute([$program]);
         $courses = $courses_stmt->fetchAll(PDO::FETCH_ASSOC);
         $classes_query = "SELECT class_id, class_code, class_name, year_level FROM classes WHERE program_chair_id = ? AND is_active = TRUE ORDER BY year_level, class_name";
         $classes_stmt = $pdo->prepare($classes_query);
@@ -386,16 +435,19 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_curriculum_assignment_d
         $course_code = $_POST['course_code'];
         $curriculum_query = "
             SELECT cur.curriculum_id, cur.year_level, cur.semester,
-                   GROUP_CONCAT(DISTINCT c.class_code SEPARATOR ', ') as class_names
+                   GROUP_CONCAT(DISTINCT c.class_code ORDER BY c.class_code SEPARATOR ', ') as class_names
             FROM curriculum cur
             LEFT JOIN classes c ON c.year_level = cur.year_level
                                 AND c.semester = cur.semester
+                                AND c.program_chair_id = ?
                                 AND c.is_active = TRUE
-            WHERE cur.course_code = ? AND cur.is_active = TRUE
+            WHERE cur.course_code = ?
+              AND cur.program_chair_id = ?
+              AND cur.is_active = TRUE
             GROUP BY cur.curriculum_id, cur.year_level, cur.semester
-            ORDER BY cur.year_level, cur.semester";
+            ORDER BY cur.year_level, FIELD(cur.semester, '1st', '2nd', 'Summer')";
         $stmt = $pdo->prepare($curriculum_query);
-        $stmt->execute([$course_code]);
+        $stmt->execute([$user_id, $course_code, $user_id]);
         $existingAssignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode([
             'success' => true,
@@ -411,20 +463,68 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum
         $course_code = $_POST['course_code'];
         $year_level = $_POST['year_level'];
         $semester = $_POST['semester'];
-        $check_query = "SELECT COUNT(*) as count FROM curriculum
-                       WHERE course_code = ? AND year_level = ? AND semester = ? AND is_active = TRUE";
+        $check_query = "SELECT cur.curriculum_id,
+                               EXISTS(
+                                   SELECT 1
+                                   FROM classes c
+                                   WHERE c.year_level = cur.year_level
+                                     AND c.semester = cur.semester
+                                     AND c.program_chair_id = cur.program_chair_id
+                                     AND c.is_active = TRUE
+                               ) AS has_classes
+                        FROM curriculum cur
+                        WHERE cur.course_code = ?
+                          AND cur.year_level = ?
+                          AND cur.semester = ?
+                          AND cur.program_chair_id = ?
+                          AND cur.is_active = TRUE
+                        ORDER BY cur.curriculum_id DESC
+                        LIMIT 1";
         $check_stmt = $pdo->prepare($check_query);
-        $check_stmt->execute([$course_code, $year_level, $semester]);
-        $exists = $check_stmt->fetch(PDO::FETCH_ASSOC)['count'] > 0;
-        if ($exists) {
+        $check_stmt->execute([$course_code, $year_level, $semester, $user_id]);
+        $existing_row = $check_stmt->fetch(PDO::FETCH_ASSOC);
+        if ($existing_row && (int)($existing_row['has_classes'] ?? 0) === 1) {
             echo json_encode(['success' => false, 'message' => 'This course is already assigned to that year level and semester']);
+            exit;
+        }
+        if ($existing_row) {
+            echo json_encode(['success' => true, 'message' => 'Curriculum entry already exists and is ready for class assignment']);
             exit;
         }
         $insert_query = "INSERT INTO curriculum (course_code, year_level, semester, program_chair_id, is_active)
                         VALUES (?, ?, ?, ?, TRUE)";
         $stmt = $pdo->prepare($insert_query);
         if ($stmt->execute([$course_code, $year_level, $semester, $user_id])) {
-            echo json_encode(['success' => true, 'message' => 'Course assigned to curriculum successfully']);
+            // Automatically assign all matching classes for this year/semester/program
+            $curriculum_id = $pdo->lastInsertId();
+            $classes_query = "SELECT class_id FROM classes WHERE year_level = ? AND semester = ? AND program_chair_id = ? AND is_active = TRUE";
+            $classes_stmt = $pdo->prepare($classes_query);
+            $classes_stmt->execute([$year_level, $semester, $user_id]);
+            $class_ids = $classes_stmt->fetchAll(PDO::FETCH_COLUMN);
+            // DEBUG OUTPUT
+            file_put_contents(__DIR__ . '/debug_assign_classes.log',
+                date('Y-m-d H:i:s') . " user_id=$user_id, year_level=$year_level, semester=$semester, found_class_ids=" . json_encode($class_ids) . "\n",
+                FILE_APPEND
+            );
+            if (!empty($class_ids)) {
+                // For each class, create a schedule assignment (if not already assigned)
+                foreach ($class_ids as $class_id) {
+                    // Only insert if not already scheduled for this course/class
+                    $exists_query = "SELECT COUNT(*) FROM schedules WHERE course_code = ? AND class_id = ? AND is_active = TRUE";
+                    $exists_stmt = $pdo->prepare($exists_query);
+                    $exists_stmt->execute([$course_code, $class_id]);
+                    if ($exists_stmt->fetchColumn() == 0) {
+                        // Insert a placeholder schedule (minimal info, to be edited later)
+                        $insert_sched = "INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, semester, academic_year, is_active)
+                                         VALUES (?, ?, ?, '', '08:00:00', '09:00:00', '', ?, ?, TRUE)";
+                        $current_year = date('Y');
+                        $academic_year = $current_year . '-' . substr($current_year + 1, -2);
+                        $sched_stmt = $pdo->prepare($insert_sched);
+                        $sched_stmt->execute([$user_id, $course_code, $class_id, $semester, $academic_year]);
+                    }
+                }
+            }
+            echo json_encode(['success' => true, 'message' => 'Course assigned to curriculum and all matching classes.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to assign course to curriculum']);
         }
@@ -436,6 +536,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum
 if (isset($_POST['action']) && $_POST['action'] === 'remove_curriculum_assignment') {
     try {
         $curriculum_id = $_POST['curriculum_id'];
+        $ownership_query = "SELECT program_chair_id FROM curriculum WHERE curriculum_id = ? AND is_active = TRUE";
+        $ownership_stmt = $pdo->prepare($ownership_query);
+        $ownership_stmt->execute([$curriculum_id]);
+        $owner_id = $ownership_stmt->fetchColumn();
+        if (!$owner_id) {
+            echo json_encode(['success' => false, 'message' => 'Curriculum assignment not found']);
+            exit;
+        }
+        if ((int)$owner_id !== (int)$user_id) {
+            echo json_encode(['success' => false, 'message' => 'This assignment belongs to another program and cannot be edited']);
+            exit;
+        }
         $delete_query = "DELETE FROM curriculum WHERE curriculum_id = ?";
         $stmt = $pdo->prepare($delete_query);
         if ($stmt->execute([$curriculum_id])) {
@@ -1053,6 +1165,22 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                     <svg class="feather feather-sm"><use href="#clipboard"></use></svg> Classes
                 </button>
                 <div class="search-bar">
+                    <div class="semester-filter" id="coursesSemesterFilter">
+                        <div class="semester-segment" id="semesterSegment" role="tablist" aria-label="Course semester filter">
+                            <button type="button" class="semester-segment-btn active" data-semester-filter="all">All</button>
+                            <button type="button" class="semester-segment-btn" data-semester-filter="1st">1st Sem</button>
+                            <button type="button" class="semester-segment-btn" data-semester-filter="2nd">2nd Sem</button>
+                        </div>
+                    </div>
+                    <div class="yearlevel-filter" id="coursesYearLevelFilter">
+                        <div class="semester-segment" id="yearLevelSegment" role="tablist" aria-label="Course year level filter">
+                            <button type="button" class="semester-segment-btn active" data-year-filter="all">All Years</button>
+                            <button type="button" class="semester-segment-btn" data-year-filter="1">1st</button>
+                            <button type="button" class="semester-segment-btn" data-year-filter="2">2nd</button>
+                            <button type="button" class="semester-segment-btn" data-year-filter="3">3rd</button>
+                            <button type="button" class="semester-segment-btn" data-year-filter="4">4th</button>
+                        </div>
+                    </div>
                     <div class="search-container collapsed" id="searchContainer">
                         <input type="text" class="search-input" placeholder="Search..." id="searchInput">
                         <button class="search-toggle" onclick="toggleSearch()">
@@ -1176,7 +1304,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                         </script>
                     <?php else: ?>
                         <?php foreach ($courses_data as $course): ?>
-                            <div class="course-card" data-course="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-id="<?php echo $course['course_id']; ?>">
+                            <div class="course-card" data-course="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-id="<?php echo $course['course_id']; ?>" data-semesters="<?php echo htmlspecialchars($course['curriculum_semesters'] ?? ''); ?>" data-year-levels="<?php echo htmlspecialchars($course['curriculum_year_levels'] ?? ''); ?>">
                                 <div class="course-card-content">
                                     <div class="course-card-default-content">
                                         <div class="course-header">
@@ -1337,6 +1465,20 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                     }
                     </script>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="editCourseAssignmentsModal">
+        <div class="modal" style="max-width: 860px; width: 95%;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="editCourseAssignmentsTitle">Edit Course Assignments</h3>
+                <button type="button" class="modal-close" onclick="closeModal('editCourseAssignmentsModal')">&times;</button>
+            </div>
+            <div id="editCourseAssignmentsContent" style="max-height: 65vh; overflow-y: auto;">
+                <div class="loading" style="text-align: center; padding: 20px;">Loading assignments...</div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('editCourseAssignmentsModal')">Close</button>
             </div>
         </div>
     </div>

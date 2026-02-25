@@ -1,15 +1,20 @@
-function printFacultySchedule(facultyId) {
+function printFacultySchedule(facultyId, useIFTL = false) {
     const facultyName = facultyNames[facultyId] || 'Unknown Faculty';
     const deanName = (window.facultyDeanNames && window.facultyDeanNames[facultyId]) || 'Dean';
     const directorName = window.campusDirectorName || 'Campus Director';
     const period = (window.facultyPrintPeriods && window.facultyPrintPeriods[facultyId]) || {};
     const semester = period.semester || '1st';
     const academicYear = period.academic_year || '2025-2026';
-    const schedules = facultySchedules[facultyId] || [];
+    let schedules;
+    if (useIFTL && window.iftlEntries && Array.isArray(window.iftlEntries)) {
+        schedules = window.iftlEntries;
+    } else {
+        schedules = facultySchedules[facultyId] || [];
+    }
     const { mwfSchedules, tthSchedules } = separateSchedulesByType(schedules);
     const summary = calculateSummaryData(schedules);
     const printWindow = window.open('', '_blank', 'width=1200,height=800');
-    printWindow.document.write(generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, deanName, directorName, semester, academicYear));
+    printWindow.document.write(generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, deanName, directorName, semester, academicYear, useIFTL));
     printWindow.document.close();
     printWindow.onload = () => {
         setTimeout(() => printWindow.print(), 500);
@@ -69,22 +74,23 @@ function calculateSummaryData(schedules) {
     });
     const actualTeachingLoad = lectureUnits + labUnits;
     const normalLoad = 18;
-    const overload = actualTeachingLoad - normalLoad;
+    const loadDisplacement = Math.max(0, normalLoad - actualTeachingLoad);
+    const overload = Math.max(0, actualTeachingLoad - normalLoad);
     const maxDailyHours = 8;
     const officeHours = Math.max(0, maxDailyHours - Math.round(totalClassHours));
     const consultationHours = 4;
     const totalHours = totalClassHours + officeHours + consultationHours;
     return {
         preparations: preparations.size,
-        loadDisplacement: 12,
+        loadDisplacement: loadDisplacement,
         researchLoad: 0,
         lectureUnits,
         labUnits,
         actualTeachingLoad,
         creditStudentFactor: 0,
-        actualTotalLoad: actualTeachingLoad,
-        normalLoad,
-        overload,
+        actualTotalLoad: actualTeachingLoad + loadDisplacement,
+        normalLoad: normalLoad,
+        overload: overload,
         classHours: Math.round(totalClassHours),
         officeHours,
         consultationHours,
@@ -120,7 +126,7 @@ function generateTimeSlots(type) {
     }
 }
 function findScheduleForSlot(schedules, day, timeSlot) {
-    const [slotStart] = timeSlot.split('-');
+    const [slotStart, slotEnd] = timeSlot.split('-');
     const normalizeTime = (time) => {
         const parts = time.split(':');
         const hours = parts[0].padStart(2, '0');
@@ -129,6 +135,7 @@ function findScheduleForSlot(schedules, day, timeSlot) {
         return `${hours}:${minutes}:${seconds}`;
     };
     const slotStartTime = normalizeTime(slotStart);
+    const slotEndTime = normalizeTime(slotEnd);
     const dayMap = {
         'MONDAY': 'M',
         'WEDNESDAY': 'W',
@@ -142,11 +149,13 @@ function findScheduleForSlot(schedules, day, timeSlot) {
         const hasDayMatch = scheduleDays.includes(dayMap[day]);
         const scheduleStart = normalizeTime(schedule.time_start);
         const scheduleEnd = normalizeTime(schedule.time_end);
-        const hasTimeMatch = slotStartTime >= scheduleStart && slotStartTime < scheduleEnd;
+        // Only match the FIRST slot the schedule covers
+        const isFirstSlot = slotStartTime === scheduleStart;
+        const hasTimeMatch = slotStartTime < scheduleEnd && slotEndTime > scheduleStart && isFirstSlot;
         return hasDayMatch && hasTimeMatch;
     });
 }
-function generateScheduleGrid(type, schedules) {
+function generateScheduleGrid(type, schedules, useIFTL = false) {
     const days = type === 'MWF'
         ? ['MONDAY', 'WEDNESDAY', 'FRIDAY']
         : ['TUESDAY', 'THURSDAY', 'SATURDAY'];
@@ -172,15 +181,42 @@ function generateScheduleGrid(type, schedules) {
         days.forEach((day, dayIndex) => {
             const cellKey = `${slotIndex}-${dayIndex}`;
             if (occupiedCells[cellKey]) {
+                // Skip rendering for occupied cells (do not output any <td>)
                 return;
             }
-            const schedule = findScheduleForSlot(schedules, day, slot);
+            // Only match schedules that start at this slot
+            const [slotStart] = slot.split('-');
+            // Normalize slot start to HH:MM:00
+            let slotHour, slotMinute;
+            if (slotStart.includes(':')) {
+                [slotHour, slotMinute] = slotStart.split(':');
+            } else {
+                slotHour = slotStart;
+                slotMinute = '00';
+            }
+            // Convert to 24-hour format if needed
+            if (slotHour.length === 1) slotHour = '0' + slotHour;
+            if (parseInt(slotHour) < 7) slotHour = (parseInt(slotHour) + 12).toString().padStart(2, '0');
+            const slotStartNorm = `${slotHour}:${slotMinute.padStart(2, '0')}:00`;
+            let schedule = null;
+            if (useIFTL && window.iftlEntries && Array.isArray(window.iftlEntries)) {
+                schedule = window.iftlEntries.find(e => {
+                    return e.time_start === slotStartNorm && e.days === day[0];
+                });
+            } else {
+                schedule = schedules.find(e => {
+                    return e.time_start === slotStartNorm && e.days && e.days[0] === day[0];
+                });
+            }
             if (schedule) {
-                const rowspan = calculateRowspan(schedule.time_start, schedule.time_end, type, slot);
-                for (let i = 1; i < rowspan; i++) {
+                // Calculate duration in slots
+                const startHour = parseInt(schedule.time_start.split(':')[0]);
+                const endHour = parseInt(schedule.time_end.split(':')[0]);
+                const duration = endHour - startHour;
+                for (let i = 0; i < duration; i++) {
                     occupiedCells[`${slotIndex + i}-${dayIndex}`] = true;
                 }
-                const rowspanAttr = rowspan > 1 ? ` rowspan="${rowspan}"` : '';
+                const rowspanAttr = duration > 1 ? ` rowspan="${duration}"` : '';
                 html += `
                     <td${rowspanAttr}>${schedule.course_code || ''}</td>
                     <td${rowspanAttr}>${schedule.class_name || ''}</td>
@@ -214,8 +250,7 @@ function generateScheduleGrid(type, schedules) {
     return html;
 }
 function calculateRowspan(startTime, endTime, scheduleType, renderedSlot = null) {
-    const renderedStart = renderedSlot ? `${renderedSlot.split('-')[0]}:00` : startTime;
-    const start = new Date(`2000-01-01 ${renderedStart}`);
+    const start = new Date(`2000-01-01 ${startTime}`);
     const end = new Date(`2000-01-01 ${endTime}`);
     const durationHours = (end - start) / (1000 * 60 * 60);
     const slotDuration = scheduleType === 'MWF' ? 1 : 1.5;
@@ -228,7 +263,7 @@ function formatSemesterLabel(semester) {
     if (value === 'summer') return 'Summer';
     return semester || 'Semester';
 }
-function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, deanName, directorName, semester, academicYear) {
+function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, deanName, directorName, semester, academicYear, useIFTL = false) {
     const safeDeanName = deanName || 'Dean';
     const safeDirectorName = directorName || 'Campus Director';
     const semesterLabel = formatSemesterLabel(semester);
@@ -425,8 +460,8 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, dea
                 <div><strong>Department:</strong> <span>Secondary</span></div>
                 <div><strong>Designation:</strong> <span>Division Director</span></div>
             </div>
-            ${generateScheduleGrid('MWF', mwfSchedules)}
-            ${generateScheduleGrid('TTH', tthSchedules)}
+            ${generateScheduleGrid('MWF', mwfSchedules, useIFTL)}
+            ${generateScheduleGrid('TTH', tthSchedules, useIFTL)}
             <div class="footer">
                 <div class="footer-section">
                     <p>Prepared by:</p>

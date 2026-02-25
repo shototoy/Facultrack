@@ -1,3 +1,72 @@
+function viewIFTLCompliance() {
+    fetch('assets/php/polling_api.php?action=get_iftl_faculty_list')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                alert('Failed to load faculty list for compliance report.');
+                return;
+            }
+            const submitted = [];
+            const notSubmitted = [];
+            (data.faculty || []).forEach((faculty) => {
+                if (faculty.has_iftl > 0) {
+                    submitted.push(faculty);
+                } else {
+                    notSubmitted.push(faculty);
+                }
+            });
+            let html = `
+<html><head><title>Submission Tracking Report</title>
+<style>
+body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+.report-container { background: #fff; margin: 20px auto; padding: 30px 40px; max-width: 900px; box-shadow: 0 2px 12px #0001; }
+h2, h3 { margin-top: 30px; }
+table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
+th, td { border: 1px solid #bbb; padding: 7px 10px; font-size: 15px; }
+th { background: #f7f7f7; }
+.section-title { font-size: 1.2em; font-weight: bold; margin: 30px 0 10px 0; }
+.summary-table th, .summary-table td { text-align: left; }
+.summary-table th { width: 60%; }
+@media print { body { background: #fff; } .report-container { box-shadow: none; margin: 0; } }
+</style>
+</head><body><div class="report-container">
+<div style="font-size:1.2em;font-weight:bold;margin-bottom:10px;">Submission Tracking Report</div>
+<div style="margin-bottom:10px;">Date: ____________________________</div>
+<div style="margin-bottom:20px;">Prepared by: ____________________________</div>
+<div class="section-title">Submitted</div>
+<table><tr><th>No.</th><th>Name</th><th>Department</th><th>Date Submitted</th><th>Remarks</th></tr>`;
+            submitted.forEach((f, i) => {
+                html += `<tr><td>${i+1}</td><td>${escapeHtml(f.full_name||'')}</td><td>${escapeHtml(f.program||'')}</td><td>${escapeHtml(f.date_submitted||'')}</td><td></td></tr>`;
+            });
+            for (let i = submitted.length; i < 5; i++) html += `<tr><td>${i+1}</td><td></td><td></td><td></td><td></td></tr>`;
+            html += `</table>`;
+            html += `<div class="section-title">Not Submitted</div>
+<table><tr><th>No.</th><th>Name</th><th>Department</th><th>Reason/Remarks</th></tr>`;
+            notSubmitted.forEach((f, i) => {
+                html += `<tr><td>${i+1}</td><td>${escapeHtml(f.full_name||'')}</td><td>${escapeHtml(f.program||'')}</td><td></td></tr>`;
+            });
+            for (let i = notSubmitted.length; i < 5; i++) html += `<tr><td>${i+1}</td><td></td><td></td><td></td></tr>`;
+            html += `</table>`;
+            html += `<div class="section-title">Summary</div>
+<table class="summary-table"><tr><th>Category</th><th>Total</th></tr>
+<tr><td>Submitted</td><td>${submitted.length}</td></tr>
+<tr><td>Not Submitted</td><td>${notSubmitted.length}</td></tr>
+<tr><td>Overall Total</td><td>${submitted.length + notSubmitted.length}</td></tr>
+</table></div></body></html>`;
+            // Open print window
+            const printWin = window.open('', '', 'width=900,height=700');
+            printWin.document.write(html);
+            printWin.document.close();
+            printWin.focus();
+            setTimeout(() => { printWin.print(); }, 300);
+        });
+}
+// Helper for HTML escaping
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+}
 function createSearchResultActions() {
     if (document.querySelector('#searchInput')) {
         const searchInput = document.querySelector('#searchInput');
@@ -65,9 +134,10 @@ async function loadIFTLFaculty() {
                 container.innerHTML = '<div class="empty-state"><h3>No faculty members found.</h3></div>';
                 return;
             }
-            let html = `
+                let html = `
                 <div class="table-header">
                     <h3 class="table-title">Individual Faculty Teaching Load (Week: ${data.current_week})</h3>
+                        <button class="btn-primary" style="margin-bottom:10px;float:right;" onclick="viewIFTLCompliance()">View Compliance</button>
                 </div>
                 <div class="iftl-grid">
             `;
@@ -75,8 +145,8 @@ async function loadIFTLFaculty() {
                 const hasIFTL = faculty.has_iftl > 0;
                 const statusClass = hasIFTL ? '' : 'no-iftl';
                 const statusBadge = hasIFTL
-                    ? '<span class="status-badge status-available">Submitted</span>'
-                    : '<span class="status-badge status-offline">Missing</span>';
+                        ? '<span class="status-badge status-available">Submitted</span>'
+                        : '<span class="status-badge status-offline">Not Submitted</span>';
                 const safeNameForJs = String(faculty.full_name || '')
                     .replace(/\\/g, '\\\\')
                     .replace(/'/g, "\\'");
@@ -664,7 +734,7 @@ async function printIFTLForWeekBtn(weekIdentifier) {
         });
         const result = await response.json();
         if (result.success) {
-            window.facultySchedules[currentIFTLFacultyId] = result.schedules;
+            window.iftlEntries = result.schedules;
             if (result.dean_name) {
                 window.facultyDeanNames[currentIFTLFacultyId] = result.dean_name;
             }
@@ -673,7 +743,7 @@ async function printIFTLForWeekBtn(weekIdentifier) {
                 academic_year: result.academic_year || null
             };
             if (typeof printFacultySchedule === 'function') {
-                printFacultySchedule(currentIFTLFacultyId);
+                printFacultySchedule(currentIFTLFacultyId, true);
             }
         } else if (typeof showNotification === 'function') {
             showNotification(result.message || 'Failed to load schedule', 'error');
@@ -726,7 +796,7 @@ async function printIFTLForWeek() {
         });
         const result = await response.json();
         if (result.success) {
-            window.facultySchedules[currentIFTLFacultyId] = result.schedules;
+            window.iftlEntries = result.schedules;
             if (result.dean_name) {
                 window.facultyDeanNames[currentIFTLFacultyId] = result.dean_name;
             }
@@ -735,7 +805,7 @@ async function printIFTLForWeek() {
                 academic_year: result.academic_year || null
             };
             if (typeof printFacultySchedule === 'function') {
-                printFacultySchedule(currentIFTLFacultyId);
+                printFacultySchedule(currentIFTLFacultyId, true);
             }
         } else if (typeof showNotification === 'function') {
             showNotification(result.message || 'Failed to load schedule', 'error');

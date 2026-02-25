@@ -1558,8 +1558,10 @@ class LivePollingManager {
     createCourseCard(course) {
         const units = parseFloat(course.units) || 0;
         const unitsDisplay = units % 1 === 0 ? `${units}.00` : units.toString();
+        const courseSemesters = escapeHtml(course.curriculum_semesters || '');
+        const courseYearLevels = escapeHtml(course.curriculum_year_levels || '');
         return `
-            <div class="course-card" data-course="${course.course_code}" data-course-id="${course.course_id}" style="display: block;">
+            <div class="course-card" data-course="${course.course_code}" data-course-id="${course.course_id}" data-semesters="${courseSemesters}" data-year-levels="${courseYearLevels}" style="display: block;">
                 <div class="course-card-content">
                     <div class="course-card-default-content">
                         <div class="course-header">

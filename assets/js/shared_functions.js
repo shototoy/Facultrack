@@ -115,6 +115,12 @@ function switchTab(tabName) {
             row.style.display = '';
         }
     });
+    if (typeof window.updateCoursesSemesterFilterVisibility === 'function') {
+        window.updateCoursesSemesterFilterVisibility();
+    }
+    if (typeof searchContent === 'function') {
+        searchContent();
+    }
 }
 function exportData(type) {
     const config = {
