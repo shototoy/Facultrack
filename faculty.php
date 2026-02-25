@@ -167,9 +167,21 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             50% { opacity: 1; }
         }
         .schedule-card {
-            height: 100%;
+            min-height: 120px;
+            height: auto;
             display: flex;
             flex-direction: column;
+            overflow-y: auto;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            padding: 16px 12px;
+            background: #fff8e1;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+                    font-size: 0.95em !important;
+                    overflow: visible !important;
+                    white-space: normal !important;
+                    line-height: 1.2;
         }
         @media (min-width: 1025px) {
             .dashboard-grid {
@@ -558,9 +570,9 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
         }
         .schedule-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden;
