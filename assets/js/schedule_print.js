@@ -233,7 +233,7 @@ function generateScheduleGrid(type, schedules, useIFTL = false) {
                 const rowspanAttr = duration > 1 ? ` rowspan="${duration}"` : '';
                 html += `
                     <td${rowspanAttr}>${schedule.course_code || ''}</td>
-                    <td${rowspanAttr}>${schedule.class_name || ''}</td>
+                    <td${rowspanAttr}>${schedule.class_code || ''}</td>
                     <td${rowspanAttr}>${schedule.room || ''}</td>
                     <td${rowspanAttr}>${schedule.total_students !== undefined && schedule.total_students !== null ? schedule.total_students : ''}</td>
                 `;
