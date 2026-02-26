@@ -473,11 +473,11 @@ function renderEditableIFTL(entries, compliance) {
                        <select class="form-select" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'time_end', this.value)" style="flex: 1; padding: 4px; min-width: 0; font-size: 0.9rem;">${timeEndOptions}</select>
                     </div>
                 </td>
-                <td data-label="Course" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-course" value="${entry.course_code || entry.activity_type || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'course_code', this.value)" oninput="updateIFTLEntry(${index}, 'course_code', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Activity/Course"></td>
+                <td data-label="Course" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-course" value="${entry.course_code || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'course_code', this.value)" oninput="updateIFTLEntry(${index}, 'course_code', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Activity/Course"></td>
                 <td data-label="# Students" style="padding: 4px; vertical-align: middle;">
                     <input type="number" min="0" class="form-input entry-students" value="${typeof entry.total_students !== 'undefined' ? entry.total_students : ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'total_students', this.value)" oninput="updateIFTLEntry(${index}, 'total_students', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="# Students">
                 </td>
-                <td data-label="Class" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-class" value="${entry.activity_type !== 'Class' ? entry.activity_type : ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'activity_type', this.value)" oninput="updateIFTLEntry(${index}, 'activity_type', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Class/Sec"></td>
+                <td data-label="Class" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-class" value="${entry.class_name || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'class_name', this.value)" oninput="updateIFTLEntry(${index}, 'class_name', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Class/Sec"></td>
                 <td data-label="Location" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-room" value="${entry.room || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'room', this.value)" oninput="updateIFTLEntry(${index}, 'room', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Location"></td>
                 <td data-label="Remarks" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-remarks" value="${entry.remarks || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'remarks', this.value)" oninput="updateIFTLEntry(${index}, 'remarks', this.value)" placeholder="Remarks" style="width:100%; padding: 4px; font-size: 0.9rem;"></td>
                 <td data-label="" style="padding: 4px; text-align: center; vertical-align: middle;">
@@ -508,7 +508,7 @@ function addIFTLEntry() {
         course_code: '',
         total_students: '',
         room: '',
-        activity_type: '',
+        class_name: '',
         status: 'Regular',
         remarks: '',
         is_modified: 1
@@ -527,7 +527,7 @@ function syncIFTLRowsToMemory() {
         const studentsInput = row.querySelector('.entry-students');
         if (studentsInput) entry.total_students = studentsInput.value;
         const classInput = row.querySelector('.entry-class');
-        if (classInput) entry.activity_type = classInput.value;
+        if (classInput) entry.class_name = classInput.value;
         const roomInput = row.querySelector('.entry-room');
         if (roomInput) entry.room = roomInput.value;
         const remarksInput = row.querySelector('.entry-remarks');

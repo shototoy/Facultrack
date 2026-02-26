@@ -2240,7 +2240,7 @@ switch ($action) {
             $stmt->execute([$compliance_id]);
             $entries = json_decode($_POST['entries'], true);
             if ($entries) {
-                $insert_stmt = $pdo->prepare("INSERT INTO iftl_entries (compliance_id, day_of_week, time_start, time_end, course_code, total_students, room, class_name, activity_type, status, remarks, is_modified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $insert_stmt = $pdo->prepare("INSERT INTO iftl_entries (compliance_id, day_of_week, time_start, time_end, course_code, total_students, room, class_name, status, remarks, is_modified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 foreach ($entries as $e) {
                     $insert_stmt->execute([
                         $compliance_id,
@@ -2250,8 +2250,7 @@ switch ($action) {
                         $e['course_code'] ?? null,
                         isset($e['total_students']) && $e['total_students'] !== '' ? (int)$e['total_students'] : null,
                         $e['room'] ?? null,
-                        $e['activity_type'] ?? null, // CRS/YR/SEC now goes to class_name
-                        null, // activity_type is not used for CRS/YR/SEC
+                        $e['class_name'] ?? null,
                         $e['status'] ?? 'Regular',
                         $e['remarks'] ?? null,
                         $e['is_modified'] ?? 0
@@ -2473,7 +2472,7 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
                     'time_end' => $sched['time_end'],
                     'course_code' => $sched['course_code'],
                     'room' => $sched['room'],
-                    'activity_type' => $sched['class_name'] ?? 'Class',
+                    'class_name' => $sched['class_name'] ?? 'Class',
                     'total_students' => isset($sched['total_students']) ? (int)$sched['total_students'] : null,
                     'status' => 'Regular',
                     'remarks' => '',
@@ -2538,7 +2537,7 @@ function mapIFTLDisplayCourse($row) {
     if (($row['status'] ?? '') === 'Leave') return 'LEAVE';
     if (($row['status'] ?? '') === 'Vacant') return 'VACANT';
     if (!empty($row['course_code'])) return $row['course_code'];
-    return $row['activity_type'] ?? '';
+    return $row['class_name'] ?? '';
 }
 function timeToMinutes($time_value) {
     if (!$time_value) return 0;
