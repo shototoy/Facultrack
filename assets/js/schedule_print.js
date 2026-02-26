@@ -457,7 +457,12 @@ function generatePrintHTML(facultyName, mwfSchedules, tthSchedules, summary, dea
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <div class="header" style="position:relative;">
+            <div style="position:absolute; top:0; right:0; text-align:right; font-size:8pt; font-weight:bold; z-index:10; background:transparent;">
+                SKSU-INS-MCI-08<br>
+                Revision: 00<br>
+                Effective Date: July 07, 2025
+            </div>
             <img src="assets/images/logo1.png" alt="SKSU Logo" class="logo" onerror="this.style.display='none'">
             <div class="header-text">
                 <h2>SULTAN KUDARAT STATE UNIVERSITY</h2>
