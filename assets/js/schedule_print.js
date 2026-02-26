@@ -236,9 +236,17 @@ function generateScheduleGrid(type, schedules, useIFTL = false) {
                     occupiedCells[`${slotIndex + i}-${dayIndex}`] = true;
                 }
                 const rowspanAttr = duration > 1 ? ` rowspan="${duration}"` : '';
+                // Compose Yr/Crs/Sec string
+                let yrCrsSec = '';
+                if (schedule.year || schedule.course_code || schedule.section) {
+                    yrCrsSec = `${schedule.year ? schedule.year : ''}${schedule.course_code ? schedule.course_code : ''}${schedule.section ? '-' + schedule.section : ''}`.replace(/^-/, '');
+                } else if (schedule.class_code) {
+                    yrCrsSec = schedule.class_code;
+                } else {
+                    yrCrsSec = '';
+                }
                 html += `
-                    <td${rowspanAttr}>${schedule.course_code || ''}</td>
-                    <td${rowspanAttr}>${schedule.class_code || ''}</td>
+                    <td${rowspanAttr}>${yrCrsSec}</td>
                     <td${rowspanAttr}>${schedule.room || ''}</td>
                     <td${rowspanAttr}>${schedule.total_students !== undefined && schedule.total_students !== null ? schedule.total_students : ''}</td>
                 `;
