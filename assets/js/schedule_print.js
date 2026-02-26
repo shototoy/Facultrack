@@ -62,6 +62,7 @@ function calculateSummaryData(schedules) {
     let totalClassHours = 0;
     let lectureUnits = 0;
     let labUnits = 0;
+    const subjectUnits = {};
     schedules.forEach(schedule => {
         preparations.add(schedule.course_code);
         const start = new Date(`2000-01-01 ${schedule.time_start}`);
@@ -70,8 +71,12 @@ function calculateSummaryData(schedules) {
         const dayCount = countDaysInSchedule(schedule.days);
         totalClassHours += hours * dayCount;
         const units = parseFloat(schedule.units || 3);
-        lectureUnits += units;
+        // Only count units for each unique subject once
+        if (!(schedule.course_code in subjectUnits)) {
+            subjectUnits[schedule.course_code] = units;
+        }
     });
+    lectureUnits = Object.values(subjectUnits).reduce((sum, u) => sum + u, 0);
     const actualTeachingLoad = lectureUnits + labUnits;
     const normalLoad = 18;
     // Load Displacement is total units
