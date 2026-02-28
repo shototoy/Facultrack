@@ -424,19 +424,35 @@ async function loadFacultyIFTLData() {
 function renderEditableIFTL(entries, compliance) {
     const content = document.getElementById('facultyIFTLContent');
     const status = compliance.status || 'Draft';
+    const normalizedStatus = String(status || '').trim().toLowerCase();
+    const isSubmittedState = normalizedStatus === 'submitted' || normalizedStatus === 're-submitted' || normalizedStatus === 'resubmitted';
     window.currentIFTLData = entries || [];
     window.currentIFTLStatus = status;
-    const draftBtn = document.getElementById('iftlDraftBtn');
     const submitBtn = document.getElementById('iftlSubmitBtn');
     const resetBtn = document.getElementById('iftlResetBtn');
-    const isLocked = status === 'Submitted' || status === 'Approved';
-    if (draftBtn) draftBtn.disabled = isLocked;
-    if (submitBtn) submitBtn.disabled = isLocked;
-    if (resetBtn) resetBtn.disabled = isLocked;
+    if (submitBtn) {
+        if (isSubmittedState) {
+            submitBtn.textContent = 'Re-Submit';
+            submitBtn.classList.add('resubmit-btn');
+        } else {
+            submitBtn.textContent = 'Submit';
+            submitBtn.classList.remove('resubmit-btn');
+        }
+        submitBtn.disabled = false;
+    }
+    if (resetBtn) resetBtn.disabled = false;
+    const statusBadgeHtml = (() => {
+        if (normalizedStatus === 'submitted') {
+            return '<span class="status-badge" style="background:#2e7d32;color:white;">Submitted</span>';
+        }
+        if (normalizedStatus === 're-submitted' || normalizedStatus === 'resubmitted') {
+            return '<span class="status-badge" style="background:#fbc02d;color:#1f1f1f;">Re-Submitted</span>';
+        }
+        return '<span class="status-badge" style="background:#d32f2f;color:white;">Not Submitted</span>';
+    })();
     let html = `
         <div class="iftl-status-header" style="margin-bottom:5px;">
-            Status: <strong>${status}</strong>
-            ${status === 'Submitted' ? '<span class="status-badge" style="background:#2196F3;color:white;">Submitted - Locked</span>' : ''}
+            Status: ${statusBadgeHtml}
         </div>
         <table class="data-table iftl-table editable-grid">
             <thead style="position: sticky; top: 0; background: white; z-index: 10;">
@@ -454,7 +470,7 @@ function renderEditableIFTL(entries, compliance) {
             <tbody>
     `;
     window.currentIFTLData.forEach((entry, index) => {
-        const isDisabled = status === 'Submitted' || status === 'Approved';
+        const isDisabled = false;
         const dayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
             .map(day => `<option value="${day}" ${entry.day_of_week === day ? 'selected' : ''}>${day}</option>`)
             .join('');
@@ -482,7 +498,7 @@ function renderEditableIFTL(entries, compliance) {
                 <td data-label="Location" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-room" value="${entry.room || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'room', this.value)" oninput="updateIFTLEntry(${index}, 'room', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Location"></td>
                 <td data-label="Remarks" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-remarks" value="${entry.remarks || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'remarks', this.value)" oninput="updateIFTLEntry(${index}, 'remarks', this.value)" placeholder="Remarks" style="width:100%; padding: 4px; font-size: 0.9rem;"></td>
                 <td data-label="" style="padding: 4px; text-align: center; vertical-align: middle;">
-                    ${!isDisabled ? `<button class="btn-delete" style="background: #e53935; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" onclick="deleteIFTLEntry(${index})" title="Remove">
+                    ${!isDisabled ? `<button class="btn-delete" style="background: #e53935; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 100%;" onclick="deleteIFTLEntry(${index})" title="Remove">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                     </button>` : ''}
                 </td>
@@ -490,13 +506,11 @@ function renderEditableIFTL(entries, compliance) {
         `;
     });
     html += `</tbody></table>`;
-    if (status !== 'Submitted' && status !== 'Approved') {
-        html += `
-        <div style="position: sticky; bottom: 0; background: white; padding: 10px; border-top: 1px solid #eee; text-align: center; box-shadow: 0 -2px 5px rgba(0,0,0,0.05);">
-            <button class="btn-secondary" style="width: 100%; padding: 10px;" onclick="addIFTLEntry()">+ Add New Entry</button>
-        </div>
-        `;
-    }
+    html += `
+    <div style="position: sticky; bottom: 0; background: white; padding: 10px; border-top: 1px solid #eee; text-align: center; box-shadow: 0 -2px 5px rgba(0,0,0,0.05);">
+        <button class="btn-secondary" style="width: 100%; padding: 10px;" onclick="addIFTLEntry()">+ Add New Entry</button>
+    </div>
+    `;
     content.innerHTML = html;
 }
 function addIFTLEntry() {
@@ -706,13 +720,16 @@ function deleteIFTLEntry(index) {
     proceed();
 }
 async function saveIFTLData(status, skipConfirm = false) {
-    if (window.currentIFTLStatus === 'Submitted' && status === 'Submitted') {
-        return;
-    }
+    const normalizedStatus = String(window.currentIFTLStatus || '').trim().toLowerCase();
+    const submitStatusToSave = (normalizedStatus === 'submitted' || normalizedStatus === 're-submitted' || normalizedStatus === 'resubmitted')
+        ? 'Re-Submitted'
+        : 'Submitted';
     if (status === 'Submitted' && !skipConfirm && typeof confirmAction === 'function') {
         confirmAction(
-            'Submit IFTL',
-            'Are you sure you want to submit? This will lock your IFTL for this week.',
+            submitStatusToSave === 'Re-Submitted' ? 'Re-Submit IFTL' : 'Submit IFTL',
+            submitStatusToSave === 'Re-Submitted'
+                ? 'Are you sure you want to re-submit your updated IFTL for this week?'
+                : 'Are you sure you want to submit your IFTL for this week?',
             function () {
                 saveIFTLData('Submitted', true);
             }
@@ -723,13 +740,12 @@ async function saveIFTLData(status, skipConfirm = false) {
     const weekSelect = document.getElementById('facultyIFTLWeekSelect');
     const weekIdentifier = weekSelect.value;
     const weekStartDate = weekSelect.options[weekSelect.selectedIndex].dataset.startDate;
-    if (status === 'Submitted' && !skipConfirm) return;
     try {
         const formData = new FormData();
         formData.append('action', 'save_iftl');
         formData.append('week_identifier', weekIdentifier);
         formData.append('week_start_date', weekStartDate);
-        formData.append('status', status);
+        formData.append('status', status === 'Submitted' ? submitStatusToSave : status);
         const modifiedEntries = buildModifiedIFTLPayload(window.currentIFTLData, window.originalIFTLData);
         formData.append('entries', JSON.stringify(modifiedEntries));
         const response = await fetch('assets/php/polling_api.php', {

@@ -2164,7 +2164,7 @@ switch ($action) {
                 'is_current' => $is_current,
                 'has_entry' => $status !== null,
                 'status' => $status,
-                'is_submitted' => in_array($normalized_status, ['submitted', 'approved'], true)
+                'is_submitted' => in_array($normalized_status, ['submitted', 're-submitted', 'resubmitted', 'approved'], true)
             ];
             $week_start = strtotime('+1 week', $week_start);
         }

@@ -453,8 +453,9 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             #iftlModal .iftl-actions {
                 width: 100% !important;
                 display: grid !important;
-                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                 gap: 8px !important;
+                padding: 0 6px !important;
             }
 
             #iftlModal .iftl-btn {
@@ -501,18 +502,21 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                 word-break: break-word;
                 font-size: 0.78rem !important;
                 padding: 2px 0 !important;
+                max-width: none !important;
+                overflow: visible !important;
             }
 
             #facultyIFTLContent .iftl-table td {
-                display: flex !important;
+                display: grid !important;
+                grid-template-columns: 72px minmax(0, 1fr) !important;
                 align-items: center !important;
                 gap: 6px !important;
                 text-align: left !important;
+                width: 100% !important;
             }
 
             #facultyIFTLContent .iftl-table td::before {
                 content: attr(data-label);
-                flex: 0 0 64px;
                 font-weight: 700;
                 font-size: 0.78rem;
                 color: #555;
@@ -522,8 +526,15 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             #facultyIFTLContent .iftl-table .form-input {
                 min-width: 0 !important;
                 width: 100% !important;
+                flex: 1 1 auto !important;
+                max-width: none !important;
                 font-size: 0.9rem !important;
                 padding: 6px !important;
+            }
+
+            #facultyIFTLContent .iftl-table td > div {
+                width: 100% !important;
+                flex: 1 1 auto !important;
             }
 
             #facultyIFTLContent .iftl-table td:nth-child(2) > div {
@@ -538,12 +549,27 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
             }
 
             #facultyIFTLContent .iftl-table td:last-child {
-                justify-content: flex-end !important;
+                grid-template-columns: minmax(0, 1fr) !important;
+                width: 100% !important;
             }
 
             #facultyIFTLContent .iftl-table td:last-child::before {
                 display: none !important;
             }
+
+            #facultyIFTLContent .iftl-table td:last-child .btn-delete {
+                width: 100% !important;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                min-height: 36px !important;
+            }
+        }
+
+        #iftlSubmitBtn.resubmit-btn {
+            background: #fbc02d !important;
+            color: #1f1f1f !important;
+            border-color: #fbc02d !important;
         }
         .schedule-header {
             display: flex;
@@ -1203,8 +1229,7 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
                             </select>
                         </div>
                         <div class="iftl-actions" style="display: flex; gap: 10px;">
-                            <button class="btn-primary iftl-btn" id="iftlDraftBtn" onclick="saveIFTLData('Draft')">Save Draft</button>
-                            <button class="btn-primary iftl-btn" id="iftlSubmitBtn" style="background: #e65100;" onclick="saveIFTLData('Submitted')">Submit</button>
+                            <button class="btn-primary iftl-btn" id="iftlSubmitBtn" onclick="saveIFTLData('Submitted')">Submit</button>
                             <button class="btn-secondary iftl-btn" id="iftlResetBtn" onclick="regenerateIFTLWeek()" title="Reset to standard schedule">Reset</button>
                         </div>
                     </div>
@@ -1260,4 +1285,3 @@ $announcements = fetchAnnouncements($pdo, $_SESSION['role'], 10);
     <script src="assets/js/faculty.js?v=<?php echo filemtime(__DIR__ . '/assets/js/faculty.js'); ?>"></script>
 </body>
 </html>
-
