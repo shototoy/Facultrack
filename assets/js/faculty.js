@@ -412,6 +412,7 @@ async function loadFacultyIFTLData() {
         });
         const result = await response.json();
         if (result.success) {
+            window.originalIFTLData = JSON.parse(JSON.stringify(result.entries || []));
             renderEditableIFTL(result.entries, result.compliance);
         } else {
             content.innerHTML = '<div class="error">Failed to load</div>';
@@ -477,7 +478,7 @@ function renderEditableIFTL(entries, compliance) {
                 <td data-label="# Students" style="padding: 4px; vertical-align: middle;">
                     <input type="number" min="0" class="form-input entry-students" value="${typeof entry.total_students !== 'undefined' ? entry.total_students : ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'total_students', this.value)" oninput="updateIFTLEntry(${index}, 'total_students', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="# Students">
                 </td>
-                <td data-label="Class" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-class" value="${entry.class_name || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'class_name', this.value)" oninput="updateIFTLEntry(${index}, 'class_name', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Class/Sec"></td>
+                <td data-label="Class" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-class" value="${entry.class_code || entry.class_name || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'class_code', this.value)" oninput="updateIFTLEntry(${index}, 'class_code', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Class/Sec"></td>
                 <td data-label="Location" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-room" value="${entry.room || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'room', this.value)" oninput="updateIFTLEntry(${index}, 'room', this.value)" style="width:100%; padding: 4px; font-size: 0.9rem;" placeholder="Location"></td>
                 <td data-label="Remarks" style="padding: 4px; vertical-align: middle;"><input type="text" class="form-input entry-remarks" value="${entry.remarks || ''}" ${isDisabled ? 'disabled' : ''} onchange="updateIFTLEntry(${index}, 'remarks', this.value)" oninput="updateIFTLEntry(${index}, 'remarks', this.value)" placeholder="Remarks" style="width:100%; padding: 4px; font-size: 0.9rem;"></td>
                 <td data-label="" style="padding: 4px; text-align: center; vertical-align: middle;">
@@ -508,7 +509,7 @@ function addIFTLEntry() {
         course_code: '',
         total_students: '',
         room: '',
-        class_name: '',
+        class_code: '',
         status: 'Regular',
         remarks: '',
         is_modified: 1
@@ -527,14 +528,99 @@ function syncIFTLRowsToMemory() {
         const studentsInput = row.querySelector('.entry-students');
         if (studentsInput) entry.total_students = studentsInput.value;
         const classInput = row.querySelector('.entry-class');
-        if (classInput) entry.class_name = classInput.value;
+        if (classInput) entry.class_code = classInput.value;
         const roomInput = row.querySelector('.entry-room');
         if (roomInput) entry.room = roomInput.value;
         const remarksInput = row.querySelector('.entry-remarks');
         if (remarksInput) entry.remarks = remarksInput.value;
-        entry.status = 'Regular';
-        entry.is_modified = 1;
     });
+}
+
+function createIFTLEntryKey(entry) {
+    return `${entry.day_of_week || ''}|${normalizeTimeValue(entry.time_start || '')}|${normalizeTimeValue(entry.time_end || '')}`;
+}
+
+function normalizeIFTLComparableEntry(entry) {
+    return {
+        day_of_week: entry.day_of_week || '',
+        time_start: normalizeTimeValue(entry.time_start || ''),
+        time_end: normalizeTimeValue(entry.time_end || ''),
+        course_code: (entry.course_code || '').trim(),
+        total_students: entry.total_students === '' || entry.total_students === null || typeof entry.total_students === 'undefined'
+            ? null
+            : parseInt(entry.total_students, 10),
+        class_code: (entry.class_code || entry.class_name || '').trim(),
+        room: (entry.room || '').trim(),
+        remarks: (entry.remarks || '').trim()
+    };
+}
+
+function areIFTLEntriesEquivalent(a, b) {
+    return a.day_of_week === b.day_of_week &&
+        a.time_start === b.time_start &&
+        a.time_end === b.time_end &&
+        a.course_code === b.course_code &&
+        a.total_students === b.total_students &&
+        a.class_code === b.class_code &&
+        a.room === b.room &&
+        a.remarks === b.remarks;
+}
+
+function buildModifiedIFTLPayload(currentEntries, originalEntries) {
+    const current = Array.isArray(currentEntries) ? currentEntries : [];
+    const original = Array.isArray(originalEntries) ? originalEntries : [];
+    const originalMap = new Map();
+    const currentMap = new Map();
+
+    original.forEach(entry => {
+        const normalized = normalizeIFTLComparableEntry(entry);
+        originalMap.set(createIFTLEntryKey(normalized), normalized);
+    });
+    current.forEach(entry => {
+        const normalized = normalizeIFTLComparableEntry(entry);
+        currentMap.set(createIFTLEntryKey(normalized), normalized);
+    });
+
+    const modified = [];
+
+    current.forEach(entry => {
+        const normalized = normalizeIFTLComparableEntry(entry);
+        const key = createIFTLEntryKey(normalized);
+        const originalEntry = originalMap.get(key);
+        const isChanged = !originalEntry || !areIFTLEntriesEquivalent(normalized, originalEntry) || Number(entry.is_modified || 0) === 1;
+        if (isChanged) {
+            modified.push({
+                day_of_week: normalized.day_of_week,
+                time_start: normalized.time_start,
+                time_end: normalized.time_end,
+                course_code: normalized.course_code || null,
+                total_students: normalized.total_students,
+                room: normalized.room || null,
+                class_code: normalized.class_code || null,
+                status: entry.status || 'Regular',
+                remarks: normalized.remarks || null,
+                is_modified: 1
+            });
+        }
+    });
+
+    originalMap.forEach((originalEntry, key) => {
+        if (currentMap.has(key)) return;
+        modified.push({
+            day_of_week: originalEntry.day_of_week,
+            time_start: originalEntry.time_start,
+            time_end: originalEntry.time_end,
+            course_code: null,
+            total_students: null,
+            room: null,
+            class_code: null,
+            status: 'Vacant',
+            remarks: 'Removed',
+            is_modified: 1
+        });
+    });
+
+    return modified;
 }
 function normalizeTimeValue(timeValue) {
     if (!timeValue) return '';
@@ -644,7 +730,8 @@ async function saveIFTLData(status, skipConfirm = false) {
         formData.append('week_identifier', weekIdentifier);
         formData.append('week_start_date', weekStartDate);
         formData.append('status', status);
-        formData.append('entries', JSON.stringify(window.currentIFTLData));
+        const modifiedEntries = buildModifiedIFTLPayload(window.currentIFTLData, window.originalIFTLData);
+        formData.append('entries', JSON.stringify(modifiedEntries));
         const response = await fetch('assets/php/polling_api.php', {
             method: 'POST',
             body: formData
@@ -695,6 +782,7 @@ async function regenerateIFTLWeekConfirmed() {
         const result = await response.json();
         if (result.success) {
             renderEditableIFTL(result.entries, result.compliance);
+            window.originalIFTLData = JSON.parse(JSON.stringify(result.entries || []));
             if (typeof showNotification === 'function') showNotification('Schedule reset to standard load', 'success');
         } else {
             content.innerHTML = '<div class="error">Failed to reset</div>';

@@ -1207,6 +1207,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
                     Object.keys(phpFacultySchedules).forEach(facultyId => {
                         facultySchedules[facultyId] = phpFacultySchedules[facultyId];
                     });
+                    window.facultyNames = facultyNames;
+                    window.facultySchedules = facultySchedules;
                     window.facultyDeanNames = facultyDeanNames;
                     function getEmptyStateHTML(title, description) {
                         return `
@@ -1476,7 +1478,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
     </div>
     <?php include 'assets/php/shared_modals.php'; ?>
     <script src="assets/js/shared_modals.js"></script>
-    <script src="assets/js/schedule_print.js"></script>
+    <script src="assets/js/iftl_consolidated.js"></script>
     <script>
         window.userRole = 'program_chair';
     </script>
@@ -1507,4 +1509,3 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
     <script src="assets/js/toast_manager.js"></script>
 </body>
 </html>
-

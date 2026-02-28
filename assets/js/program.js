@@ -2095,6 +2095,7 @@ function regenerateCourseLoadModal() {
         .then(freshData => {
             if (freshData.success) {
                 facultySchedules = freshData.faculty_schedules;
+                window.facultySchedules = facultySchedules;
                 generateScheduleView(currentFacultyId, 'courseload');
             } else {
                 generateScheduleView(currentFacultyId, 'courseload');
@@ -3322,4 +3323,3 @@ function syncClassDataState(classData) {
         }
     }
 }
-

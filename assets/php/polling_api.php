@@ -1675,19 +1675,32 @@ switch ($action) {
                 $is_override = $flagged_override || $entry_count > 0;
             }
 
+            $schedule_query = "
+                SELECT s.*, c.course_description, cl.class_name, cl.class_code, cl.total_students,
+                       'upcoming' as status, 'standard' as source
+                FROM schedules s
+                JOIN courses c ON s.course_code = c.course_code
+                JOIN classes cl ON s.class_id = cl.class_id
+                WHERE s.faculty_id = ? AND s.is_active = TRUE
+                ORDER BY s.time_start";
+            $stmt = $pdo->prepare($schedule_query);
+            $stmt->execute([$faculty_id]);
+            $standard_schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $standard_entries = splitScheduleByDay($standard_schedules);
+
+            $overlay_entries = [];
             if ($compliance_id && $is_override) {
-                  $overlay_query = "
-                      SELECT e.entry_id, e.day_of_week, e.time_start, e.time_end, e.course_code, e.room,
-                          e.class_name, e.status,
-                          c.course_description, c.units, cl.total_students
-                      FROM iftl_entries e
-                      LEFT JOIN courses c ON e.course_code = c.course_code
-                      LEFT JOIN classes cl ON e.class_name = cl.class_name
-                      WHERE e.compliance_id = ?
-                      ORDER BY e.time_start";
+                $overlay_query = "
+                    SELECT e.entry_id, e.day_of_week, e.time_start, e.time_end, e.course_code, e.room,
+                        e.class_name, e.status,
+                        c.course_description, c.units, cl.total_students, cl.class_code
+                    FROM iftl_entries e
+                    LEFT JOIN courses c ON e.course_code = c.course_code
+                    LEFT JOIN classes cl ON (e.class_name = cl.class_name OR e.class_name = cl.class_code)
+                    WHERE e.compliance_id = ?
+                    ORDER BY e.time_start";
                 $stmt = $pdo->prepare($overlay_query);
                 $stmt->execute([$compliance_id]);
-                $overlay_entries = [];
                 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                     $day_codes = mapDayOfWeekToCodes($row['day_of_week']);
                     if (empty($day_codes)) {
@@ -1702,6 +1715,7 @@ switch ($action) {
                             'course_code' => mapIFTLDisplayCourse($row),
                             'room' => $row['room'],
                             'class_name' => $row['class_name'],
+                            'class_code' => $row['class_code'] ?: $row['class_name'],
                             'status' => $row['status'],
                             'course_description' => $row['course_description'],
                             'units' => $row['units'],
@@ -1710,20 +1724,9 @@ switch ($action) {
                         ];
                     }
                 }
-                $schedule_data = $overlay_entries;
-            } else {
-                $schedule_query = "
-                    SELECT s.*, c.course_description, cl.class_name, cl.class_code, cl.total_students,
-                           'upcoming' as status, 'standard' as source
-                    FROM schedules s
-                    JOIN courses c ON s.course_code = c.course_code
-                    JOIN classes cl ON s.class_id = cl.class_id
-                    WHERE s.faculty_id = ? AND s.is_active = TRUE
-                    ORDER BY s.time_start";
-                $stmt = $pdo->prepare($schedule_query);
-                $stmt->execute([$faculty_id]);
-                $schedule_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
+
+            $schedule_data = mergeScheduleEntriesByDayTime($standard_entries, $overlay_entries);
 
             $semester = null;
             $academic_year = null;
@@ -2179,19 +2182,24 @@ switch ($action) {
         $stmt = $pdo->prepare("SELECT * FROM iftl_weekly_compliance WHERE faculty_id = ? AND week_identifier = ? ORDER BY updated_at DESC, compliance_id DESC LIMIT 1");
         $stmt->execute([$target_faculty_id, $week]);
         $compliance = $stmt->fetch(PDO::FETCH_ASSOC);
+        $standard_entries = generateIFTLFromStandard($pdo, $target_faculty_id);
         if ($compliance && !isset($_POST['reset'])) {
-            $stmt = $pdo->prepare("SELECT * FROM iftl_entries WHERE compliance_id = ? ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), time_start");
+            $stmt = $pdo->prepare("
+                SELECT e.*,
+                       COALESCE(cl.class_code, e.class_name) AS class_code
+                FROM iftl_entries e
+                LEFT JOIN classes cl ON (e.class_name = cl.class_name OR e.class_name = cl.class_code)
+                WHERE e.compliance_id = ?
+                ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), time_start
+            ");
             $stmt->execute([$compliance['compliance_id']]);
-            $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $overlay_entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $flagged_override = $has_override_column ? ((int)($compliance['is_override'] ?? 0) === 1) : true;
-            $is_override = $flagged_override || count($entries) > 0;
-            if (!$is_override) {
-                $compliance = ['status' => 'None'];
-                $entries = generateIFTLFromStandard($pdo, $target_faculty_id);
-            }
+            $is_override = $flagged_override || count($overlay_entries) > 0;
+            $entries = $is_override ? mergeIFTLWithStandard($standard_entries, $overlay_entries) : $standard_entries;
         } else {
             $compliance = ['status' => 'None'];
-            $entries = generateIFTLFromStandard($pdo, $target_faculty_id);
+            $entries = $standard_entries;
         }
         sendJsonResponse(['success' => true, 'compliance' => $compliance, 'entries' => $entries]);
         break;
@@ -2213,19 +2221,25 @@ switch ($action) {
             $existing_stmt->execute([$faculty_id, $week_identifier]);
             $existing_compliance_id = $existing_stmt->fetchColumn();
 
+            $entries = json_decode($_POST['entries'] ?? '[]', true);
+            if (!is_array($entries)) {
+                $entries = [];
+            }
+            $has_overrides = count($entries) > 0;
+
             if ($existing_compliance_id) {
                 $compliance_id = $existing_compliance_id;
                 if ($has_override_column) {
-                    $stmt = $pdo->prepare("UPDATE iftl_weekly_compliance SET week_start_date = ?, status = ?, is_override = 1, updated_at = NOW() WHERE compliance_id = ?");
-                    $stmt->execute([$week_start_date, $status, $compliance_id]);
+                    $stmt = $pdo->prepare("UPDATE iftl_weekly_compliance SET week_start_date = ?, status = ?, is_override = ?, updated_at = NOW() WHERE compliance_id = ?");
+                    $stmt->execute([$week_start_date, $status, $has_overrides ? 1 : 0, $compliance_id]);
                 } else {
                     $stmt = $pdo->prepare("UPDATE iftl_weekly_compliance SET week_start_date = ?, status = ?, updated_at = NOW() WHERE compliance_id = ?");
                     $stmt->execute([$week_start_date, $status, $compliance_id]);
                 }
             } else {
                 if ($has_override_column) {
-                    $stmt = $pdo->prepare("INSERT INTO iftl_weekly_compliance (faculty_id, week_identifier, week_start_date, status, is_override) VALUES (?, ?, ?, ?, 1)");
-                    $stmt->execute([$faculty_id, $week_identifier, $week_start_date, $status]);
+                    $stmt = $pdo->prepare("INSERT INTO iftl_weekly_compliance (faculty_id, week_identifier, week_start_date, status, is_override) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([$faculty_id, $week_identifier, $week_start_date, $status, $has_overrides ? 1 : 0]);
                 } else {
                     $stmt = $pdo->prepare("INSERT INTO iftl_weekly_compliance (faculty_id, week_identifier, week_start_date, status) VALUES (?, ?, ?, ?)");
                     $stmt->execute([$faculty_id, $week_identifier, $week_start_date, $status]);
@@ -2238,7 +2252,6 @@ switch ($action) {
 
             $stmt = $pdo->prepare("DELETE FROM iftl_entries WHERE compliance_id = ?");
             $stmt->execute([$compliance_id]);
-            $entries = json_decode($_POST['entries'], true);
             if ($entries) {
                 $insert_stmt = $pdo->prepare("INSERT INTO iftl_entries (compliance_id, day_of_week, time_start, time_end, course_code, total_students, room, class_name, status, remarks, is_modified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 foreach ($entries as $e) {
@@ -2250,7 +2263,7 @@ switch ($action) {
                         $e['course_code'] ?? null,
                         isset($e['total_students']) && $e['total_students'] !== '' ? (int)$e['total_students'] : null,
                         $e['room'] ?? null,
-                        $e['class_name'] ?? null,
+                        $e['class_code'] ?? ($e['class_name'] ?? null),
                         $e['status'] ?? 'Regular',
                         $e['remarks'] ?? null,
                         $e['is_modified'] ?? 0
@@ -2428,7 +2441,7 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
 
     if ($target_academic_year) {
         $stmt = $pdo->prepare("
-            SELECT s.*, c.class_name, c.total_students
+            SELECT s.*, c.class_name, c.class_code, c.total_students
             FROM schedules s
             LEFT JOIN classes c ON s.class_id = c.class_id
             WHERE s.faculty_id = ? AND s.is_active = 1
@@ -2437,7 +2450,7 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
         $stmt->execute([$faculty_id, $target_academic_year]);
     } else {
         $stmt = $pdo->prepare("
-            SELECT s.*, c.class_name, c.total_students
+            SELECT s.*, c.class_name, c.class_code, c.total_students
             FROM schedules s
             LEFT JOIN classes c ON s.class_id = c.class_id
             WHERE s.faculty_id = ? AND s.is_active = 1
@@ -2472,6 +2485,7 @@ function generateIFTLFromStandard($pdo, $faculty_id) {
                     'time_end' => $sched['time_end'],
                     'course_code' => $sched['course_code'],
                     'room' => $sched['room'],
+                    'class_code' => $sched['class_code'] ?? null,
                     'class_name' => $sched['class_name'] ?? 'Class',
                     'total_students' => isset($sched['total_students']) ? (int)$sched['total_students'] : null,
                     'status' => 'Regular',
@@ -2613,6 +2627,7 @@ function splitScheduleByDay($schedules) {
                 'days' => $day_map[$d],
                 'course_code' => $sched['course_code'],
                 'room' => $sched['room'],
+                'class_code' => $sched['class_code'] ?? null,
                 'class_name' => $sched['class_name'] ?? null,
                 'status' => $sched['status'] ?? 'upcoming',
                 'course_description' => $sched['course_description'] ?? null,
