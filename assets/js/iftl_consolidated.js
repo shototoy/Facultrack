@@ -1,4 +1,3 @@
-// Consolidated IFTL manager/api/http requests + schedule fetch/print utilities.
 (function () {
     window.facultyNames = window.facultyNames || {};
     window.facultySchedules = window.facultySchedules || {};
@@ -632,7 +631,6 @@
                     Object.keys(data.faculty_schedules).forEach(facultyId => {
                         window.facultySchedules[facultyId] = data.faculty_schedules[facultyId];
                     });
-                    console.log('Faculty schedules refreshed successfully');
                 }
             })
             .catch(error => {

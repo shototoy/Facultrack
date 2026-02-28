@@ -1,5 +1,4 @@
 <?php
-// Always use Manila timezone for all PHP date/time functions
 date_default_timezone_set('Asia/Manila');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -48,7 +47,6 @@ function getAllFaculty($pdo) {
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute();
     $faculty = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    // Attach PHP-side last_updated using getTimeAgo
     foreach ($faculty as &$f) {
         $lh_stmt = $pdo->prepare("SELECT time_set FROM location_history WHERE faculty_id = ? ORDER BY time_set DESC LIMIT 1");
         $lh_stmt->execute([$f['faculty_id']]);
@@ -293,7 +291,6 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
     $day_order = ['M', 'T', 'W', 'TH', 'F', 'S'];
     $today_code = $day_mapping[$current_day];
     $viewing_day = $days;
-    // Helper to get index in week
     $get_day_index = function($d) use ($day_order) {
         $idx = array_search($d, $day_order);
         return $idx === false ? -1 : $idx;
@@ -344,8 +341,6 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
     $stmt = $pdo->prepare($schedule_query);
     $stmt->execute([$faculty_id]);
     $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    // Debug info for diagnosis
-    // Debug output removed, restore normal operation
     return $result;
 }
 function generateScheduleHTML($schedule_data) {
@@ -1054,7 +1049,6 @@ switch ($action) {
                 $stmt = $pdo->prepare($faculty_query);
                 $stmt->execute([$class_id]);
                 $faculty_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                // Attach PHP-side last_updated using getTimeAgo
                 foreach ($faculty_data as &$f) {
                     $lh_stmt = $pdo->prepare("SELECT time_set FROM location_history WHERE faculty_id = ? ORDER BY time_set DESC LIMIT 1");
                     $lh_stmt->execute([$f['faculty_id']]);
@@ -2700,5 +2694,4 @@ function hasIftlOverrideColumn(PDO $pdo) {
     return $exists;
 }
 ?>
-
 

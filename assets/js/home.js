@@ -14,6 +14,5 @@ function formatTime(timeString) {
     return `${hour12}:${minutes} ${ampm}`;
 }
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('Class Dashboard loaded');
 });
 

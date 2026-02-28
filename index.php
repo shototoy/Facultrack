@@ -104,7 +104,6 @@ if (!isset($_GET['ready']) && empty($_POST)) {
                 }
             })
             .catch(error => {
-                console.log('Polling...', error);
                 setTimeout(checkServer, 1000);
             });
         }

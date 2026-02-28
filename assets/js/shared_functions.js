@@ -485,7 +485,7 @@ function generateAnnouncementPDF(id, title, content, authorName, date) {
             </div>
 
             <div class="content-wrapper">
-                <!-- Header removed as requested -->
+                
                 <div class="document-header" style="display: none;">
 
                 </div>
@@ -515,7 +515,7 @@ function generateAnnouncementPDF(id, title, content, authorName, date) {
                 </div>
             </div>
 
-            <!-- Footer removed as requested -->
+            
             <div class="footer-text" style="display: none;">
                 <span>VISION:</span> A leading University in advancing scholarly innovation, multi-cultural convergence, and responsive public service in a borderless Region. |
                 <span>MISSION:</span> The University shall primarily provide advanced instruction and professional training in science and technology, agriculture, fisheries, education and other relevant fields of study. It shall also undertake research and extension services, and provide progressive leadership in its areas of specialization. |
@@ -582,7 +582,6 @@ function printAnnouncement(announcementOrId) {
 
 async function emailAnnouncement(announcement) {
     const subject = encodeURIComponent(`Announcement: ${announcement.title}`);
-
 
     const path = window.location.pathname;
     const directory = path.substring(0, path.lastIndexOf('/'));

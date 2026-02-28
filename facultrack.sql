@@ -1,31 +1,12 @@
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
---
--- Host: 127.0.0.1
--- Generation Time: Feb 03, 2026 at 04:37 AM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
-
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
-
---
--- Database: `facultrack_db`
---
-
--- --------------------------------------------------------
-
---
--- Table structure for table `announcements`
---
 
 CREATE TABLE `announcements` (
   `announcement_id` int(11) NOT NULL,
@@ -39,18 +20,9 @@ CREATE TABLE `announcements` (
   `is_active` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `announcements`
---
-
 INSERT INTO `announcements` (`announcement_id`, `title`, `content`, `priority`, `target_audience`, `created_by`, `created_at`, `updated_at`, `is_active`) VALUES
 (1, 'Welcome to FaculTrack System', 'The new FaculTrack system is now live. All users can access their respective dashboards using their assigned credentials.', 'medium', 'all', 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (2, 'Academic Year 2024-2025 Guidelines', 'Please review the updated academic guidelines for the current academic year. All policies are now available in the system.', 'high', 'all', 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
--- --------------------------------------------------------
-
---
--- Table structure for table `classes`
---
 
 CREATE TABLE `classes` (
   `class_id` int(11) NOT NULL,
@@ -67,10 +39,6 @@ CREATE TABLE `classes` (
   `total_students` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `classes`
---
-
 INSERT INTO `classes` (`class_id`, `user_id`, `class_code`, `class_name`, `year_level`, `semester`, `academic_year`, `program_chair_id`, `created_at`, `updated_at`, `is_active`, `total_students`) VALUES
 (1, 36, 'IT-1A', 'Information Technology 2023-2024', 1, '1st', '2025-26', 2, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
 (2, 37, 'IT-2A', 'Information Technology 2022-2023', 2, '1st', '2025-26', 2, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
@@ -84,11 +52,6 @@ INSERT INTO `classes` (`class_id`, `user_id`, `class_code`, `class_name`, `year_
 (10, 50, 'ECE-2A', 'Electronics and Communications Engineering 2025-2026', 2, '1st', '2025-2026', 54, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
 (11, 55, 'CS-1A', 'Computer Science 2025-2026', 1, '1st', '2025-2026', 51, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0),
 (12, 56, 'CS-2A', 'Computer Science 2025-2026', 2, '1st', '2025-2026', 51, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1, 0);
--- --------------------------------------------------------
-
---
--- Table structure for table `courses`
---
 
 CREATE TABLE `courses` (
   `course_id` int(11) NOT NULL,
@@ -100,10 +63,6 @@ CREATE TABLE `courses` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `is_active` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `courses`
---
 
 INSERT INTO `courses` (`course_id`, `course_code`, `course_description`, `units`, `program_id`, `created_at`, `updated_at`, `is_active`) VALUES
 (1, 'CC111', 'Introduction to Computing', 3.00, 2, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
@@ -164,11 +123,6 @@ INSERT INTO `courses` (`course_id`, `course_code`, `course_description`, `units`
 (56, 'ECE102', 'Circuit Analysis', 3.00, 6, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (57, 'ECE201', 'Signals and Systems', 3.00, 6, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (58, 'ECE202', 'Electronic Devices', 3.00, 6, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
--- --------------------------------------------------------
-
---
--- Table structure for table `curriculum`
---
 
 CREATE TABLE `curriculum` (
   `curriculum_id` int(11) NOT NULL,
@@ -180,10 +134,6 @@ CREATE TABLE `curriculum` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `is_active` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `curriculum`
---
 
 INSERT INTO `curriculum` (`curriculum_id`, `course_code`, `year_level`, `semester`, `program_chair_id`, `created_at`, `updated_at`, `is_active`) VALUES
 (1, 'CC112', 1, '1st', 2, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
@@ -258,11 +208,6 @@ INSERT INTO `curriculum` (`curriculum_id`, `course_code`, `year_level`, `semeste
 (70, 'ECE102', 1, '1st', 54, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (71, 'ECE201', 2, '1st', 54, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (72, 'ECE202', 2, '1st', 54, '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
--- --------------------------------------------------------
-
---
--- Table structure for table `deans`
---
 
 CREATE TABLE `deans` (
   `dean_id` int(11) NOT NULL,
@@ -272,18 +217,6 @@ CREATE TABLE `deans` (
   `program_id` int(11) NOT NULL,
   `assigned_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `deans`
---
--- No seed rows for deans. Dean assignments can be created from the Director dashboard.
-
-
--- --------------------------------------------------------
-
---
--- Table structure for table `faculty`
---
 
 CREATE TABLE `faculty` (
   `faculty_id` int(11) NOT NULL,
@@ -301,10 +234,6 @@ CREATE TABLE `faculty` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `is_active` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `faculty`
---
 
 INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `current_location`, `last_location_update`, `last_activity`, `office_hours`, `contact_email`, `contact_phone`, `status`, `created_at`, `updated_at`, `is_active`) VALUES
 (1, 2, 'CHAIR-001', 'Information Technology', NULL, '2026-02-02 15:10:39', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.it@sksu.edu.ph', '09123456789', 'Available', '2025-11-27 10:06:45', '2026-02-02 15:10:39', 1),
@@ -347,11 +276,6 @@ INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `curre
 (38, 53, 'CHAIR-005', 'Civil Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.ce@sksu.edu.ph', '09123456792', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (39, 54, 'CHAIR-006', 'Electronics and Communications Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'chair.ece@sksu.edu.ph', '09123456793', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (40, 44, 'EMP-0034', 'Computer Engineering', NULL, '2025-11-27 10:06:45', '2025-11-27 10:06:45', '8:00 AM - 5:00 PM', 'lenmar.catajay@sksu.edu.ph', '09123456734', 'Available', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
--- --------------------------------------------------------
-
---
--- Table structure for table `iftl_entries`
---
 
 CREATE TABLE `iftl_entries` (
   `entry_id` int(11) NOT NULL,
@@ -369,17 +293,6 @@ CREATE TABLE `iftl_entries` (
   `is_modified` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `iftl_entries`
---
--- No seed rows for iftl_entries to avoid FK dependency on specific weekly compliance IDs during fresh installs.
-
--- --------------------------------------------------------
-
---
--- Table structure for table `iftl_weekly_compliance`
---
-
 CREATE TABLE `iftl_weekly_compliance` (
   `compliance_id` int(11) NOT NULL,
   `faculty_id` int(11) NOT NULL,
@@ -394,18 +307,6 @@ CREATE TABLE `iftl_weekly_compliance` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `iftl_weekly_compliance`
---
--- No seed rows for iftl_weekly_compliance to keep fresh installs clean.
-
-
--- --------------------------------------------------------
-
---
--- Table structure for table `location_history`
---
-
 CREATE TABLE `location_history` (
   `location_history_id` int(11) NOT NULL,
   `faculty_id` int(11) NOT NULL,
@@ -413,12 +314,6 @@ CREATE TABLE `location_history` (
   `time_set` timestamp NOT NULL DEFAULT current_timestamp(),
   `time_changed` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `programs`
---
 
 CREATE TABLE `programs` (
   `program_id` int(11) NOT NULL,
@@ -431,10 +326,6 @@ CREATE TABLE `programs` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `programs`
---
-
 INSERT INTO `programs` (`program_id`, `program_code`, `program_name`, `program_description`, `dean_id`, `is_active`, `created_at`, `updated_at`) VALUES
 (1, 'CS', 'Computer Science', 'Bachelor of Science in Computer Science', 8, 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45'),
 (2, 'IT', 'Information Technology', 'Bachelor of Science in Information Technology', 8, 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45'),
@@ -442,11 +333,6 @@ INSERT INTO `programs` (`program_id`, `program_code`, `program_name`, `program_d
 (4, 'CpE', 'Computer Engineering', 'Bachelor of Science in Computer Engineering', 44, 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45'),
 (5, 'CE', 'Civil Engineering', 'Bachelor of Science in Civil Engineering', 44, 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45'),
 (6, 'ECE', 'Electronics and Communications Engineering', 'Bachelor of Science in Electronics and Communications Engineering', 44, 1, '2025-11-27 10:06:45', '2025-11-27 10:06:45');
--- --------------------------------------------------------
-
---
--- Table structure for table `schedules`
---
 
 CREATE TABLE `schedules` (
   `schedule_id` int(11) NOT NULL,
@@ -465,17 +351,8 @@ CREATE TABLE `schedules` (
   `is_active` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `schedules`
---
-
 INSERT INTO `schedules` (`schedule_id`, `course_code`, `class_id`, `faculty_id`, `section`, `days`, `time_start`, `time_end`, `room`, `semester`, `academic_year`, `created_at`, `updated_at`, `is_active`) VALUES
 (1, 'CC112', 1, 3, NULL, 'TTH', '07:30:00', '10:00:00', 'Room 101', '1st', '', '2025-12-22 17:50:41', '2025-12-22 17:50:41', 1);
--- --------------------------------------------------------
-
---
--- Table structure for table `users`
---
 
 CREATE TABLE `users` (
   `user_id` int(11) NOT NULL,
@@ -487,10 +364,6 @@ CREATE TABLE `users` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `is_active` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `users`
---
 
 INSERT INTO `users` (`user_id`, `username`, `password`, `full_name`, `role`, `created_at`, `updated_at`, `is_active`) VALUES
 (1, 'admin', 'admin123', 'Rommel M. Lagumen', 'campus_director', '2025-11-27 10:06:45', '2026-02-03 03:35:01', 1),
@@ -549,20 +422,11 @@ INSERT INTO `users` (`user_id`, `username`, `password`, `full_name`, `role`, `cr
 (54, 'chair_ece', 'chair123', 'Dr. Electronics and Communications Engineering Chair', 'program_chair', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (55, 'cs1a_class', 'class123', 'CS 1A Class Account', 'class', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1),
 (56, 'cs2a_class', 'class123', 'CS 2A Class Account', 'class', '2025-11-27 10:06:45', '2025-11-27 10:06:45', 1);
-
-
---
--- Indexes for table `announcements`
---
 ALTER TABLE `announcements`
   ADD PRIMARY KEY (`announcement_id`),
   ADD KEY `created_by` (`created_by`),
   ADD KEY `idx_announcements_target` (`target_audience`,`created_at`),
   ADD KEY `idx_announcements_active` (`is_active`);
-
---
--- Indexes for table `classes`
---
 ALTER TABLE `classes`
   ADD PRIMARY KEY (`class_id`),
   ADD UNIQUE KEY `class_code` (`class_code`),
@@ -570,10 +434,6 @@ ALTER TABLE `classes`
   ADD KEY `program_chair_id` (`program_chair_id`),
   ADD KEY `idx_classes_chair` (`program_chair_id`),
   ADD KEY `idx_classes_year` (`year_level`);
-
---
--- Indexes for table `courses`
---
 ALTER TABLE `courses`
   ADD PRIMARY KEY (`course_id`),
   ADD UNIQUE KEY `course_code` (`course_code`),
@@ -581,20 +441,12 @@ ALTER TABLE `courses`
   ADD KEY `idx_courses_code` (`course_code`),
   ADD KEY `idx_courses_active` (`is_active`),
   ADD KEY `idx_courses_program` (`program_id`);
-
---
--- Indexes for table `curriculum`
---
 ALTER TABLE `curriculum`
   ADD PRIMARY KEY (`curriculum_id`),
   ADD KEY `course_code` (`course_code`),
   ADD KEY `program_chair_id` (`program_chair_id`),
   ADD KEY `idx_curriculum_year_sem` (`year_level`,`semester`),
   ADD KEY `idx_curriculum_active` (`is_active`);
-
---
--- Indexes for table `faculty`
---
 ALTER TABLE `faculty`
   ADD PRIMARY KEY (`faculty_id`),
   ADD UNIQUE KEY `employee_id` (`employee_id`),
@@ -602,33 +454,17 @@ ALTER TABLE `faculty`
   ADD KEY `idx_faculty_activity` (`is_active`,`last_activity`),
   ADD KEY `idx_faculty_program` (`program`),
   ADD KEY `idx_faculty_employee` (`employee_id`);
-
---
--- Indexes for table `deans`
---
 ALTER TABLE `deans`
   ADD PRIMARY KEY (`dean_id`),
   ADD UNIQUE KEY `uniq_program_id` (`program_id`),
   ADD KEY `idx_deans_faculty_id` (`faculty_id`);
-
---
--- Indexes for table `iftl_entries`
---
 ALTER TABLE `iftl_entries`
   ADD PRIMARY KEY (`entry_id`),
   ADD KEY `compliance_id` (`compliance_id`);
-
---
--- Indexes for table `iftl_weekly_compliance`
---
 ALTER TABLE `iftl_weekly_compliance`
   ADD PRIMARY KEY (`compliance_id`),
   ADD UNIQUE KEY `unique_week_faculty` (`faculty_id`,`week_identifier`),
   ADD KEY `faculty_id` (`faculty_id`);
-
---
--- Indexes for table `location_history`
---
 ALTER TABLE `location_history`
   ADD PRIMARY KEY (`location_history_id`),
   ADD KEY `faculty_id` (`faculty_id`),
@@ -636,20 +472,12 @@ ALTER TABLE `location_history`
   ADD KEY `idx_location_time_changed` (`time_changed`),
   ADD KEY `idx_location_faculty_time` (`faculty_id`,`time_set`),
   ADD KEY `idx_location_active` (`faculty_id`,`time_changed`);
-
---
--- Indexes for table `programs`
---
 ALTER TABLE `programs`
   ADD PRIMARY KEY (`program_id`),
   ADD UNIQUE KEY `program_code` (`program_code`),
   ADD KEY `idx_programs_code` (`program_code`),
   ADD KEY `idx_programs_active` (`is_active`),
   ADD KEY `idx_programs_dean` (`dean_id`);
-
---
--- Indexes for table `schedules`
---
 ALTER TABLE `schedules`
   ADD PRIMARY KEY (`schedule_id`),
   ADD KEY `course_code` (`course_code`),
@@ -659,162 +487,58 @@ ALTER TABLE `schedules`
   ADD KEY `idx_schedules_class_faculty` (`class_id`,`faculty_id`),
   ADD KEY `idx_schedules_time` (`days`,`time_start`,`time_end`),
   ADD KEY `idx_schedules_active` (`is_active`);
-
---
--- Indexes for table `users`
---
 ALTER TABLE `users`
   ADD PRIMARY KEY (`user_id`),
   ADD UNIQUE KEY `username` (`username`),
   ADD KEY `idx_users_username` (`username`),
   ADD KEY `idx_users_role` (`role`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `announcements`
---
 ALTER TABLE `announcements`
   MODIFY `announcement_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT for table `classes`
---
 ALTER TABLE `classes`
   MODIFY `class_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
-
---
--- AUTO_INCREMENT for table `courses`
---
 ALTER TABLE `courses`
   MODIFY `course_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
-
---
--- AUTO_INCREMENT for table `curriculum`
---
 ALTER TABLE `curriculum`
   MODIFY `curriculum_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
-
---
--- AUTO_INCREMENT for table `deans`
---
 ALTER TABLE `deans`
   MODIFY `dean_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
-
---
--- AUTO_INCREMENT for table `faculty`
---
 ALTER TABLE `faculty`
   MODIFY `faculty_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
-
---
--- AUTO_INCREMENT for table `iftl_entries`
---
 ALTER TABLE `iftl_entries`
   MODIFY `entry_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
-
---
--- AUTO_INCREMENT for table `iftl_weekly_compliance`
---
 ALTER TABLE `iftl_weekly_compliance`
   MODIFY `compliance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
-
---
--- AUTO_INCREMENT for table `location_history`
---
 ALTER TABLE `location_history`
   MODIFY `location_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
-
---
--- AUTO_INCREMENT for table `programs`
---
 ALTER TABLE `programs`
   MODIFY `program_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT for table `schedules`
---
 ALTER TABLE `schedules`
   MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT for table `users`
---
 ALTER TABLE `users`
   MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `announcements`
---
 ALTER TABLE `announcements`
   ADD CONSTRAINT `announcements_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`);
-
---
--- Constraints for table `classes`
---
 ALTER TABLE `classes`
   ADD CONSTRAINT `classes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
   ADD CONSTRAINT `classes_ibfk_2` FOREIGN KEY (`program_chair_id`) REFERENCES `users` (`user_id`);
-
---
--- Constraints for table `courses`
---
 ALTER TABLE `courses`
   ADD CONSTRAINT `fk_courses_program` FOREIGN KEY (`program_id`) REFERENCES `programs` (`program_id`);
-
---
--- Constraints for table `deans`
---
 ALTER TABLE `deans`
   ADD CONSTRAINT `fk_deans_faculty` FOREIGN KEY (`faculty_id`) REFERENCES `faculty` (`faculty_id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_deans_program` FOREIGN KEY (`program_id`) REFERENCES `programs` (`program_id`) ON UPDATE CASCADE;
-
---
--- Constraints for table `programs`
---
 ALTER TABLE `programs`
   ADD CONSTRAINT `programs_ibfk_1` FOREIGN KEY (`dean_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
-
---
--- Constraints for table `curriculum`
---
 ALTER TABLE `curriculum`
   ADD CONSTRAINT `curriculum_ibfk_1` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`),
   ADD CONSTRAINT `curriculum_ibfk_2` FOREIGN KEY (`program_chair_id`) REFERENCES `users` (`user_id`);
-
---
--- Constraints for table `faculty`
---
 ALTER TABLE `faculty`
   ADD CONSTRAINT `faculty_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
-
---
--- Constraints for table `iftl_entries`
---
 ALTER TABLE `iftl_entries`
   ADD CONSTRAINT `iftl_entries_ibfk_1` FOREIGN KEY (`compliance_id`) REFERENCES `iftl_weekly_compliance` (`compliance_id`) ON DELETE CASCADE;
-
---
--- Constraints for table `iftl_weekly_compliance`
---
 ALTER TABLE `iftl_weekly_compliance`
   ADD CONSTRAINT `iftl_weekly_compliance_ibfk_1` FOREIGN KEY (`faculty_id`) REFERENCES `faculty` (`faculty_id`) ON DELETE CASCADE;
-
---
--- Constraints for table `location_history`
---
 ALTER TABLE `location_history`
   ADD CONSTRAINT `location_history_ibfk_1` FOREIGN KEY (`faculty_id`) REFERENCES `faculty` (`faculty_id`) ON DELETE CASCADE;
-
---
--- Constraints for table `schedules`
---
 ALTER TABLE `schedules`
   ADD CONSTRAINT `schedules_ibfk_1` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`),
   ADD CONSTRAINT `schedules_ibfk_2` FOREIGN KEY (`class_id`) REFERENCES `classes` (`class_id`),

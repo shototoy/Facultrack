@@ -208,7 +208,6 @@ function getAllFacultyProgram($pdo) {
     $stmt = $pdo->prepare($faculty_query);
     $stmt->execute();
     $faculty_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    // Use improved getTimeAgo for each faculty
     require_once 'assets/php/common_utilities.php';
     foreach ($faculty_list as &$faculty) {
         $faculty['last_updated'] = getTimeAgo($faculty['last_location_time']);
@@ -495,26 +494,21 @@ if (isset($_POST['action']) && $_POST['action'] === 'assign_course_to_curriculum
                         VALUES (?, ?, ?, ?, TRUE)";
         $stmt = $pdo->prepare($insert_query);
         if ($stmt->execute([$course_code, $year_level, $semester, $user_id])) {
-            // Automatically assign all matching classes for this year/semester/program
             $curriculum_id = $pdo->lastInsertId();
             $classes_query = "SELECT class_id FROM classes WHERE year_level = ? AND semester = ? AND program_chair_id = ? AND is_active = TRUE";
             $classes_stmt = $pdo->prepare($classes_query);
             $classes_stmt->execute([$year_level, $semester, $user_id]);
             $class_ids = $classes_stmt->fetchAll(PDO::FETCH_COLUMN);
-            // DEBUG OUTPUT
             file_put_contents(__DIR__ . '/debug_assign_classes.log',
                 date('Y-m-d H:i:s') . " user_id=$user_id, year_level=$year_level, semester=$semester, found_class_ids=" . json_encode($class_ids) . "\n",
                 FILE_APPEND
             );
             if (!empty($class_ids)) {
-                // For each class, create a schedule assignment (if not already assigned)
                 foreach ($class_ids as $class_id) {
-                    // Only insert if not already scheduled for this course/class
                     $exists_query = "SELECT COUNT(*) FROM schedules WHERE course_code = ? AND class_id = ? AND is_active = TRUE";
                     $exists_stmt = $pdo->prepare($exists_query);
                     $exists_stmt->execute([$course_code, $class_id]);
                     if ($exists_stmt->fetchColumn() == 0) {
-                        // Insert a placeholder schedule (minimal info, to be edited later)
                         $insert_sched = "INSERT INTO schedules (faculty_id, course_code, class_id, days, time_start, time_end, room, semester, academic_year, is_active)
                                          VALUES (?, ?, ?, '', '08:00:00', '09:00:00', '', ?, ?, TRUE)";
                         $current_year = date('Y');
@@ -800,7 +794,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_room_options') {
         $stmt->execute();
         $existing_rooms = $stmt->fetchAll(PDO::FETCH_COLUMN);
         $room_config = include __DIR__ . '/assets/php/room_config.php';
-        // For course load assignment, use only 'room_assignment'
         $predefined_rooms = $room_config['room_assignment'];
         $all_rooms = array_unique(array_merge($existing_rooms, $predefined_rooms));
         sort($all_rooms);
@@ -864,7 +857,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'get_validated_options') {
         $stmt->execute();
         $existing_rooms = $stmt->fetchAll(PDO::FETCH_COLUMN);
         $room_config = include __DIR__ . '/assets/php/room_config.php';
-        // For course load assignment, use only 'room_assignment'
         $predefined_rooms = $room_config['room_assignment'];
         $all_rooms = array_unique(array_merge($existing_rooms, $predefined_rooms));
         sort($all_rooms);

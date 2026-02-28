@@ -24,7 +24,6 @@ function fetchAnnouncements($pdo, $userRole, $limit = 10) {
     switch ($userRole) {
         case 'faculty':
             $targetAudiences[] = 'faculty';
-            // Check if this faculty is a dean (exists in deans table)
             if (isset($_SESSION['user_id'])) {
                 $user_id = $_SESSION['user_id'];
                 $faculty_stmt = $pdo->prepare("SELECT faculty_id FROM faculty WHERE user_id = ? AND is_active = 1");
@@ -38,7 +37,6 @@ function fetchAnnouncements($pdo, $userRole, $limit = 10) {
                             $targetAudiences[] = 'dean';
                         }
                     } catch (Exception $ignore) {
-                        // deans table may not exist in all deployments
                     }
                 }
             }
@@ -52,7 +50,6 @@ function fetchAnnouncements($pdo, $userRole, $limit = 10) {
             $targetAudiences[] = 'faculty';
             break;
     }
-    // Announcements can have multiple audiences, so use FIND_IN_SET
     $where = implode(' OR ', array_fill(0, count($targetAudiences), "FIND_IN_SET(?, a.target_audience) > 0"));
     $announcements_query = "
         SELECT a.*, u.full_name as created_by_name,

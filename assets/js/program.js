@@ -516,7 +516,6 @@ function findExistingCourse(cell, day, timeSlot) {
 }
 function showAssignmentPanel(day, timeSlot, cell, existingCourse = null) {
     const isEditMode = existingCourse !== null;
-    console.log('showAssignmentPanel called:', { day, timeSlot, existingCourse, isEditMode });
     const form = document.querySelector('.courseload-assignment-form');
     if (!form) {
         console.error('Course load form not found!');
@@ -1479,7 +1478,6 @@ function submitCurriculumAssignment(form, courseCode) {
             if (data.success) {
                 showNotification('Course assigned to curriculum successfully!', 'success');
                 closeModal('curriculumAssignModal');
-                // Always re-open and refresh the overlay for this course
                 setTimeout(() => {
                     const courseCard = document.querySelector(`[data-course="${courseCode}"]`);
                     if (courseCard) {
@@ -2631,8 +2629,6 @@ function renderSemesterAssignmentCards(assignments, courseCode) {
         if (!semesterRows || semesterRows.length === 0) {
             return;
         }
-
-        // Show the assignment card even if there are no classes yet
         const yearLevels = [...new Set(semesterRows.map(row => parseInt(row.year_level, 10)).filter(Number.isFinite))].sort((a, b) => a - b);
         const classSet = new Set();
         semesterRows.forEach(row => {

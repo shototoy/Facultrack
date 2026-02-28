@@ -53,7 +53,6 @@ th { background: #f7f7f7; }
 <tr><td>Not Submitted</td><td>${notSubmitted.length}</td></tr>
 <tr><td>Overall Total</td><td>${submitted.length + notSubmitted.length}</td></tr>
 </table></div></body></html>`;
-            // Open print window
             const printWin = window.open('', '', 'width=900,height=700');
             printWin.document.write(html);
             printWin.document.close();
@@ -61,7 +60,6 @@ th { background: #f7f7f7; }
             setTimeout(() => { printWin.print(); }, 300);
         });
 }
-// Helper for HTML escaping
 function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, function (c) {
         return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];

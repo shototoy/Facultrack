@@ -192,9 +192,7 @@ class LivePollingManager {
                 description: 'Faculty Cards',
                 polling: 'location'
             };
-            console.log('Faculty grid found, faculty cards:', facultyGrid.querySelectorAll('.faculty-card').length);
         } else {
-            console.log('Faculty grid NOT found');
         }
         const coursesGrid = document.querySelector('.courses-grid');
         if (coursesGrid) {
@@ -261,14 +259,12 @@ class LivePollingManager {
                 this.currentTab = tabButton.dataset.tab;
                 console.clear();
                 const pageName = document.title.split(' - ')[1] || 'Dashboard';
-                console.log(`Page: ${pageName}`);
                 this.logCurrentStatus();
                 this.refreshVisibleElements();
             } else if (scheduleTab && this.pageType === 'faculty') {
                 setTimeout(() => {
                     console.clear();
                     const pageName = document.title.split(' - ')[1] || 'Dashboard';
-                    console.log(`Page: ${pageName}`);
                     this.logCurrentStatus();
                     this.refreshVisibleElements();
                 }, 100);
@@ -701,9 +697,7 @@ class LivePollingManager {
                 }
             });
             this.updateCounts(data.tab, data.updates.length);
-            console.log(`${data.tab}: ${data.updates.length} new updates received`);
         } else {
-            console.log(`${data.tab}: No changes detected`);
         }
         if (data.total_count !== undefined) {
             this.updateTotalCount(data.tab, data.total_count);
@@ -821,7 +815,6 @@ class LivePollingManager {
         const currentRows = container.querySelectorAll('tr:not(.expansion-row)').length;
         const newCount = newData.length;
         if (currentRows !== newCount) {
-            console.log(`${type} count change detected. Reloading page to update...`);
             setTimeout(() => location.reload(), 500);
             return { type: 'reload_triggered' };
         }
@@ -832,7 +825,6 @@ class LivePollingManager {
         const newIds = newData.map(item => item[this.getIdField(type)].toString());
         const hasIdMismatch = newIds.some(id => !currentIds.includes(id)) || currentIds.some(id => !newIds.includes(id));
         if (hasIdMismatch) {
-            console.log(`${type} content mismatch detected. Reloading page...`);
             setTimeout(() => location.reload(), 500);
             return { type: 'reload_triggered' };
         }
@@ -854,7 +846,6 @@ class LivePollingManager {
         const currentCards = container.querySelectorAll(cardSelector).length;
         const newCount = newData.length;
         if (currentCards !== newCount) {
-            console.log(`${type} (cards) count change detected. Current: ${currentCards}, New: ${newCount}. Reloading page...`);
             setTimeout(() => location.reload(), 500);
             return { type: 'reload_triggered' };
         }
@@ -863,18 +854,14 @@ class LivePollingManager {
     logCurrentStatus() {
         const pageName = document.title.split(' - ')[1] || 'Dashboard';
         const activeTab = this.getActiveTab();
-        console.log('Observable elements:');
         const observableStatus = this.getObservableElementsStatus();
         Object.keys(observableStatus).forEach(elementKey => {
-            console.log(`${elementKey}: ${observableStatus[elementKey]}`);
         });
         const activeElements = Object.keys(observableStatus).filter(key => observableStatus[key]);
         const pollingTargets = this.getPollingTargetsFromObservable(activeElements);
-        console.log(`Active polling targets: ${pollingTargets.length > 0 ? pollingTargets.join(', ') : 'none'}`);
         if (pollingTargets.length > 0) {
             pollingTargets.forEach(target => {
                 const lastUpdate = this.getLastUpdateForTab(target);
-                console.log(`${target}: Optimized mode, last update: ${lastUpdate}`);
             });
         }
     }
@@ -1886,29 +1873,21 @@ class LivePollingManager {
         const pageTitle = this.pageType === 'faculty' ? 'Faculty Dashboard' :
             this.pageType === 'class' ? 'Class Dashboard' :
                 'Dashboard';
-        console.log(`Page: ${pageTitle}`);
-        console.log(`${currentDay}, ${currentDate} ${currentTime}`);
-        elements.forEach(element => console.log(element));
+        
         if (this.pageType === 'class') {
-            console.log('Faculty with schedules:');
             this.logActualScheduleItems();
         }
     }
     logActualScheduleItems() {
         if (this.pageType === 'class') {
-            console.log('CLASS DEBUG FUNCTION CALLED!');
             const facultyCards = document.querySelectorAll('.faculty-card:not(.add-card)');
             if (facultyCards.length === 0) {
-                console.log('No faculty found');
                 return;
             }
-            console.log('Faculties found:');
             facultyCards.forEach(card => {
                 const facultyName = card.querySelector('.faculty-name')?.textContent?.trim() || 'Unknown Faculty';
                 const program = card.querySelector('.faculty-program')?.textContent?.trim() || '';
-                console.log(`  ${facultyName} (${program})`);
             });
-            console.log('\nClass schedule:');
             const allCourses = [];
             facultyCards.forEach(card => {
                 const facultyName = card.querySelector('.faculty-name')?.textContent?.trim() || 'Unknown Faculty';
@@ -1954,10 +1933,8 @@ class LivePollingManager {
             });
             allCourses.sort((a, b) => a.courseCode.localeCompare(b.courseCode));
             if (allCourses.length === 0) {
-                console.log('  No courses scheduled');
             } else {
                 allCourses.forEach(course => {
-                    console.log(`  ${course.courseCode}: ${course.facultyName}, ${course.courseName}, ${course.days} ${course.time}, ${course.status}`);
                 });
             }
         } else {
@@ -1985,7 +1962,6 @@ class LivePollingManager {
                 scheduleItems = document.querySelectorAll('.schedule-item, .schedule-card, .class-item');
             }
             if (scheduleItems.length === 0) {
-                console.log('No items found');
                 return;
             }
             scheduleItems.forEach(item => {
@@ -2001,7 +1977,6 @@ class LivePollingManager {
                     const duration = this.calculateDuration(startTime, endTime);
                     timeText = `${start} ${duration}hr`;
                 }
-                console.log(`${timeText} ${course}: ${status}`);
             });
         }
     }
@@ -2141,17 +2116,12 @@ class LivePollingManager {
         if (locationText && currentUser.current_location) {
             locationText.textContent = currentUser.current_location || 'No Location';
         }
-        console.log('Current user data:', currentUser);
-        console.log('last_updated value:', currentUser.last_updated);
         if (currentUser.last_updated) {
             const lastUpdatedElement = document.querySelector('.location-updated');
-            console.log('lastUpdatedElement found:', lastUpdatedElement);
             if (lastUpdatedElement) {
                 lastUpdatedElement.textContent = `Last updated: ${currentUser.last_updated}`;
-                console.log('Updated timestamp to:', currentUser.last_updated);
             }
         } else {
-            console.log('No last_updated in currentUser object');
         }
     }
 }

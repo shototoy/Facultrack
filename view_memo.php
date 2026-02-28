@@ -1,14 +1,12 @@
 <?php
 require_once 'assets/php/common_utilities.php';
 
-
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     die("Invalid announcement ID.");
 }
 
 $id = intval($_GET['id']);
 $pdo = get_db_connection();
-
 
 $stmt = $pdo->prepare("
     SELECT a.*, u.full_name as created_by_name
@@ -29,7 +27,6 @@ $authorName = $announcement['created_by_name'] ? htmlspecialchars($announcement[
 $date = date('F d, Y', strtotime($announcement['created_at']));
 $year = date('Y', strtotime($announcement['created_at']));
 
-
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
 $host = $_SERVER['HTTP_HOST'];
 $dir = dirname($_SERVER['PHP_SELF']);
@@ -48,7 +45,7 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
             padding: 0;
             min-height: 100vh;
             box-sizing: border-box;
-            background: #525659; /* PDF viewer-like background */
+            background: #525659; 
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -72,7 +69,7 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 0; /* Changed from -10 to 0 to sit inside .page correctly */
+            z-index: 0; 
         }
         .background-layer img {
             width: 100%;
@@ -227,7 +224,7 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
         </div>
 
         <div class="content-wrapper">
-            <!-- Header removed as requested -->
+            
             <div class="document-header" style="display: none;">
 
             </div>
@@ -257,7 +254,7 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
             </div>
         </div>
 
-        <!-- Footer removed as requested -->
+        
         <div class="footer-text" style="display: none;">
             <span>VISION:</span> A leading University in advancing scholarly innovation, multi-cultural convergence, and responsive public service in a borderless Region. |
             <span>MISSION:</span> The University shall primarily provide advanced instruction and professional training in science and technology, agriculture, fisheries, education and other relevant fields of study. It shall also undertake research and extension services, and provide progressive leadership in its areas of specialization. |
@@ -267,10 +264,6 @@ $appRoot = rtrim($protocol . "://" . $host . $dir, '/') . '/';
     </div>
 
     <script>
-        // Optional: Auto-print after a delay if needed, but per request this is just view memo
-        // setTimeout(() => {
-        //     window.print();
-        // }, 1000);
     </script>
 </body>
 </html>
