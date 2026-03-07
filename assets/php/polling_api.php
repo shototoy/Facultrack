@@ -91,6 +91,8 @@ function getAllCourses($pdo) {
             c.course_code,
             c.course_description,
             c.units,
+            c.lecture_units,
+            c.lab_units,
             COALESCE(p.program_name, 'General Education') as program_name,
             COUNT(s.schedule_id) as times_scheduled
         FROM courses c
@@ -117,6 +119,26 @@ function getProgramChairCourses($pdo, $user_id) {
             c.course_code,
             c.course_description,
             c.units,
+            c.lecture_units,
+            c.lab_units,
+            (
+                    SELECT cur.semester
+                    FROM curriculum cur
+                    WHERE cur.course_code = c.course_code
+                        AND cur.is_active = TRUE
+                        AND cur.program_chair_id = ?
+                    ORDER BY cur.updated_at DESC, cur.curriculum_id DESC
+                    LIMIT 1
+            ) AS assigned_semester,
+            (
+                    SELECT cur.year_level
+                    FROM curriculum cur
+                    WHERE cur.course_code = c.course_code
+                        AND cur.is_active = TRUE
+                        AND cur.program_chair_id = ?
+                    ORDER BY cur.updated_at DESC, cur.curriculum_id DESC
+                    LIMIT 1
+            ) AS assigned_year_level,
             COALESCE(p.program_name, 'General Education') as program_name,
             COUNT(DISTINCT s.schedule_id) as times_scheduled,
             CONCAT_WS(',',
@@ -176,7 +198,7 @@ function getProgramChairCourses($pdo, $user_id) {
         GROUP BY c.course_id
         ORDER BY c.course_code";
     $stmt = $pdo->prepare($courses_query);
-    $stmt->execute([$user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $program_name]);
+    $stmt->execute([$user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $program_name]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 function getAllPrograms($pdo) {
@@ -298,7 +320,7 @@ function getScheduleForDays($pdo, $faculty_id, $days) {
     $today_idx = $get_day_index($today_code);
     $viewing_idx = $get_day_index($viewing_day);
     $schedule_query = "
-        SELECT s.*, c.course_description, cl.class_name, cl.class_code,
+        SELECT s.*, c.course_description, c.units, c.lecture_units, c.lab_units, cl.class_name, cl.class_code,
             CASE
                 WHEN '$viewing_day' = '$today_code' THEN
                     CASE
@@ -498,7 +520,7 @@ function getFacultyCoursesForClass($pdo, $user_id) {
     $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
     $today_code = $day_mapping[$current_day];
     $courses_query = "
-        SELECT s.faculty_id, s.course_code, c.course_description, s.time_start, s.time_end, s.room,
+        SELECT s.faculty_id, s.course_code, c.course_description, c.units, c.lecture_units, c.lab_units, s.time_start, s.time_end, s.room,
             CASE
                 WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end
                      AND (
@@ -811,7 +833,7 @@ switch ($action) {
                         'required' => ['course_code', 'course_description', 'units'],
                         'unique' => ['courses.course_code'],
                         'table' => 'courses',
-                        'fields' => ['course_code', 'course_description', 'units', 'program_id']
+                        'fields' => ['course_code', 'course_description', 'units', 'lecture_units', 'lab_units', 'program_id']
                     ],
                     'add_program' => [
                         'required' => ['program_code', 'program_name'],
@@ -933,6 +955,18 @@ switch ($action) {
                         }
                     }
                     if ($action === 'add_course') {
+                        $total_units = (float)($_POST['units'] ?? 0);
+                        $lecture_units = $_POST['lecture_units'] ?? null;
+                        $lab_units = $_POST['lab_units'] ?? null;
+                        $lecture_units = ($lecture_units === null || $lecture_units === '') ? $total_units : (float)$lecture_units;
+                        $lab_units = ($lab_units === null || $lab_units === '') ? 0.0 : (float)$lab_units;
+                        $calculated_units = round($lecture_units + $lab_units, 2);
+                        if (abs($calculated_units - $total_units) > 0.001) {
+                            throw new Exception('Lecture and laboratory units must equal the selected total units');
+                        }
+                        $insert_data['units'] = $total_units;
+                        $insert_data['lecture_units'] = $lecture_units;
+                        $insert_data['lab_units'] = $lab_units;
                         if ($user_role === 'program_chair') {
                             $stmt = $pdo->prepare("\n                                SELECT p.program_id\n                                FROM faculty f\n                                JOIN programs p ON p.program_name = f.program AND p.is_active = TRUE\n                                WHERE f.user_id = ? AND f.is_active = TRUE\n                                LIMIT 1\n                            ");
                             $stmt->execute([$user_id]);
@@ -953,6 +987,8 @@ switch ($action) {
                             }
                             $program_id = $_POST[$field] ?? '';
                             $insert_data[$field] = ($program_id === '' || $program_id === 'general') ? null : (int)$program_id;
+                        } elseif ($action === 'add_course' && array_key_exists($field, $insert_data)) {
+                            continue;
                         } elseif ($field === 'target_audience' && $action === 'add_announcement') {
                             if (isset($_POST['target_audience']) && is_array($_POST['target_audience'])) {
                                 $insert_data[$field] = implode(',', $_POST['target_audience']);
@@ -1529,7 +1565,7 @@ switch ($action) {
             break;
         }
         $courses_query = "
-            SELECT c.course_id, c.course_code, c.course_description, c.units,
+            SELECT c.course_id, c.course_code, c.course_description, c.units, c.lecture_units, c.lab_units,
                    COUNT(s.schedule_id) as times_scheduled
             FROM courses c
             LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
@@ -1558,7 +1594,7 @@ switch ($action) {
             $day_mapping = [0 => 'S', 1 => 'M', 2 => 'T', 3 => 'W', 4 => 'TH', 5 => 'F', 6 => 'SAT'];
             $today_code = $day_mapping[$current_day];
             $schedule_query = "
-                SELECT s.*, c.course_description, cl.class_name, cl.class_code, cl.total_students,
+                SELECT s.*, c.course_description, c.units, c.lecture_units, c.lab_units, cl.class_name, cl.class_code, cl.total_students,
                     CASE
                         WHEN TIME(NOW()) BETWEEN s.time_start AND s.time_end
                              AND (
@@ -1670,7 +1706,7 @@ switch ($action) {
             }
 
             $schedule_query = "
-                SELECT s.*, c.course_description, cl.class_name, cl.class_code, cl.total_students,
+                SELECT s.*, c.course_description, c.units, c.lecture_units, c.lab_units, cl.class_name, cl.class_code, cl.total_students,
                        'upcoming' as status, 'standard' as source
                 FROM schedules s
                 JOIN courses c ON s.course_code = c.course_code
@@ -1687,7 +1723,7 @@ switch ($action) {
                 $overlay_query = "
                     SELECT e.entry_id, e.day_of_week, e.time_start, e.time_end, e.course_code, e.room,
                         e.class_name, e.status,
-                        c.course_description, c.units, cl.total_students, cl.class_code
+                        c.course_description, c.units, c.lecture_units, c.lab_units, cl.total_students, cl.class_code
                     FROM iftl_entries e
                     LEFT JOIN courses c ON e.course_code = c.course_code
                     LEFT JOIN classes cl ON (e.class_name = cl.class_name OR e.class_name = cl.class_code)
@@ -1713,6 +1749,8 @@ switch ($action) {
                             'status' => $row['status'],
                             'course_description' => $row['course_description'],
                             'units' => $row['units'],
+                            'lecture_units' => $row['lecture_units'],
+                            'lab_units' => $row['lab_units'],
                             'total_students' => $row['total_students'],
                             'source' => 'iftl'
                         ];
@@ -2293,7 +2331,7 @@ function fetchAddedRecord($pdo, $action, $id) {
             break;
         case 'add_course':
             $stmt = $pdo->prepare("
-                SELECT c.course_id, c.course_code, c.course_description, c.units,
+                SELECT c.course_id, c.course_code, c.course_description, c.units, c.lecture_units, c.lab_units,
                        COUNT(s.schedule_id) as times_scheduled
                 FROM courses c
                 LEFT JOIN schedules s ON c.course_code = s.course_code AND s.is_active = TRUE
@@ -2626,6 +2664,8 @@ function splitScheduleByDay($schedules) {
                 'status' => $sched['status'] ?? 'upcoming',
                 'course_description' => $sched['course_description'] ?? null,
                 'units' => $sched['units'] ?? null,
+                'lecture_units' => $sched['lecture_units'] ?? null,
+                'lab_units' => $sched['lab_units'] ?? null,
                 'total_students' => $sched['total_students'] ?? null,
                 'source' => $sched['source'] ?? 'standard'
             ];

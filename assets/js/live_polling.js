@@ -1543,17 +1543,28 @@ class LivePollingManager {
         }
     }
     createCourseCard(course) {
-        const units = parseFloat(course.units) || 0;
-        const unitsDisplay = units % 1 === 0 ? `${units}.00` : units.toString();
-        const courseSemesters = escapeHtml(course.curriculum_semesters || '');
-        const courseYearLevels = escapeHtml(course.curriculum_year_levels || '');
+        const totalUnits = parseFloat(course.units) || 0;
+        const lectureUnits = course.lecture_units !== undefined && course.lecture_units !== null && course.lecture_units !== ''
+            ? parseFloat(course.lecture_units) || 0
+            : totalUnits;
+        const labUnits = parseFloat(course.lab_units) || 0;
+        const formatUnits = (value) => {
+            const numericValue = parseFloat(value) || 0;
+            return numericValue.toFixed(2);
+        };
+        const unitBadges = [
+            labUnits > 0 ? `<div class="course-unit-badge lab">${formatUnits(labUnits)} Lab</div>` : '',
+            lectureUnits > 0 ? `<div class="course-unit-badge lecture">${formatUnits(lectureUnits)} Lec</div>` : ''
+        ].filter(Boolean).join('');
+        const assignedSemester = escapeHtml(course.assigned_semester || '');
+        const assignedYearLevel = escapeHtml(course.assigned_year_level || '');
         return `
-            <div class="course-card" data-course="${course.course_code}" data-course-id="${course.course_id}" data-semesters="${courseSemesters}" data-year-levels="${courseYearLevels}" style="display: block;">
+            <div class="course-card" data-course="${course.course_code}" data-course-id="${course.course_id}" data-semester="${assignedSemester}" data-year-level="${assignedYearLevel}" style="display: block;">
                 <div class="course-card-content">
                     <div class="course-card-default-content">
                         <div class="course-header">
                             <div class="course-code">${escapeHtml(course.course_code)}</div>
-                            <div class="course-units">${unitsDisplay} unit${units > 1 ? 's' : ''}</div>
+                            <div class="course-unit-badges">${unitBadges}</div>
                         </div>
                         <div class="course-description">
                             ${escapeHtml(course.course_description)}

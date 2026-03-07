@@ -134,6 +134,16 @@ $role = $_SESSION['role'] ?? '';
                     </select>
                 </div>
             </div>
+            <div class="form-row course-unit-split-row">
+                <div class="form-group">
+                    <label class="form-label">Lecture Units *</label>
+                    <input type="number" name="lecture_units" id="addCourseLectureUnits" class="form-input" min="0" step="1" inputmode="numeric" disabled required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Laboratory Units *</label>
+                    <input type="number" name="lab_units" id="addCourseLabUnits" class="form-input" min="0" step="1" inputmode="numeric" disabled required>
+                </div>
+            </div>
             <div class="form-group">
                 <label class="form-label">Course Description *</label>
                 <input type="text" name="course_description" class="form-input" required>
@@ -154,6 +164,93 @@ $role = $_SESSION['role'] ?? '';
         </form>
     </div>
 </div>
+<script>
+(function() {
+    function parseUnitValue(value) {
+        const parsed = parseInt(value, 10);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function formatUnitValue(value) {
+        if (!Number.isFinite(value)) return '';
+        return String(Math.round(value));
+    }
+
+    function clampUnitValue(value, total) {
+        return Math.min(total, Math.max(0, Math.round(value)));
+    }
+
+    function updateSplitUnits(source) {
+        const totalSelect = document.querySelector('#addCourseForm select[name="units"]');
+        const lectureInput = document.getElementById('addCourseLectureUnits');
+        const labInput = document.getElementById('addCourseLabUnits');
+        if (!totalSelect || !lectureInput || !labInput) return;
+
+        const totalUnits = parseUnitValue(totalSelect.value);
+        const isEnabled = totalUnits !== null && totalUnits > 0;
+        lectureInput.disabled = !isEnabled;
+        labInput.disabled = !isEnabled;
+        lectureInput.max = isEnabled ? String(totalUnits) : '';
+        labInput.max = isEnabled ? String(totalUnits) : '';
+
+        if (!isEnabled) {
+            lectureInput.value = '';
+            labInput.value = '';
+            return;
+        }
+
+        let lectureUnits = parseUnitValue(lectureInput.value);
+        let labUnits = parseUnitValue(labInput.value);
+
+        if (source === 'lecture') {
+            lectureUnits = clampUnitValue(lectureUnits ?? totalUnits, totalUnits);
+            labUnits = totalUnits - lectureUnits;
+        } else if (source === 'lab') {
+            labUnits = clampUnitValue(labUnits ?? 0, totalUnits);
+            lectureUnits = totalUnits - labUnits;
+        } else if (lectureUnits === null && labUnits === null) {
+            lectureUnits = totalUnits;
+            labUnits = 0;
+        } else if (lectureUnits !== null) {
+            lectureUnits = clampUnitValue(lectureUnits, totalUnits);
+            labUnits = totalUnits - lectureUnits;
+        } else {
+            labUnits = clampUnitValue(labUnits, totalUnits);
+            lectureUnits = totalUnits - labUnits;
+        }
+
+        lectureInput.value = formatUnitValue(lectureUnits);
+        labInput.value = formatUnitValue(labUnits);
+    }
+
+    function initializeAddCourseUnitSplit() {
+        const form = document.getElementById('addCourseForm');
+        const totalSelect = form ? form.querySelector('select[name="units"]') : null;
+        const lectureInput = document.getElementById('addCourseLectureUnits');
+        const labInput = document.getElementById('addCourseLabUnits');
+        if (!form || !totalSelect || !lectureInput || !labInput) return;
+
+        totalSelect.addEventListener('change', function() {
+            updateSplitUnits();
+        });
+        lectureInput.addEventListener('input', function() {
+            updateSplitUnits('lecture');
+        });
+        labInput.addEventListener('input', function() {
+            updateSplitUnits('lab');
+        });
+        form.addEventListener('reset', function() {
+            setTimeout(function() {
+                updateSplitUnits();
+            }, 0);
+        });
+
+        updateSplitUnits();
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeAddCourseUnitSplit);
+})();
+</script>
 <div class="modal-overlay" id="addClassModal">
     <div class="modal">
         <div class="modal-header">

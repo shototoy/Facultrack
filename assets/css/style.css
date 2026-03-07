@@ -625,6 +625,16 @@ body::before {
     text-align: left;
 }
 
+#addCourseForm .course-unit-split-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+#addCourseForm .course-unit-split-row .form-group {
+    margin-bottom: 20px;
+}
+
 .form-label {
     display: block;
     color: var(--text-primary);
@@ -2899,14 +2909,32 @@ body:has(.faculty-grid) .tab-content.active,
     line-height: 1.2;
 }
 
-.course-units {
-    color: var(--text-green-secondary);
+.course-unit-badges {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.course-unit-badge {
     font-size: 0.8rem;
     font-weight: 600;
-    background: rgba(46, 125, 50, 0.1);
-    padding: 3px 6px;
+    padding: 3px 8px;
     border-radius: var(--radius-md);
     white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.course-unit-badge.lab {
+    color: #0b5394;
+    background: rgba(13, 110, 253, 0.1);
+    border-color: rgba(13, 110, 253, 0.18);
+}
+
+.course-unit-badge.lecture {
+    color: var(--text-green-secondary);
+    background: rgba(46, 125, 50, 0.1);
+    border-color: rgba(46, 125, 50, 0.18);
 }
 
 .course-description {

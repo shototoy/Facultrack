@@ -147,18 +147,35 @@
         let labUnits = 0;
         const subjectUnits = {};
         schedules.forEach(schedule => {
-            preparations.add(schedule.course_code);
+            const totalUnits = parseFloat(schedule.units || 0) || 0;
+            const scheduleLectureUnits = parseFloat(
+                schedule.lecture_units !== undefined && schedule.lecture_units !== null && schedule.lecture_units !== ''
+                    ? schedule.lecture_units
+                    : totalUnits
+            ) || 0;
+            const scheduleLabUnits = parseFloat(schedule.lab_units || 0) || 0;
+            const scheduleTotalUnits = scheduleLectureUnits + scheduleLabUnits || totalUnits;
+            const offeringKey = [
+                schedule.course_code || '',
+                schedule.class_code || schedule.class_name || schedule.class_id || ''
+            ].join('|');
+            if (schedule.course_code && scheduleTotalUnits > 0) {
+                preparations.add(schedule.course_code);
+            }
             const start = new Date(`2000-01-01 ${schedule.time_start}`);
             const end = new Date(`2000-01-01 ${schedule.time_end}`);
             const hours = (end - start) / (1000 * 60 * 60);
             const dayCount = countDaysInSchedule(schedule.days);
             totalClassHours += hours * dayCount;
-            const units = parseFloat(schedule.units || 3);
-            if (!(schedule.course_code in subjectUnits)) {
-                subjectUnits[schedule.course_code] = units;
+            if (offeringKey && !(offeringKey in subjectUnits) && scheduleTotalUnits > 0) {
+                subjectUnits[offeringKey] = {
+                    lectureUnits: scheduleLectureUnits,
+                    labUnits: scheduleLabUnits
+                };
             }
         });
-        lectureUnits = Object.values(subjectUnits).reduce((sum, u) => sum + u, 0);
+        lectureUnits = Object.values(subjectUnits).reduce((sum, unitSet) => sum + unitSet.lectureUnits, 0);
+        labUnits = Object.values(subjectUnits).reduce((sum, unitSet) => sum + unitSet.labUnits, 0);
         const actualTeachingLoad = lectureUnits + labUnits;
         const normalLoad = 18;
         const loadDisplacement = actualTeachingLoad;

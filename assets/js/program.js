@@ -185,29 +185,21 @@ function shouldShowCourseCardForSemester(card, selectedSemester) {
     if (selectedSemester === 'all') {
         return true;
     }
-    const rawSemesters = (card.getAttribute('data-semesters') || '').trim();
-    if (!rawSemesters) {
+    const assignedSemester = (card.getAttribute('data-semester') || '').trim();
+    if (!assignedSemester) {
         return false;
     }
-    const semesterList = rawSemesters.split(',').map(semester => semester.trim()).filter(Boolean);
-    if (semesterList.length === 0) {
-        return false;
-    }
-    return semesterList.includes(selectedSemester);
+    return assignedSemester === selectedSemester;
 }
 function shouldShowCourseCardForYearLevel(card, selectedYearLevel) {
     if (selectedYearLevel === 'all') {
         return true;
     }
-    const rawYearLevels = (card.getAttribute('data-year-levels') || '').trim();
-    if (!rawYearLevels) {
+    const assignedYearLevel = (card.getAttribute('data-year-level') || '').trim();
+    if (!assignedYearLevel) {
         return false;
     }
-    const yearLevelList = rawYearLevels.split(',').map(level => level.trim()).filter(Boolean);
-    if (yearLevelList.length === 0) {
-        return false;
-    }
-    return yearLevelList.includes(selectedYearLevel);
+    return assignedYearLevel === selectedYearLevel;
 }
 function updateSemesterFilterVisibility() {
     const semesterFilter = document.getElementById('coursesSemesterFilter');
@@ -637,7 +629,7 @@ function populateCourseAssignmentPage(day, timeSlot, cell, existingCourse = null
     assignmentPage.innerHTML = `
         <div class="assignment-page-header">
             <button class="back-btn" onclick="closeCourseAssignmentPage()">
-                ← Back to Schedule
+                < Back to Schedule
             </button>
             <h3>${isEditMode ? 'Edit' : 'Course'} Assignment</h3>
             <div class="selected-slot-info">
@@ -777,20 +769,20 @@ function generateScheduleMWFPageContent(schedules) {
         const days = s.days.toUpperCase();
         return days.includes('M') || days.includes('W') || days.includes('F');
     });
-    const totalUnits = mwfSchedules.reduce((sum, schedule) => sum + parseInt(schedule.units), 0);
+    const summary = calculateScheduleLoadSummary(mwfSchedules);
     return `
         <div class="schedule-table-wrapper">
             ${generateMWFScheduleTable(schedules, '', '')}
         </div>
         <div class="page-summary">
             <div class="summary-header">
-                ${mwfSchedules.length} subjects, ${totalUnits} units
+                ${(summary.offeringCount || mwfSchedules.length)} subjects, ${formatScheduleUnitValue(summary.totalUnits)} units
             </div>
             <div class="subjects-list" data-count="${getDataCount(mwfSchedules.length)}">
                 ${mwfSchedules.map(schedule => `
                     <div class="subject-item">
                         <div class="subject-code">${schedule.course_code}</div>
-                        <div class="subject-details">${schedule.course_description} • ${schedule.units}u • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
+                        <div class="subject-details">${schedule.course_description} | ${formatScheduleUnitBreakdown(schedule)} | ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
                     </div>
                 `).join('')}
             </div>
@@ -802,20 +794,20 @@ function generateScheduleTTHPageContent(schedules) {
         const days = s.days.toUpperCase();
         return days.includes('T') || days.includes('TH') || days.includes('S');
     });
-    const totalUnits = tthSchedules.reduce((sum, schedule) => sum + parseInt(schedule.units), 0);
+    const summary = calculateScheduleLoadSummary(tthSchedules);
     return `
         <div class="schedule-table-wrapper">
             ${generateTTHScheduleTable(schedules, '', '')}
         </div>
         <div class="page-summary">
             <div class="summary-header">
-                ${tthSchedules.length} subjects, ${totalUnits} units
+                ${(summary.offeringCount || tthSchedules.length)} subjects, ${formatScheduleUnitValue(summary.totalUnits)} units
             </div>
             <div class="subjects-list" data-count="${getDataCount(tthSchedules.length)}">
                 ${tthSchedules.map(schedule => `
                     <div class="subject-item">
                         <div class="subject-code">${schedule.course_code}</div>
-                        <div class="subject-details">${schedule.course_description} • ${schedule.units}u • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
+                        <div class="subject-details">${schedule.course_description} | ${formatScheduleUnitBreakdown(schedule)} | ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
                     </div>
                 `).join('')}
             </div>
@@ -1016,9 +1008,70 @@ function timeToMinutes(time) {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
 }
+function parseScheduleUnitValue(value) {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+function formatScheduleUnitValue(value) {
+    const numericValue = parseScheduleUnitValue(value);
+    return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+}
+function getScheduleOfferingKey(schedule) {
+    return [
+        schedule.course_code || '',
+        schedule.class_code || schedule.class_name || schedule.class_id || ''
+    ].join('|');
+}
+function calculateScheduleLoadSummary(schedules) {
+    const offerings = new Map();
+    (schedules || []).forEach(schedule => {
+        const totalUnits = parseScheduleUnitValue(schedule.units);
+        const lectureUnits = parseScheduleUnitValue(
+            schedule.lecture_units !== undefined && schedule.lecture_units !== null && schedule.lecture_units !== ''
+                ? schedule.lecture_units
+                : totalUnits
+        );
+        const labUnits = parseScheduleUnitValue(schedule.lab_units);
+        const normalizedTotalUnits = lectureUnits + labUnits || totalUnits;
+        const offeringKey = getScheduleOfferingKey(schedule);
+        if (!offeringKey || normalizedTotalUnits <= 0) {
+            return;
+        }
+        if (!offerings.has(offeringKey)) {
+            offerings.set(offeringKey, {
+                totalUnits: normalizedTotalUnits,
+                lectureUnits,
+                labUnits
+            });
+        }
+    });
+    const summary = Array.from(offerings.values()).reduce((acc, offering) => {
+        acc.totalUnits += offering.totalUnits;
+        acc.lectureUnits += offering.lectureUnits;
+        acc.labUnits += offering.labUnits;
+        return acc;
+    }, { totalUnits: 0, lectureUnits: 0, labUnits: 0 });
+    return {
+        offeringCount: offerings.size,
+        totalUnits: summary.totalUnits,
+        lectureUnits: summary.lectureUnits,
+        labUnits: summary.labUnits
+    };
+}
+function formatScheduleUnitBreakdown(schedule) {
+    const totalUnits = parseScheduleUnitValue(schedule.units);
+    const lectureUnits = parseScheduleUnitValue(
+        schedule.lecture_units !== undefined && schedule.lecture_units !== null && schedule.lecture_units !== ''
+            ? schedule.lecture_units
+            : totalUnits
+    );
+    const labUnits = parseScheduleUnitValue(schedule.lab_units);
+    const normalizedTotalUnits = lectureUnits + labUnits || totalUnits;
+    return `${formatScheduleUnitValue(normalizedTotalUnits)} unit${normalizedTotalUnits === 1 ? '' : 's'} (${formatScheduleUnitValue(lectureUnits)} Lec / ${formatScheduleUnitValue(labUnits)} Lab)`;
+}
 function generateScheduleSummary(schedules, facultyId) {
-    const totalUnits = schedules.reduce((sum, schedule) => sum + parseInt(schedule.units), 0);
-    const totalSubjects = schedules.length;
+    const summary = calculateScheduleLoadSummary(schedules);
+    const totalSubjects = summary.offeringCount || schedules.length;
     return `
         <div class="schedule-summary-content">
             <h4>Complete Schedule Summary</h4>
@@ -1028,7 +1081,7 @@ function generateScheduleSummary(schedules, facultyId) {
                     <div class="stat-label">Total Subjects</div>
                 </div>
                 <div class="load-stat">
-                    <div class="stat-number">${totalUnits}</div>
+                    <div class="stat-number">${formatScheduleUnitValue(summary.totalUnits)}</div>
                     <div class="stat-label">Total Units</div>
                 </div>
             </div>
@@ -1040,7 +1093,7 @@ function generateScheduleSummary(schedules, facultyId) {
                         <div class="subject-details">
                             <div class="subject-desc">${schedule.course_description}</div>
                             <div class="subject-info">
-                                ${schedule.units} units • ${schedule.days} • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}
+                                ${formatScheduleUnitBreakdown(schedule)} | ${schedule.days} | ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}
                             </div>
                             <div class="subject-class">${schedule.class_name} (${schedule.class_code})</div>
                         </div>
@@ -1064,7 +1117,7 @@ function generateMWFSummary(schedules) {
             ${mwfSchedules.map(schedule => `
                 <div class="subject-item">
                     <div class="subject-code">${schedule.course_code}</div>
-                    <div class="subject-details">${schedule.course_description} • ${schedule.units}u • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
+                    <div class="subject-details">${schedule.course_description} | ${formatScheduleUnitBreakdown(schedule)} | ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
                 </div>
             `).join('')}
         </div>
@@ -1080,7 +1133,7 @@ function generateTTHSummary(schedules) {
             ${tthSchedules.map(schedule => `
                 <div class="subject-item">
                     <div class="subject-code">${schedule.course_code}</div>
-                    <div class="subject-details">${schedule.course_description} • ${schedule.units}u • ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
+                    <div class="subject-details">${schedule.course_description} | ${formatScheduleUnitBreakdown(schedule)} | ${formatTime(schedule.time_start)}-${formatTime(schedule.time_end)}</div>
                 </div>
             `).join('')}
         </div>
@@ -1422,7 +1475,7 @@ function loadCurriculumAssignmentForm(courseCode) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                generateCurriculumAssignmentForm(courseCode, data.existingAssignments);
+                generateCurriculumAssignmentForm(courseCode, data.currentAssignment || null);
             } else {
                 document.getElementById('curriculumAssignContent').innerHTML =
                     '<div class="error">Failed to load curriculum data: ' + (data.message || 'Unknown error') + '</div>';
@@ -1433,34 +1486,41 @@ function loadCurriculumAssignmentForm(courseCode) {
                 '<div class="error">Failed to load curriculum data. Please try again.</div>';
         });
 }
-function generateCurriculumAssignmentForm(courseCode, existingAssignments) {
+function generateCurriculumAssignmentForm(courseCode, currentAssignment) {
     const content = document.getElementById('curriculumAssignContent');
+    const selectedYearLevel = currentAssignment && currentAssignment.year_level ? String(currentAssignment.year_level) : '';
+    const selectedSemester = currentAssignment && currentAssignment.semester ? String(currentAssignment.semester) : '';
     content.innerHTML = `
         <form id="curriculumAssignForm" onsubmit="event.preventDefault(); submitCurriculumAssignment(this, '${courseCode}');">
+            ${currentAssignment ? `
+                <div style="padding: 12px 14px; margin-bottom: 14px; border-radius: 10px; background: rgba(46, 125, 50, 0.08); color: #2e7d32; font-size: 0.9rem; font-weight: 500;">
+                    Current assignment: Year ${currentAssignment.year_level} | ${currentAssignment.semester} Semester
+                </div>
+            ` : ''}
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Year Level:</label>
                     <select name="year_level" class="form-select" required>
                         <option value="">Select Year Level</option>
-                        <option value="1">1st Year</option>
-                        <option value="2">2nd Year</option>
-                        <option value="3">3rd Year</option>
-                        <option value="4">4th Year</option>
+                        <option value="1" ${selectedYearLevel === '1' ? 'selected' : ''}>1st Year</option>
+                        <option value="2" ${selectedYearLevel === '2' ? 'selected' : ''}>2nd Year</option>
+                        <option value="3" ${selectedYearLevel === '3' ? 'selected' : ''}>3rd Year</option>
+                        <option value="4" ${selectedYearLevel === '4' ? 'selected' : ''}>4th Year</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Semester:</label>
                     <select name="semester" class="form-select" required>
                         <option value="">Select Semester</option>
-                        <option value="1st">1st Semester</option>
-                        <option value="2nd">2nd Semester</option>
-                        <option value="Summer">Summer</option>
+                        <option value="1st" ${selectedSemester === '1st' ? 'selected' : ''}>1st Semester</option>
+                        <option value="2nd" ${selectedSemester === '2nd' ? 'selected' : ''}>2nd Semester</option>
+                        <option value="Summer" ${selectedSemester === 'Summer' ? 'selected' : ''}>Summer</option>
                     </select>
                 </div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" onclick="closeModal('curriculumAssignModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Add to Curriculum</button>
+                <button type="submit" class="btn-primary">${currentAssignment ? 'Update Assignment' : 'Assign to Curriculum'}</button>
             </div>
         </form>
     `;
@@ -1476,10 +1536,14 @@ function submitCurriculumAssignment(form, courseCode) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showNotification('Course assigned to curriculum successfully!', 'success');
+                showNotification(data.message || 'Course assignment updated successfully!', 'success');
                 closeModal('curriculumAssignModal');
+                const courseCard = document.querySelector(`[data-course="${courseCode}"]`);
+                if (courseCard && data.assignment) {
+                    courseCard.setAttribute('data-semester', data.assignment.semester || '');
+                    courseCard.setAttribute('data-year-level', String(data.assignment.year_level || ''));
+                }
                 setTimeout(() => {
-                    const courseCard = document.querySelector(`[data-course="${courseCode}"]`);
                     if (courseCard) {
                         const overlay = courseCard.querySelector('.course-details-overlay');
                         if (overlay) {
@@ -1487,6 +1551,7 @@ function submitCurriculumAssignment(form, courseCode) {
                             loadCourseAssignments(courseCode, overlay);
                         }
                     }
+                    searchContent();
                 }, 400);
             } else {
                 showNotification(data.message || 'Failed to assign course to curriculum', 'error');
@@ -1514,14 +1579,19 @@ function removeCurriculumAssignment(courseCode, curriculumId) {
         .then(data => {
             if (data.success) {
                 showNotification('Course removed from curriculum successfully!', 'success');
+                const courseCard = document.querySelector(`[data-course="${normalizedCourseCode}"]`);
+                if (courseCard) {
+                    courseCard.setAttribute('data-semester', '');
+                    courseCard.setAttribute('data-year-level', '');
+                }
                 if (typeof normalizedCourseCode === 'string' && normalizedCourseCode.length > 0) {
                     loadCurriculumAssignmentForm(normalizedCourseCode);
-                    loadEditCourseAssignmentsModal(normalizedCourseCode);
                     const visibleCourseOverlay = document.querySelector('.course-details-overlay.overlay-visible');
                     if (visibleCourseOverlay) {
                         loadCourseAssignments(normalizedCourseCode, visibleCourseOverlay);
                     }
                 }
+                searchContent();
             } else {
                 showNotification(data.message || 'Failed to remove course from curriculum', 'error');
             }
@@ -1591,7 +1661,7 @@ function loadCourseAssignments(courseCode, overlay) {
                                     ${assignment.class_names || 'No Classes Yet'}
                                 </div>
                                 <div style="font-size: 0.8rem; color: #666;">
-                                    Year ${assignment.year_level} • ${assignment.semester} Semester
+                                    Year ${assignment.year_level} | ${assignment.semester} Semester
                                 </div>
                             </div>
                             <button class="btn-danger small" onclick="removeCurriculumAssignment('${courseCode}', ${assignment.curriculum_id})">Remove</button>
@@ -1620,9 +1690,9 @@ document.addEventListener('click', function (event) {
             const toggleButton = card.querySelector('.class-details-toggle, .course-details-toggle');
             if (toggleButton) {
                 if (toggleButton.classList.contains('course-details-toggle')) {
-                    toggleButton.innerHTML = 'View Assignments <span class="arrow">▼</span>';
+                    toggleButton.innerHTML = 'View Assignments <span class="arrow">v</span>';
                 } else {
-                    toggleButton.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+                    toggleButton.innerHTML = 'View Schedule Details <span class="arrow">v</span>';
                 }
             }
         });
@@ -1726,29 +1796,30 @@ function filterClassesForCourse(courseCode, existingCourse = null) {
     })
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.curriculum) {
-                const validYearLevels = data.curriculum.map(curr => curr.year_level);
+            if (data.success && Array.isArray(data.curriculum) && data.curriculum.length > 0) {
+                const validAssignments = data.curriculum.map(curr => ({
+                    year_level: parseInt(curr.year_level, 10),
+                    semester: String(curr.semester || '')
+                }));
                 classSelect.innerHTML = '<option value="">Choose a class...</option>';
                 window.classData.forEach(cls => {
-                    if (validYearLevels.includes(parseInt(cls.year_level))) {
+                    const classYearLevel = parseInt(cls.year_level, 10);
+                    const classSemester = String(cls.semester || '');
+                    const isAllowed = validAssignments.some(assignment => assignment.year_level === classYearLevel && assignment.semester === classSemester);
+                    if (isAllowed) {
                         const isSelected = existingCourse && existingCourse.class_id == cls.class_id ? 'selected' : '';
                         classSelect.innerHTML += `<option value="${cls.class_id}" ${isSelected}>${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
                     }
                 });
+                if (classSelect.options.length === 1) {
+                    classSelect.innerHTML += '<option value="" disabled>No classes have this course in their curriculum</option>';
+                }
             } else {
-                classSelect.innerHTML = '<option value="">Choose a class...</option>';
-                window.classData.forEach(cls => {
-                    const isSelected = existingCourse && existingCourse.class_id == cls.class_id ? 'selected' : '';
-                    classSelect.innerHTML += `<option value="${cls.class_id}" ${isSelected}>${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
-                });
+                classSelect.innerHTML = '<option value="" disabled>No classes have this course in their curriculum</option>';
             }
         })
         .catch(error => {
-            classSelect.innerHTML = '<option value="">Choose a class...</option>';
-            window.classData.forEach(cls => {
-                const isSelected = existingCourse && existingCourse.class_id == cls.class_id ? 'selected' : '';
-                classSelect.innerHTML += `<option value="${cls.class_id}" ${isSelected}>${cls.class_code} - ${cls.class_name} (Year ${cls.year_level})</option>`;
-            });
+            classSelect.innerHTML = '<option value="" disabled>Error loading valid classes</option>';
         });
 }
 function loadRoomOptions(roomSelect, existingCourse) {
@@ -2160,6 +2231,8 @@ function loadCourseAndClassData() {
                         courseSelect.innerHTML += `
                         <option value="${course.course_code}"
                                 data-units="${course.units}"
+                                data-lecture-units="${course.lecture_units ?? course.units}"
+                                data-lab-units="${course.lab_units ?? 0}"
                                 data-description="${course.course_description}">
                             ${course.course_code} - ${course.course_description}
                         </option>
@@ -2540,13 +2613,13 @@ function toggleCourseDetailsOverlay(button, courseCode) {
     const isCurrentlyVisible = overlay.classList.contains('overlay-visible');
     if (isCurrentlyVisible) {
         overlay.classList.remove('overlay-visible');
-        button.innerHTML = 'View Assignments <span class="arrow">▼</span>';
+        button.innerHTML = 'View Assignments <span class="arrow">v</span>';
     } else {
         loadCourseAssignments(courseCode, overlay);
         setTimeout(() => {
             overlay.classList.add('overlay-visible');
         }, 10);
-        button.innerHTML = 'Hide Assignments <span class="arrow">▲</span>';
+        button.innerHTML = 'Hide Assignments <span class="arrow">^</span>';
     }
 }
 function toggleClassDetailsOverlay(button) {
@@ -2555,10 +2628,10 @@ function toggleClassDetailsOverlay(button) {
     const isCurrentlyVisible = overlay.classList.contains('overlay-visible');
     if (isCurrentlyVisible) {
         overlay.classList.remove('overlay-visible');
-        button.innerHTML = 'View Schedule Details <span class="arrow">▼</span>';
+        button.innerHTML = 'View Schedule Details <span class="arrow">v</span>';
     } else {
         overlay.classList.add('overlay-visible');
-        button.innerHTML = 'Hide Schedule Details <span class="arrow">▲</span>';
+        button.innerHTML = 'Hide Schedule Details <span class="arrow">^</span>';
     }
 }
 function showMobilePage(pageNumber) {
@@ -2603,70 +2676,34 @@ function loadCourseAssignments(courseCode, overlay) {
         });
 }
 function renderSemesterAssignmentCards(assignments, courseCode) {
-    const semesterOrder = ['1st', '2nd'];
-    const grouped = {
-        '1st': [],
-        '2nd': []
-    };
-
-    const parseClassNames = (value) => {
-        if (!value || typeof value !== 'string') return [];
-        return value
-            .split(',')
-            .map(item => item.trim())
-            .filter(Boolean);
-    };
-
-    assignments.forEach(assignment => {
-        if (grouped[assignment.semester]) {
-            grouped[assignment.semester].push(assignment);
-        }
-    });
-
-    let html = '';
-    semesterOrder.forEach(semesterKey => {
-        const semesterRows = grouped[semesterKey];
-        if (!semesterRows || semesterRows.length === 0) {
-            return;
-        }
-        const yearLevels = [...new Set(semesterRows.map(row => parseInt(row.year_level, 10)).filter(Number.isFinite))].sort((a, b) => a - b);
-        const classSet = new Set();
-        semesterRows.forEach(row => {
-            parseClassNames(row.class_names).forEach(item => classSet.add(item));
-        });
-        const editableIds = semesterRows
-            .map(row => parseInt(row.curriculum_id, 10))
-            .filter(Number.isFinite);
-        const hasEditable = editableIds.length > 0;
-
-        html += `
-            <div class="assignment-item" style="padding: 12px; margin-bottom: 10px; border-radius: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 700; color: var(--text-green-secondary); margin-bottom: 4px;">
-                            ${semesterKey} Semester Assignments
-                        </div>
-                        <div style="font-size: 0.82rem; color: #666; margin-bottom: 4px;">
-                            Year Levels: ${yearLevels.length > 0 ? yearLevels.map(level => `Year ${level}`).join(', ') : 'None'}
-                        </div>
-                        <div style="font-size: 0.8rem; color: #2e7d32; white-space: normal; word-break: break-word;">
-                            Classes: ${classSet.size > 0 ? Array.from(classSet).join(', ') : '<span style=\"color:#888\">No classes yet</span>'}
-                        </div>
+    const assignment = Array.isArray(assignments) && assignments.length > 0 ? assignments[0] : null;
+    if (!assignment) {
+        return '<div style="text-align: center; color: #666; padding: 20px;">No curriculum assignment found</div>';
+    }
+    const curriculumId = parseInt(assignment.curriculum_id, 10);
+    const classesText = assignment.class_names && assignment.class_names.trim() !== ''
+        ? assignment.class_names
+        : '<span style="color:#888">No classes yet</span>';
+    return `
+        <div class="assignment-item" style="padding: 12px; margin-bottom: 10px; border-radius: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 700; color: var(--text-green-secondary); margin-bottom: 4px;">
+                        Year ${assignment.year_level} | ${assignment.semester} Semester
                     </div>
-                    <div style="display: flex; gap: 6px; align-items: center;">
-                        <button type="button" class="class-card-icon-btn" title="Edit ${semesterKey} semester assignments" onclick="openEditCourseAssignmentsModal('${courseCode}', '${semesterKey}')" ${hasEditable ? '' : 'disabled style=\"opacity:.5;cursor:not-allowed;\"'}>
-                            <svg class="feather feather-sm"><use href="#edit"></use></svg>
-                        </button>
-                        <button type="button" class="class-card-icon-btn danger" title="Delete ${semesterKey} semester assignments" onclick="removeSemesterAssignments('${courseCode}', '${semesterKey}')" ${hasEditable ? '' : 'disabled style=\"opacity:.5;cursor:not-allowed;\"'}>
-                            <svg class="feather feather-sm"><use href="#trash-2"></use></svg>
-                        </button>
+                    <div style="font-size: 0.82rem; color: #666; margin-bottom: 4px;">
+                        Classes in this assignment
+                    </div>
+                    <div style="font-size: 0.8rem; color: #2e7d32; white-space: normal; word-break: break-word;">
+                        ${classesText}
                     </div>
                 </div>
+                <button type="button" class="class-card-icon-btn danger" title="Remove assignment" onclick="removeCurriculumAssignment('${courseCode}', ${Number.isFinite(curriculumId) ? curriculumId : 0})" ${Number.isFinite(curriculumId) ? '' : 'disabled style=\"opacity:.5;cursor:not-allowed;\"'}>
+                    <svg class="feather feather-sm"><use href="#trash-2"></use></svg>
+                </button>
             </div>
-        `;
-    });
-
-    return html || '<div style="text-align: center; color: #666; padding: 20px;">No semester assignments yet</div>';
+        </div>
+    `;
 }
 function openEditCourseAssignmentsModal(courseCode, semester = '1st') {
     openModal('editCourseAssignmentsModal');
