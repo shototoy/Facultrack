@@ -46,6 +46,8 @@ CREATE TABLE `courses` (
   `course_id` int(11) NOT NULL,
   `course_code` varchar(20) NOT NULL,
   `course_description` varchar(255) NOT NULL,
+  `lecture_units` decimal(3,2) NOT NULL DEFAULT 0.00,
+  `lab_units` decimal(3,2) NOT NULL DEFAULT 0.00,
   `units` decimal(3,2) NOT NULL,
   `program_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -111,7 +113,7 @@ CREATE TABLE `iftl_weekly_compliance` (
   `faculty_id` int(11) NOT NULL,
   `week_identifier` varchar(20) NOT NULL COMMENT 'Format: YYYY-Wxx',
   `week_start_date` date NOT NULL,
-  `status` enum('Draft','Submitted','Approved','Rejected') DEFAULT 'Draft',
+  `status` enum('Draft','Submitted','Re-Submitted','Approved','Rejected') DEFAULT 'Draft',
   `is_override` tinyint(1) NOT NULL DEFAULT 0,
   `submitted_at` timestamp NULL DEFAULT NULL,
   `reviewed_at` timestamp NULL DEFAULT NULL,
@@ -191,7 +193,7 @@ ALTER TABLE `courses`
 
 ALTER TABLE `curriculum`
   ADD PRIMARY KEY (`curriculum_id`),
-  ADD KEY `course_code` (`course_code`),
+  ADD UNIQUE KEY `uniq_curriculum_course_program` (`course_code`,`program_chair_id`),
   ADD KEY `program_chair_id` (`program_chair_id`),
   ADD KEY `idx_curriculum_year_sem` (`year_level`,`semester`),
   ADD KEY `idx_curriculum_active` (`is_active`);
@@ -330,3 +332,4 @@ INSERT INTO `faculty` (`faculty_id`, `user_id`, `employee_id`, `program`, `curre
 (35, 1, 'DIR-1', 'Administration', NULL, '2026-02-03 03:35:01', '2025-11-27 10:06:48', NULL, NULL, NULL, 'Available', '2025-11-27 10:06:48', '2026-02-03 03:35:01', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
+
